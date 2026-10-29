@@ -1,0 +1,4 @@
+(fp_lib_table
+	(version 7)
+	(lib (name "th_sensor")(type "KiCad")(uri "${KIPRJMOD}/lib/th_sensor.pretty")(options "")(descr "TH-SENSOR-H2 project footprints"))
+)

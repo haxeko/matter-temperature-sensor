@@ -1,0 +1,11 @@
+# Battery profile (field use).
+# - logs reduced to warnings (runtime level can be raised to INFO)
+# - brown-out / low-battery boot guard enabled
+# - LED feedback enabled by default, can be disabled: `config set led 0`
+CONFIG_LOG_DEFAULT_LEVEL_WARN=y
+CONFIG_LOG_MAXIMUM_LEVEL_INFO=y
+CONFIG_BOOTLOADER_LOG_LEVEL_WARN=y
+CONFIG_OPENTHREAD_LOG_LEVEL_CRIT=y
+CONFIG_APP_POWER_GUARD_ENABLE=y
+CONFIG_APP_LED_DEFAULT_ENABLED=y
+CONFIG_APP_CONSOLE_ENABLE=y

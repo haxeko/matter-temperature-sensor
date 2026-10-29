@@ -1,0 +1,18 @@
+# ESP-IDF
+firmware/build*/
+firmware/managed_components/
+firmware/sdkconfig
+firmware/sdkconfig.old
+firmware/test/host/build/
+
+# KiCad user/session files and caches
+*.kicad_prl
+*-backups/
+fp-info-cache
+\#auto_saved_files\#
+_autosave-*
+hardware/kicad/*.net
+
+# Python
+__pycache__/
+*.pyc

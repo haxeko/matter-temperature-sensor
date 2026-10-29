@@ -1,0 +1,14 @@
+# Production commissioning data (UNTESTED overlay, add on top of the battery
+# profile). Without this file the firmware uses the SDK test DAC provider and
+# test commissioning data (VID 0xFFF1 / PID 0x8000, passcode 20202021,
+# discriminator 3840): development only, never ship devices like that.
+#
+# With this overlay, per-device data must be generated with esp-matter-mfg-tool
+# (unique passcode/discriminator/verifier, serial, DAC/PAI/CD) and flashed to
+# the "fctry" and "esp_secure_cert" partitions of each device. Never clone
+# flash/NVS between devices. See docs/commissioning.md.
+CONFIG_ENABLE_ESP32_FACTORY_DATA_PROVIDER=y
+CONFIG_ENABLE_ESP32_DEVICE_INSTANCE_INFO_PROVIDER=y
+CONFIG_CHIP_FACTORY_NAMESPACE_PARTITION_LABEL="fctry"
+CONFIG_SEC_CERT_DAC_PROVIDER=y
+CONFIG_ENABLE_ROTATING_DEVICE_ID=y

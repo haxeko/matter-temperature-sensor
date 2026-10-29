@@ -1,0 +1,11 @@
+# Debug / bring-up profile (bench supply or batteries).
+# - INFO logs from the application, Matter and OpenThread (NOTE)
+# - boot guard disabled so a weak bench supply does not put the chip to sleep
+# Power management stays enabled so that current measurements remain
+# meaningful; disconnect USB for sleep-current measurements (USB keeps the chip
+# awake on purpose, CONFIG_USJ_NO_AUTO_LS_ON_CONNECTION).
+CONFIG_LOG_DEFAULT_LEVEL_INFO=y
+CONFIG_OPENTHREAD_LOG_LEVEL_NOTE=y
+CONFIG_APP_POWER_GUARD_ENABLE=n
+CONFIG_APP_LED_DEFAULT_ENABLED=y
+CONFIG_APP_CONSOLE_ENABLE=y

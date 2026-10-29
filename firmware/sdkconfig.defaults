@@ -1,0 +1,90 @@
+# ---------------------------------------------------------------------------
+# Common configuration (both profiles). Locked stack: ESP-IDF v5.5.5 +
+# espressif/esp_matter 1.6.0~1. Options below are taken from the ESP-Matter
+# icd_app / sensors examples of that release; every deviation is commented.
+# Build a profile with:
+#   idf.py -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.battery" build
+#   idf.py -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.debug" build
+# ---------------------------------------------------------------------------
+CONFIG_IDF_TARGET="esp32h2"
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+
+# Partition table (A/B app slots, factory data partitions)
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+CONFIG_PARTITION_TABLE_FILENAME="partitions.csv"
+CONFIG_PARTITION_TABLE_OFFSET=0xC000
+
+# BLE is only used for Matter commissioning and released afterwards
+CONFIG_BT_ENABLED=y
+CONFIG_BT_NIMBLE_ENABLED=y
+CONFIG_BT_NIMBLE_ENABLE_CONN_REATTEMPT=n
+CONFIG_USE_BLE_ONLY_FOR_COMMISSIONING=y
+CONFIG_BT_LE_SLEEP_ENABLE=y
+# Deviation: BLE default TX power +9 dBm -> +3 dBm. Commissioning happens next
+# to the phone; +9 dBm (~55 mA) is close to the coin-cell power-path limit.
+CONFIG_BT_LE_DFT_TX_POWER_LEVEL_P3=y
+# Deviation: 32.768 kHz crystal is fitted (Y1), use it for RTC and BLE LP clock.
+CONFIG_RTC_CLK_SRC_EXT_CRYS=y
+CONFIG_BT_LE_LP_CLK_SRC_DEFAULT=y
+
+# OpenThread: minimal end device (MTD), no CLI
+CONFIG_OPENTHREAD_ENABLED=y
+CONFIG_OPENTHREAD_MTD=y
+CONFIG_OPENTHREAD_SRP_CLIENT=y
+CONFIG_OPENTHREAD_LOG_LEVEL_DYNAMIC=n
+CONFIG_OPENTHREAD_CLI=n
+CONFIG_LWIP_IPV6_AUTOCONFIG=n
+CONFIG_LWIP_IPV6_NUM_ADDRESSES=8
+CONFIG_LWIP_MULTICAST_PING=y
+CONFIG_LWIP_ND6=n
+CONFIG_LWIP_IPV4=n
+CONFIG_DISABLE_IPV4=y
+CONFIG_USE_MINIMAL_MDNS=n
+CONFIG_ENABLE_WIFI_STATION=n
+CONFIG_ESP_WIFI_SOFTAP_SUPPORT=n
+CONFIG_MBEDTLS_HKDF_C=y
+CONFIG_MBEDTLS_SSL_PROTO_DTLS=y
+
+# Data model: root + temperature + humidity endpoints
+CONFIG_ESP_MATTER_MAX_DYNAMIC_ENDPOINT_COUNT=4
+CONFIG_SUPPORT_GROUPCAST_CLUSTER=n
+
+# Matter ICD: Short Idle Time device (no LIT/check-in requirement on controllers)
+CONFIG_ENABLE_ICD_SERVER=y
+# Deviation from icd_app (5 s): 15 s is the SIT maximum and divides the number
+# of idle polls by three (docs/power_budget.md).
+CONFIG_ICD_SLOW_POLL_INTERVAL_MS=15000
+CONFIG_ICD_FAST_POLL_INTERVAL_MS=500
+# Deviation from icd_app (60 s): fewer subscription keep-alive reports.
+CONFIG_ICD_IDLE_MODE_INTERVAL_SEC=300
+CONFIG_ICD_ACTIVE_MODE_INTERVAL_MS=1000
+CONFIG_ICD_ACTIVE_MODE_THRESHOLD_MS=1000
+
+# Commissioning window after first boot: 3 min (Matter minimum), not 15 min
+CONFIG_CHIP_DISCOVERY_TIMEOUT_SECS=180
+
+# OTA requestor not enabled: not validated against a real OTA provider.
+CONFIG_ENABLE_OTA_REQUESTOR=n
+
+# Power management: automatic light sleep with peripheral power-down
+CONFIG_PM_ENABLE=y
+CONFIG_PM_DFS_INIT_AUTO=y
+CONFIG_PM_POWER_DOWN_PERIPHERAL_IN_LIGHT_SLEEP=y
+CONFIG_ESP_SLEEP_POWER_DOWN_FLASH=y
+CONFIG_ESP_PHY_MAC_BB_PD=y
+CONFIG_FREERTOS_HZ=1000
+CONFIG_FREERTOS_USE_TICKLESS_IDLE=y
+CONFIG_IEEE802154_SLEEP_ENABLE=y
+
+# Console on USB Serial/JTAG (pogo header J1). While a host is connected the
+# chip stays out of auto light sleep so the maintenance console works.
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
+CONFIG_ESP_CONSOLE_SECONDARY_NONE=y
+CONFIG_USJ_NO_AUTO_LS_ON_CONNECTION=y
+
+# Button debounce 4 x 5 ms
+CONFIG_BUTTON_DEBOUNCE_TICKS=4
+
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=6144
+CONFIG_ESP_SYSTEM_PANIC_PRINT_REBOOT=y

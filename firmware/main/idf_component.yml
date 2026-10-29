@@ -1,0 +1,9 @@
+## Dependency manifest for the application component.
+## Versions are pinned exactly; the resolved set (with hashes) is in ../dependencies.lock.
+dependencies:
+  idf:
+    version: "==5.5.5"
+  espressif/esp_matter:
+    version: "==1.6.0~1"
+  espressif/button:
+    version: "==4.2.1"
