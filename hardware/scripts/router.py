@@ -667,13 +667,34 @@ class Router:
             return False
         return True
 
+    def pad_keepoff(self, gap=0.2, via_dia=0.6):
+        """Lattice points where a via ring would touch or come within `gap` of any pad (any net)."""
+        m = np.zeros((self.ny, self.nx), bool)
+        r = via_dia / 2 + gap
+        for fp in self.board.GetFootprints():
+            for p in fp.Pads():
+                for L in LAYERS:
+                    if not p.IsOnLayer(L):
+                        continue
+                    for pts in self.shape_points(p.GetEffectivePolygon(L, pcbnew.ERROR_INSIDE)):
+                        xs = [a[0] for a in pts]
+                        ys = [a[1] for a in pts]
+                        win = self._win(min(xs) - r, min(ys) - r, max(xs) + r, max(ys) + r)
+                        if win is None:
+                            continue
+                        d = self._poly_dist(win[1], win[2], pts)
+                        m[win[0]][d <= r] = True
+        return m
+
     def stitch(self, sites, extra_gap=0.0):
-        """GND stitching vias at the given candidate sites (mm), where legal."""
+        """GND stitching vias at the given candidate sites (mm), where legal and clear of pads."""
         code = self.netcode["GND"]
+        keepoff = self.pad_keepoff()
         placed = []
         for p in sites:
             q = (round(p[0] / self.g) * self.g, round(p[1] / self.g) * self.g)
-            if self.via_site_ok(code, q):
+            i, j = int(round(q[0] / self.g)), int(round(q[1] / self.g))
+            if 0 <= i < self.nx and 0 <= j < self.ny and not keepoff[j, i] and self.via_site_ok(code, q):
                 placed.append(self.place_via("GND", q))
         return placed
 

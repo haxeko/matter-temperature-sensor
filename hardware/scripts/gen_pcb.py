@@ -38,7 +38,7 @@ CORNER_R = 1.5
 # no board material for >= 15 mm beside the 5.4 mm antenna region.
 MOD_X, MOD_Y = 8.6, 8.8                      # module centre; body 13.2 x 16.6 mm
 MOD_L, MOD_T = MOD_X - 6.6, MOD_Y - 8.3      # 2.0 / 0.5 mm from the edges
-NOTCH_X1, NOTCH_X2, NOTCH_D = MOD_X + 6.8, MOD_X + 6.8 + 15.2, 6.0
+NOTCH_X1, NOTCH_X2, NOTCH_D = MOD_X + 7.0, MOD_X + 7.0 + 15.2, 6.0
 SHT_TONGUE = dict(x1=61.0, slot_y=13.0, bridge_y2=3.4, slot_w=1.0)
 CELL_R = 10.6                                 # CR2032 radius 10.0 + 0.6 margin
 SIGNAL_W, POWER_W = 0.25, 0.4
@@ -397,6 +397,9 @@ def build_board(path=PCB):
     bds.m_CopperEdgeClearance = mm(0.3)
     bds.m_HoleToHoleMin = mm(0.5)
     bds.m_HoleClearance = mm(0.25)
+    bds.m_TentViasFront = True
+    bds.m_TentViasBack = True
+    bds.SetAuxOrigin(V(0, H))            # drill/place origin: board bottom-left corner (fab outputs)
     tb = board.GetTitleBlock()
     tb.SetTitle("TH-SENSOR-H2")
     tb.SetRevision(D.REV)
@@ -683,20 +686,178 @@ def prune_stitching(board, vias):
     return removed
 
 
+class SilkPlacer:
+    """Places silkscreen text where it overlaps no pad, no other silk, no courtyard of another part
+    and stays clear of the board edge. Coordinates in mm relative to the board corner."""
+
+    def __init__(self, board):
+        self.board = board
+        self.obst = []           # (x1, y1, x2, y2, owner reference or None)
+        mmr = lambda v: pcbnew.ToMM(v)
+        for fp in board.GetFootprints():
+            ref = fp.GetReference()
+            for pad in fp.Pads():
+                if pad.IsOnLayer(pcbnew.F_Cu) or pad.IsOnLayer(pcbnew.F_Mask):
+                    self._add(pad.GetBoundingBox(), 0.2, None)
+            for it in fp.GraphicalItems():
+                if it.GetLayer() == pcbnew.F_SilkS:
+                    self._add(it.GetBoundingBox(), 0.15, ref)
+        # courtyards as a raster (holder courtyards are far from rectangular)
+        import numpy as np
+        self.np = np
+        self.g = 0.1
+        self.cy = np.full((int(H / self.g) + 2, int(W / self.g) + 2), -1, np.int32)
+        self.refs = []
+        ys, xs = np.mgrid[0:self.cy.shape[0], 0:self.cy.shape[1]] * self.g
+        for k, fp in enumerate(board.GetFootprints()):
+            self.refs.append(fp.GetReference())
+            cy = fp.GetCourtyard(pcbnew.F_CrtYd)
+            for i in range(cy.OutlineCount()):
+                ol = cy.Outline(i)
+                pts = [(mmr(ol.CPoint(j).x) - OX, mmr(ol.CPoint(j).y) - OY) for j in range(ol.PointCount())]
+                inside = np.zeros(xs.shape, bool)
+                for a, b in zip(pts, pts[1:] + pts[:1]):
+                    cond = (a[1] > ys) != (b[1] > ys)
+                    with np.errstate(divide="ignore", invalid="ignore"):
+                        xc = (b[0] - a[0]) * (ys - a[1]) / (b[1] - a[1] + 1e-30) + a[0]
+                    inside ^= cond & (xs < xc)
+                self.cy[inside] = k
+        for t in board.GetTracks():
+            if t.GetClass() == "PCB_VIA" and not t.IsTented(pcbnew.F_Mask):
+                self._add(t.GetBoundingBox(), 0.1, None)
+        t = SHT_TONGUE
+        self.cuts = [(t["x1"] - t["slot_w"], t["bridge_y2"], t["x1"], t["slot_y"] + t["slot_w"]),
+                     (t["x1"] - t["slot_w"], t["slot_y"], W, t["slot_y"] + t["slot_w"]),
+                     (NOTCH_X1, 0, NOTCH_X2, NOTCH_D)]
+
+    def _add(self, bb, grow, owner):
+        mmr = pcbnew.ToMM
+        self.obst.append((mmr(bb.GetX()) - OX - grow, mmr(bb.GetY()) - OY - grow, mmr(bb.GetRight()) - OX + grow,
+                          mmr(bb.GetBottom()) - OY + grow, owner))
+
+    def _bbox(self, text):
+        bb = text.GetBoundingBox()
+        return (pcbnew.ToMM(bb.GetX()) - OX, pcbnew.ToMM(bb.GetY()) - OY,
+                pcbnew.ToMM(bb.GetRight()) - OX, pcbnew.ToMM(bb.GetBottom()) - OY)
+
+    def free(self, box, owner=None, edge=0.4):
+        x1, y1, x2, y2 = box
+        if x1 < edge or y1 < edge or x2 > W - edge or y2 > H - edge:
+            return False
+        for cx1, cy1, cx2, cy2 in self.cuts:
+            if x1 < cx2 + edge and x2 > cx1 - edge and y1 < cy2 + edge and y2 > cy1 - edge:
+                return False
+        for ox1, oy1, ox2, oy2, own in self.obst:
+            if own is not None and owner is not None and own == owner:
+                continue
+            if x1 < ox2 and x2 > ox1 and y1 < oy2 and y2 > oy1:
+                return False
+        g = self.g
+        win = self.cy[int(y1 / g):int(y2 / g) + 2, int(x1 / g):int(x2 / g) + 2]
+        own = self.refs.index(owner) if owner in self.refs else -2
+        return not ((win >= 0) & (win != own)).any()
+
+    def claim(self, text):
+        x1, y1, x2, y2 = self._bbox(text)
+        self.obst.append((x1 - 0.1, y1 - 0.1, x2 + 0.1, y2 + 0.1, None))
+
+    def place_text(self, text, candidates, owner=None):
+        """candidates: (x, y, angle). Returns True when one fits."""
+        for x, y, a in candidates:
+            text.SetPosition(V(x, y))
+            text.SetTextAngleDegrees(a)
+            if self.free(self._bbox(text), owner):
+                self.claim(text)
+                return True
+        return False
+
+    def place_reference(self, fp):
+        ref = fp.Reference()
+        ref.SetTextSize(pcbnew.VECTOR2I(mm(0.8), mm(0.8)))
+        ref.SetTextThickness(mm(0.15))
+        ref.SetLayer(pcbnew.F_SilkS)
+        cy = fp.GetCourtyard(pcbnew.F_CrtYd)
+        bb = cy.BBox() if cy.OutlineCount() else fp.GetBoundingBox(False)
+        x1, y1 = pcbnew.ToMM(bb.GetX()) - OX, pcbnew.ToMM(bb.GetY()) - OY
+        x2, y2 = pcbnew.ToMM(bb.GetRight()) - OX, pcbnew.ToMM(bb.GetBottom()) - OY
+        cx, cyy = (x1 + x2) / 2, (y1 + y2) / 2
+        tw = 0.75 * len(fp.GetReference()) + 0.2
+        cands = []
+        for d in (0.0, -0.8, 0.8, -1.6, 1.6):
+            cands += [(cx + d, y1 - 0.55, 0), (cx + d, y2 + 0.55, 0),
+                      (x1 - tw / 2 - 0.1, cyy + d, 0), (x2 + tw / 2 + 0.1, cyy + d, 0),
+                      (x1 - 0.55, cyy + d, 90), (x2 + 0.55, cyy + d, 90)]
+        if self.place_text(ref, cands, owner=fp.GetReference()):
+            ref.SetVisible(True)
+            return True
+        ref.SetVisible(False)          # stays on the assembly drawing (F.Fab carries ${REFERENCE})
+        return False
+
+    def free_spot(self, text, region, step=0.5, angles=(0,)):
+        rx1, ry1, rx2, ry2 = region
+        cands = []
+        y = ry1
+        while y <= ry2 + 1e-9:
+            x = rx1
+            while x <= rx2 + 1e-9:
+                for a in angles:
+                    cands.append((x, y, a))
+                x += step
+            y += step
+        return self.place_text(text, cands)
+
+
 def silkscreen(board):
-    silk_text(board, "TH-SENSOR-H2  Rev " + D.REV, 46.0, 54.6, 1.0, bold=True)
-    silk_text(board, "CR2032 ONLY - NO CHARGE", 19.0, 56.6, 0.9)
-    silk_text(board, "CR2032 ONLY - NO CHARGE", 53.0, 56.6, 0.9)
-    silk_text(board, "+", 36.3, 41.4, 1.2, bold=True)
-    silk_text(board, "+", 70.3, 41.4, 1.2, bold=True)
-    silk_text(board, "TX RX D+ D- BOOT 3V3 GND", 24.9, 10.3, 0.7)
-    silk_text(board, "RST", 3.4, 34.0, 0.8)
-    silk_text(board, "USER", 36.0, 6.9, 0.8)
-    silk_text(board, "SHT40", 66.0, 11.6, 0.7)
-    silk_text(board, "ANTENNA KEEPOUT", 9.0, 3.0, 0.8, layer="B.SilkS")
-    silk_text(board, "TH-SENSOR-H2 Rev %s  %s" % (D.REV, D.DATE), 36.0, 54.6, 1.0, layer="B.SilkS")
-    silk_text(board, "2 x CR2032 in parallel through one buck-boost each - do not recharge", 36.0, 52.4, 0.8,
+    """Reference designators and board texts; returns the references kept on F.Fab only."""
+    sp = SilkPlacer(board)
+    hidden = []
+    order = sorted(board.GetFootprints(), key=lambda f: -f.GetCourtyard(pcbnew.F_CrtYd).Area()
+                   if f.GetCourtyard(pcbnew.F_CrtYd).OutlineCount() else 0)
+    texts = []
+
+    def txt(text, size=1.0, layer="F.SilkS", bold=False):
+        t = silk_text(board, text, 0, 0, size, layer=layer, bold=bold)
+        texts.append(t)
+        return t
+
+    # front: the cell warning between the two holders (visible with cells fitted), then the board name
+    missing = []
+    t = txt("CR2032 ONLY", 1.0, bold=True)
+    if not sp.free_spot(t, (30.0, 33.6, 42.0, 36.0), step=0.1):
+        missing.append("CR2032 ONLY")
+    else:
+        x, y = pcbnew.ToMM(t.GetPosition().x) - OX, pcbnew.ToMM(t.GetPosition().y) - OY
+        t2 = txt("NO RECHARGE", 1.0, bold=True)
+        if not sp.free_spot(t2, (x - 0.6, y + 1.4, x + 0.6, y + 2.0), step=0.1):
+            missing.append("NO RECHARGE")
+    name = txt("TH-SENSOR-H2 Rev " + D.REV, 1.0, bold=True)
+    if not sp.free_spot(name, (40.0, 7.0, 58.0, 19.0), step=0.5):
+        missing.append("board name")
+    if missing:
+        raise RuntimeError("silkscreen: no room for " + ", ".join(missing))
+    for label, ref, region in (("RST", "SW2", (0.6, 33.0, 8.0, 43.0)), ("USER", "SW1", (31.0, 6.5, 41.0, 9.8)),
+                               ("SHT40", "U5", (62.0, 10.0, 71.0, 12.6))):
+        t = txt(label, 0.8)
+        if not sp.free_spot(t, region, step=0.25, angles=(0, 90)):
+            board.Remove(t)
+    for fp in order:
+        if not sp.place_reference(fp):
+            hidden.append(fp.GetReference())
+    # back: the full story, mirrored
+    silk_text(board, "TH-SENSOR-H2 Rev %s  %s" % (D.REV, D.DATE), 36.0, 30.0, 1.2, layer="B.SilkS", bold=True)
+    silk_text(board, "ESP32-H2 Matter/Thread temperature & humidity", 36.0, 32.0, 0.8, layer="B.SilkS")
+    silk_text(board, "2 x CR2032 (one TPS63900 buck-boost per cell)", 36.0, 33.6, 0.8, layer="B.SilkS")
+    silk_text(board, "Primary lithium cells only - never recharge", 36.0, 35.2, 0.8, layer="B.SilkS")
+    jx, jy, _ = PLACE["J1"]
+    for i, lab in enumerate(["TX", "RX", "D+", "D-", "BOOT", "3V3", "GND"]):
+        t = silk_text(board, lab, jx + 2.54 * i, jy, 0.8, rot=90, layer="B.SilkS")
+        bb = t.GetBoundingBox()
+        top = pcbnew.ToMM(bb.GetY()) - OY
+        t.SetPosition(V(jx + 2.54 * i, jy + (jy + 1.35 - top)))     # text starts 0.5 mm below the pad
+    silk_text(board, "J1 debug (not fitted): 3V3 pad powers the board only with JP1 closed", 36.0, 13.6, 0.8,
               layer="B.SilkS")
+    silk_text(board, "ANTENNA KEEPOUT", 8.6, 3.2, 0.8, layer="B.SilkS")
+    return hidden
 
 
 def place_report(board):
@@ -722,7 +883,8 @@ if __name__ == "__main__":
         report.append("dangling stub segments trimmed or removed: %d" % report_dangling)
         report.append("stitching vias: %d placed, %d removed (single plane)" % (len(vias), removed))
         pcbnew.ZONE_FILLER(board).Fill(board.Zones())
-        silkscreen(board)
+        hidden = silkscreen(board)
+        report.append("references on F.Fab only (no room on silk): %s" % (", ".join(sorted(hidden)) or "none"))
         os.makedirs(REPORTS, exist_ok=True)
         with open(os.path.join(REPORTS, "routing_log.txt"), "w") as f:
             f.write("\n".join(report) + "\n")

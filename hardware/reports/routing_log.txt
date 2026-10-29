@@ -59,5 +59,6 @@ ok /VBAT1: BT1.1 -> TP1.1                   len   13.4 mm  vias 0
 ok /VBAT2: BT2.1 -> TP2.1                   len   23.6 mm  vias 0
 ok /VBAT2: R33.1 -> R11.1                   len   37.0 mm  vias 4
 dangling stub segments trimmed or removed: 10
-stitching vias: 142 placed, 4 removed (single plane)
+stitching vias: 131 placed, 0 removed (single plane)
+references on F.Fab only (no room on silk): C1, C11, C12, C13, C2, C21, C22, C23, C24, C25, C26, C27, C28, R13, R22, R27, R3, R33, R35, U1, U2
 unrouted: 0
