@@ -12,6 +12,7 @@
 #include "battery_model.h"
 #include "board.h"
 #include "esp_log.h"
+#include "esp_system.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
@@ -478,6 +479,8 @@ static void print_status(void)
     printf("power guard       : reset %s, boot #%" PRIu32 ", unstable boots %u (last best cell %u mV)%s\n",
            power_guard_reset_reason_str(pg.reset_reason), pg.boot_count, pg.unstable_boots, pg.last_best_mv,
            pg.nvs_ok ? "" : ", NVS unavailable");
+    printf("heap              : free %" PRIu32 " B, minimum since boot %" PRIu32 " B\n", esp_get_free_heap_size(),
+           esp_get_minimum_free_heap_size());
 }
 
 static void print_config(void)

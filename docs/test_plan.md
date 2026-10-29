@@ -4,7 +4,7 @@
 
 Dụng cụ cần: nguồn bench có giới hạn dòng, đồng hồ vạn năng, máy đo dòng có dải µA và lấy mẫu nhanh (ví dụ Nordic PPK2, Joulescope hoặc tương đương), oscilloscope, cặp CR2032 mới cùng lô và một cặp đã xả, tủ lạnh/tủ nhiệt (0 °C và −10 °C), cảm biến tham chiếu nhiệt ẩm, một Thread Border Router + Matter controller (xem `docs/commissioning.md`).
 
-Điểm đo: TP1 VBAT1, TP2 VBAT2, TP3/TP4 VIN1/VIN2, TP5/TP6 VOUT1/VOUT2, TP7 3V3_PWR, TP8 +3V3, TP9/TP10 GND. Link đo dòng: R1 (cell 1), R11 (cell 2), R21 (tải sau bộ chuyển đổi).
+Điểm đo (silkscreen ghi tên net, không ghi số TP): TP1 VBAT1, TP2 VBAT2, TP3/TP4 VIN1/VIN2, TP5/TP6 VOUT1/VOUT2, TP7 3V3_PWR, TP8 +3V3 ("3V3"), TP9/TP10 GND, TP11 EN; BOOT ở J1 chân 5. Link đo dòng: R1 (cell 1), R11 (cell 2), R21 (tải sau bộ chuyển đổi).
 
 ## A. Bo trần và đường nguồn (trước khi cấp cho module)
 
@@ -16,7 +16,7 @@ Dụng cụ cần: nguồn bench có giới hạn dòng, đồng hồ vạn năn
 | T-04 | Sụt áp P-MOSFET | Tải 50 mA ở 3V3_PWR (R21 tháo, tải điện tử ở TP7), đo VBAT1−VIN1 | < 20 mV ở 2.9 V vào; ghi lại ở 1.8 V vào |
 | T-05 | Dòng ngược vào cell | Cấp 3.2 V vào BT2, cấp 2.6 V vào BT1 qua ampe kế đặt ở vị trí R1 (tháo R1). Đo ở 25 °C và 60 °C | dòng chảy vào cell 1 ≤ 0.7 µA (Panasonic: tổng điện tích nạp vào coin cell trong đời sử dụng ≤ 3 % dung lượng; 225 mAh × 3 % / 1 năm ≈ 0.77 µA) |
 | T-06 | Giới hạn dòng vào | Một nguồn 2.9 V nối tiếp 12 Ω (giả lập cell) vào BT1, tải xung 60 mA/5 ms ở TP7 | dòng vào trung bình không vượt ~100 mA; rail không sụt dưới 3.0 V với "cell" 12 Ω |
-| T-07 | Supervisor | R21 tháo, U4 chưa lắp; cấp nguồn ngoài vào TP8 (+3V3) rồi hạ dần | nRST xuống thấp tại 2.86–2.97 V (VIT− của TPS3839K33); lên lại sau 120–350 ms |
+| T-07 | Supervisor | R21 tháo, U4 chưa lắp; cấp nguồn ngoài vào TP8 (+3V3) rồi hạ dần; đo nRST (pad R22 phía U3) và EN (TP11) | nRST xuống thấp tại 2.86–2.97 V (VIT− của TPS3839K33); lên lại sau 120–350 ms; EN theo sau qua RC 10 kΩ / 1 µF (τ ≈ 10 ms) |
 | T-08 | Thứ tự hai cell | Cấp hai nguồn 3.0 V và 2.7 V vào BT1/BT2, tải 20 mA | cả hai cell đều cấp dòng theo tỷ lệ (ghi lại phân chia); không có dòng ngược |
 
 ## B. Module, firmware, cảm biến
@@ -31,6 +31,7 @@ Dụng cụ cần: nguồn bench có giới hạn dòng, đồng hồ vạn năn
 | T-14 | Null khi lỗi cảm biến | Rút SDA (cắt tạm hoặc giữ SCL thấp) trong lúc chạy | sau 3 lần đọc lỗi, controller thấy MeasuredValue = null; khôi phục khi nối lại |
 | T-15 | Nút | Nhấn ngắn, 3 lần trong 2 s, giữ 10 s rồi thả, giữ 60 s | đúng hành vi và LED theo `docs/architecture.md` §4.4; nhấn ngắn liên tục bị giới hạn 1 lần / 5 s |
 | T-16 | Power guard | Pin yếu (nguồn 2.3 V nối tiếp 50 Ω) | không vòng reset liên tục; vào ngủ sâu backoff; nút USER đánh thức |
+| T-17 | Heap | Dòng `heap` của lệnh `status` sau khởi động, ngay sau commissioning, sau 24 h và sau 7 ngày | ghi lại số đo; "free" ở cùng trạng thái nghỉ không giảm dần giữa các lần đo (không rò bộ nhớ); "minimum since boot" là biên an toàn còn lại; không có reset do thiếu bộ nhớ |
 
 ## C. Matter / Thread
 

@@ -11,7 +11,7 @@
 | `bom_jlc.csv` | BOM theo định dạng JLC (Comment, Designator, Footprint, LCSC Part #) kèm hãng, MPN, Basic/Extended, tồn kho và thời điểm tra |
 | `cpl_jlc.csv` | CPL (Designator, Mid X, Mid Y, Layer, Rotation), mm, gốc góc dưới-trái, Y hướng lên |
 | `orientation_check.md` | chân 1 / cực tính của từng linh kiện có cực tính, để đối chiếu trong bản xem trước của JLC |
-| `assembly_top.pdf` | bản vẽ lớp Fab có đủ ký hiệu linh kiện (21 ký hiệu không đủ chỗ trên silkscreen) |
+| `assembly_top.pdf` | bản vẽ lớp Fab có đủ ký hiệu linh kiện (20 ký hiệu không đủ chỗ trên silkscreen) và số TP của test pad (silkscreen ghi tên net) |
 | `manufacturing_blockers.md` | trở ngại và các kiểm tra cần người làm |
 | `jlc_parts_snapshot.jsonl` | dữ liệu tra JLC ngày 2026-10-29 08:55 UTC |
 

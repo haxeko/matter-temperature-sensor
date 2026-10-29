@@ -104,7 +104,8 @@ at("C23", 6.6, 32.2, 270)
 at("R22", 2.6, 31.0, 180)
 at("C25", 2.6, 33.2, 180)
 at("SW2", 3.0, 38.75, 90)
-at("TP9", 9.0, 35.8, 0)
+at("TP11", 8.0, 35.8, 0)           # EN, between the reset button and the divider switches
+at("TP9", 21.0, 33.2, 0)           # GND, between the divider group and cell 1's test pads
 at("FID1", 16.4, 33.6, 0)
 at("TP10", 69.4, 38.0, 0)
 
@@ -386,6 +387,8 @@ def pad_xy(board, ref, num):
 
 # ------------------------------------------------------------------ board
 def build_board(path=PCB):
+    # KiCad saves items sorted by UUID: a fixed seed keeps regenerated files diff-friendly.
+    pcbnew.KIID.SeedGenerator(1)
     board = pcbnew.NewBoard(path)
     board.SetCopperLayerCount(2)
     bds = board.GetDesignSettings()
@@ -771,8 +774,9 @@ class SilkPlacer:
                 return True
         return False
 
-    def place_reference(self, fp):
-        ref = fp.Reference()
+    def place_reference(self, fp, field=None):
+        """Place fp's reference (or another of its fields) on F.SilkS next to the part; hide it if no room."""
+        ref = field if field is not None else fp.Reference()
         ref.SetTextSize(pcbnew.VECTOR2I(mm(0.8), mm(0.8)))
         ref.SetTextThickness(mm(0.15))
         ref.SetLayer(pcbnew.F_SilkS)
@@ -781,7 +785,7 @@ class SilkPlacer:
         x1, y1 = pcbnew.ToMM(bb.GetX()) - OX, pcbnew.ToMM(bb.GetY()) - OY
         x2, y2 = pcbnew.ToMM(bb.GetRight()) - OX, pcbnew.ToMM(bb.GetBottom()) - OY
         cx, cyy = (x1 + x2) / 2, (y1 + y2) / 2
-        tw = 0.75 * len(fp.GetReference()) + 0.2
+        tw = 0.75 * len(ref.GetText()) + 0.2
         cands = []
         for d in (0.0, -0.8, 0.8, -1.6, 1.6):
             cands += [(cx + d, y1 - 0.55, 0), (cx + d, y2 + 0.55, 0),
@@ -827,20 +831,43 @@ def silkscreen(board):
         missing.append("CR2032 ONLY")
     else:
         x, y = pcbnew.ToMM(t.GetPosition().x) - OX, pcbnew.ToMM(t.GetPosition().y) - OY
-        t2 = txt("NO RECHARGE", 1.0, bold=True)
+        t2 = txt("NO CHARGE", 1.0, bold=True)
         if not sp.free_spot(t2, (x - 0.6, y + 1.4, x + 0.6, y + 2.0), step=0.1):
-            missing.append("NO RECHARGE")
+            missing.append("NO CHARGE")
     name = txt("TH-SENSOR-H2 Rev " + D.REV, 1.0, bold=True)
-    if not sp.free_spot(name, (40.0, 7.0, 58.0, 19.0), step=0.5):
+    if not sp.free_spot(name, (50.0, 16.5, 58.0, 19.0), step=0.5):
         missing.append("board name")
-    if missing:
-        raise RuntimeError("silkscreen: no room for " + ", ".join(missing))
-    for label, ref, region in (("RST", "SW2", (0.6, 33.0, 8.0, 43.0)), ("USER", "SW1", (31.0, 6.5, 41.0, 9.8)),
+    for label, ref, region in (("RST", "SW2", (0.6, 33.0, 8.0, 43.0)), ("USER/BOOT", "SW1", (31.0, 6.5, 41.0, 9.8)),
                                ("SHT40", "U5", (62.0, 10.0, 71.0, 12.6))):
         t = txt(label, 0.8)
         if not sp.free_spot(t, region, step=0.25, angles=(0, 90)):
-            board.Remove(t)
+            missing.append(label)
+    # current-measurement links first: the bring-up procedure refers to them by name
+    links = ("R1", "R11", "R21")
+    for ref in links:
+        if not sp.place_reference(board.FindFootprintByReference(ref)):
+            hidden.append(ref)
+    # test pads show their net name (VBAT1, 3V3, GND, EN, ...); the TP numbers stay on the assembly drawing.
+    # Greedy placement, retried once with the pads that failed placed first.
+    tps = sorted((f for f in board.GetFootprints() if f.GetReference().startswith("TP")),
+                 key=lambda f: int(f.GetReference()[2:]))
+    n_obst = len(sp.obst)
+    for attempt in range(2):
+        del sp.obst[n_obst:]
+        failed = []
+        for fp in tps:
+            fp.Reference().SetVisible(False)
+            if not sp.place_reference(fp, field=fp.Value()):
+                failed.append(fp)
+        if not failed:
+            break
+        tps = failed + [f for f in tps if f not in failed]
+    missing += [fp.GetReference() + " " + fp.GetValue() for fp in failed]
+    if missing:
+        raise RuntimeError("silkscreen: no room for " + ", ".join(missing))
     for fp in order:
+        if fp.GetReference().startswith("TP") or fp.GetReference() in links:
+            continue
         if not sp.place_reference(fp):
             hidden.append(fp.GetReference())
     # back: the full story, mirrored

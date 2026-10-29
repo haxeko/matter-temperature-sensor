@@ -82,7 +82,7 @@ Hệ quả: dải 2 mm bên trái module chỉ đủ cho 3V3 và EN, nên ba tí
 
 ## D14. J1 nằm ngang 1×7, bỏ EN
 
-J1 dọc 1×8 cũ tạo một "bức tường" giữa bo. J1 mới nằm dưới rãnh anten, thứ tự chân theo thứ tự chân module (TX, RX, D+, D−, BOOT, 3V3_DBG, GND). EN không còn trên J1: nạp firmware qua USB-Serial/JTAG tự reset được, hoặc dùng nút RST + BOOT.
+J1 dọc 1×8 cũ tạo một "bức tường" giữa bo. J1 mới nằm dưới rãnh anten, thứ tự chân theo thứ tự chân module (TX, RX, D+, D−, BOOT, 3V3_DBG, GND). EN không còn trên J1: nạp firmware qua USB-Serial/JTAG tự reset được, hoặc dùng nút RST + BOOT. EN có test pad riêng TP11 (in "EN") cạnh nút RST để đo thời điểm reset.
 
 ## D15. Không có OTA trong Rev A
 
@@ -95,11 +95,11 @@ Bảng phân vùng có hai slot A/B (giống `icd_app`), nhưng OTA Requestor t�
 ## D17. PCB 2 lớp, đi dây bằng script
 
 - KiCad 9 không chạy được FreeRouting trong môi trường này (không được tải/thực thi phần mềm bên ngoài), nên dùng router lưới tự viết (`router.py`): A* trên lưới 0.1 mm, bản đồ chiếm chỗ đã nới theo clearance, phạt rẽ, via, kiểm khoảng cách lỗ khoan. Khối nguồn và lưỡi cảm biến đi dây tay trong script.
-- Kết quả có vài đoạn chéo dài và 21 ký hiệu linh kiện chỉ nằm trên lớp Fab (không đủ chỗ trên silkscreen) — xem `docs/limitations.md`.
+- Kết quả có vài đoạn chéo dài và 20 ký hiệu linh kiện chỉ nằm trên lớp Fab (không đủ chỗ trên silkscreen) — xem `docs/limitations.md`.
 
 ## D18. Điểm đo và link đo dòng
 
-R1/R11 (dòng từng cell), R21 (dòng tải sau bộ chuyển đổi) là 0R 0805: tháo ra, hàn hai dây tới ampe kế/đầu đo dòng. TP1–TP10 là pad 1.5 mm cho que đo/pogo.
+R1/R11 (dòng từng cell), R21 (dòng tải sau bộ chuyển đổi) là 0R 0805: tháo ra, hàn hai dây tới ampe kế/đầu đo dòng. TP1–TP11 là pad 1.5 mm cho que đo/pogo; silkscreen ghi tên net (VBAT1, VBAT2, VIN1/2, VOUT1/2, 3V3_PWR, 3V3, GND, EN) thay cho số TP, vì người đo cần tên tín hiệu; số TP vẫn có trên bản vẽ lắp ráp.
 
 ## D19. Data model Matter
 

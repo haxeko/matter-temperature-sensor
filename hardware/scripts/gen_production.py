@@ -186,11 +186,12 @@ def blockers(rows, snap):
     ext = [r for r in rows if r["JLC library"].startswith("Extended")]
     lines += ["", "## Extended parts (each adds JLC's extended-part setup fee)", ""]
     lines += ["- %s: %s (%s)" % (r["Designator"], r["MPN"], r["LCSC Part #"]) for r in ext]
+    n_tp = sum(1 for p in D.PARTS if p["ref"].startswith("TP"))
     lines += ["", "## Checks that need a person", "",
               "- Placement preview: every line of `orientation_check.md` (holders, diodes, LED, ICs, MOSFETs).",
               "- Holders BT1/BT2 (Keystone 1060TR): the + retainer side must match the silkscreen '+' mark.",
               "- J1 and JP1 are not fitted / not in the BOM (debug only).",
-              "- Test pads TP1..TP10 and fiducials have no parts.",
+              "- Test pads TP1..TP%d (silkscreen shows their net names) and fiducials have no parts." % n_tp,
               "- PCB options: 2 layers, 1.6 mm FR-4, 1 oz, tented vias (set in the board file), "
               "lead-free HASL or ENIG. The SHT40 tongue is cut by two 1 mm slots (routed, not V-cut).",
               "- Nothing here proves the design works: see docs/test_plan.md (no prototype has been built)."]

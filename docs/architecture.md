@@ -53,7 +53,8 @@ Hai rào cản chống sạc ngược cell: (1) bản thân bộ chuyển đổi
 - **Thạch anh 32.768 kHz** (Epson FC-135, CL 12.5 pF) cho RTC/BLE LP clock; tụ tải 18 pF là giá trị **ƯỚC TÍNH**, phải chỉnh ở bring-up (T-09).
 - **Debug**: J1 (1×7, 2.54 mm, không lắp): TX, RX, D+, D−, BOOT, 3V3_DBG, GND. 3V3_DBG chỉ cấp vào rail khi hàn nối JP1.
 - **Nút**: SW1 USER/BOOT (GPIO9, strap), SW2 RST (EN).
-- **Điểm đo**: TP1 VBAT1, TP2 VBAT2, TP3/TP4 VIN1/VIN2, TP5/TP6 VOUT1/VOUT2, TP7 3V3_PWR (tương đương "VBAT_OR" trong yêu cầu, sau OR), TP8 +3V3, TP9/TP10 GND.
+- **Điểm đo** (pad 1.5 mm; silkscreen ghi tên net cạnh mỗi pad, số TP chỉ có trên bản vẽ lắp ráp): TP1 VBAT1, TP2 VBAT2, TP3/TP4 VIN1/VIN2, TP5/TP6 VOUT1/VOUT2, TP7 3V3_PWR, TP8 +3V3 (in "3V3"), TP9/TP10 GND, TP11 EN. BOOT (GPIO9) có ở J1 chân 5 và nút SW1 (in "USER/BOOT").
+- **"VBAT_OR"**: yêu cầu gốc giả định hai cell được OR ở điện áp pin. Topology C không có nút đó (hai cell chỉ gặp nhau sau bộ chuyển đổi); điểm OR là **3V3_PWR (TP7)**. Điện áp từng cell đo ở TP1/TP2.
 
 ## 4. Firmware
 
@@ -131,7 +132,7 @@ Nút USER đánh thức sớm. Hành vi trên phần cứng: CHƯA KIỂM THỬ.
 |---|---|---|
 | battery | `sdkconfig.defaults;sdkconfig.defaults.battery` | log WARN, power guard bật |
 | debug | `sdkconfig.defaults;sdkconfig.defaults.debug` | log INFO, power guard tắt (nguồn bench) |
-| prod (lớp phủ, CHƯA KIỂM THỬ) | thêm `sdkconfig.defaults.prod` | dữ liệu factory thật (DAC/PAI/CD, passcode riêng từng máy) |
+| prod (lớp phủ; build ĐÃ XÁC MINH, chạy CHƯA KIỂM THỬ) | thêm `sdkconfig.defaults.prod` | dữ liệu factory thật (DAC/PAI/CD, passcode riêng từng máy) |
 
 OTA: **không triển khai** (`CONFIG_ENABLE_OTA_REQUESTOR=n`); bảng phân vùng có sẵn hai slot A/B cho bản sau.
 

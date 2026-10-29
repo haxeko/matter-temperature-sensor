@@ -364,10 +364,13 @@ def rail_block():
     S.stubs("C26")
     S.wire(S.pin("U3", "2"), S.pin("R22", "1"))
     S.label("nRST", (259.08, ys), 0)
-    S.wire(S.pin("R22", "2"), S.pin("C25", "1"), S.pin("SW2", "1"), (297.18, ys))
+    S.wire(S.pin("R22", "2"), S.pin("C25", "1"), S.pin("SW2", "1"), (293.37, ys), (297.18, ys))
     S.junction(S.pin("C25", "1"))
     S.junction(S.pin("SW2", "1"))
     S.label("EN", (297.18, ys), 0)
+    S.place("TP11", 293.37, ys - 5.08, 0, ref_off=(1.27, -3.81), val_off=(1.27, -6.35))
+    S.wire(S.pin("TP11", "1"), (293.37, ys))
+    S.junction((293.37, ys))
     S.stub("C25", "2")
     S.stub("SW2", "2")
 
@@ -438,7 +441,7 @@ def module_block():
            "VBAT (pad 15) is tied to 3V3 inside the module (R2 = 0R); connected here as well.\n"
            "Unused GPIO0/1/2/3/25: no connect, firmware disables input + pull-down.\n"
            "J1 is a pad row (not fitted): pin 6 3V3_DBG only reaches the rail when JP1 is closed.\n"
-           "Reset for programming: SW2 (RST) or the USB-Serial/JTAG reset; EN is not on J1.",
+           "Reset for programming: SW2 (RST) or the USB-Serial/JTAG reset; EN is on test pad TP11, not on J1.",
            (x1 + 1.27, 195.58))
 
 
@@ -488,7 +491,7 @@ def sense_block():
         S.stub(q, "1", length=5.08)
     S.place("R35", 167.64, 210.82, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
     S.stubs("R35")
-    S.text("Switches open: no divider current. GPIO0 high for ~30 ms every 6 h: 470k/470k -> 3.3 uA per cell.\n"
+    S.text("Switches open: no divider current. GPIO12 high for ~30 ms every 6 h: 470k/470k -> 3.3 uA per cell.\n"
            "Each divider top is at the holder terminal (before the 0R link), so a missing cell reads ~0 V.",
            (x1 + 1.27, 222.25))
 
@@ -506,8 +509,8 @@ def misc_block():
         S.place(ref, 71.12 + k * 15.24, 254.0, 0, ref_off=(-2.54, -5.08), val_off=(-2.54, 5.08))
     S.text("CR2032 ONLY - NOT RECHARGEABLE. Both cells must be the same brand/lot and replaced together.\n"
            "Power-path decision and its limits: docs/decisions.md, docs/power_budget.md (ESTIMATE until measured).\n"
-           "Current measurement: remove R1 / R11 (per cell) or R21 (load) and insert the ammeter.\\n"
-           "U3 TPS3839K33: 2.93 V typ (2.857-2.974 V), push-pull ~RESET, 200 ms delay; R22 keeps it from fighting SW2 / J1 EN.",
+           "Current measurement: remove R1 / R11 (per cell) or R21 (load) and insert the ammeter.\n"
+           "U3 TPS3839K33: 2.93 V typ (2.857-2.974 V), push-pull ~RESET, 200 ms delay; R22 keeps it from fighting SW2 / TP11 (EN).",
            (x1 + 1.27, 266.7))
 
 

@@ -31,10 +31,11 @@ ok /VBAT1_SENSE: R32.1 -> R31.2             len    1.7 mm  vias 0
 ok /VBAT1_SENSE: U4.19 -> C31.1             len    6.5 mm  vias 0
 ok /SNS1_LO: R32.2 -> Q3.3                  len    0.8 mm  vias 0
 ok /SNS2_LO: R34.2 -> Q4.3                  len    0.8 mm  vias 0
-ok /EN: R22.2 -> U4.8                       len   18.7 mm  vias 2
-ok /EN: C25.1 -> R22.2                      len    1.8 mm  vias 0
+ok /EN: C25.1 -> TP11.1                     len    6.7 mm  vias 0
+ok /EN: R22.2 -> C25.1                      len    1.8 mm  vias 0
 ok /EN: SW2.1 -> C25.1                      len    2.4 mm  vias 0
 ok /EN: SW2.1 -> SW2.1                      len    5.1 mm  vias 0
+ok /EN: U4.8 -> R22.2                       len   18.4 mm  vias 2
 ok /nRST: U3.2 -> R22.1                     len    1.8 mm  vias 0
 ok /3V3_PWR: JP1.2 -> TP7.1                 len    1.3 mm  vias 0
 ok /3V3_PWR: C21.1 -> TP7.1                 len    1.1 mm  vias 0
@@ -57,8 +58,8 @@ ok +3V3: C23.1 -> C26.1                     len    3.4 mm  vias 0
 ok /VBAT1: R31.1 -> R1.1                    len    9.9 mm  vias 0
 ok /VBAT1: BT1.1 -> TP1.1                   len   13.4 mm  vias 0
 ok /VBAT2: BT2.1 -> TP2.1                   len   23.6 mm  vias 0
-ok /VBAT2: R33.1 -> R11.1                   len   37.0 mm  vias 4
-dangling stub segments trimmed or removed: 10
-stitching vias: 131 placed, 0 removed (single plane)
-references on F.Fab only (no room on silk): C1, C11, C12, C13, C2, C21, C22, C23, C24, C25, C26, C27, C28, R13, R22, R27, R3, R33, R35, U1, U2
+ok /VBAT2: R33.1 -> R11.1                   len   40.5 mm  vias 4
+dangling stub segments trimmed or removed: 9
+stitching vias: 130 placed, 0 removed (single plane)
+references on F.Fab only (no room on silk): C1, C11, C12, C13, C2, C21, C22, C23, C24, C25, C26, C27, C28, R13, R22, R27, R3, R33, U1, U2
 unrouted: 0

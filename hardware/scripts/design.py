@@ -149,7 +149,7 @@ part("C22", "Device:C", "100uF", FP_C1206, {"1": "3V3_PWR", "2": "GND"}, src="10
 part("R21", "Device:R", "0R", FP_R0805, {"1": "3V3_PWR", "2": "+3V3"}, src="0R_0805",
      desc="Load current-measurement link (module, sensor, LED, supervisor)")
 part("JP1", "Jumper:SolderJumper_2_Open", "DEBUG_PWR", "Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm",
-     {"1": "3V3_DBG", "2": "3V3_PWR"}, in_bom=False, desc="Close to power the board from J1 pin 1 (<= 3.6 V)")
+     {"1": "3V3_DBG", "2": "3V3_PWR"}, in_bom=False, desc="Close to power the board from J1 pin 6 (<= 3.6 V, cells removed)")
 part("U3", "Power_Supervisor:TPS3839DBZ", "TPS3839K33DBZR", FP_SOT23, {"3": "+3V3", "1": "GND", "2": "nRST"},
      src="TPS3839K33", desc="2.93 V supervisor, push-pull, 200 ms delay")
 part("C26", "Device:C", "100nF", FP_C0603, {"1": "+3V3", "2": "GND"}, src="100n", desc="U3 bypass")
@@ -215,7 +215,8 @@ part("R35", "Device:R", "1M", FP_R0603, {"1": "VBAT_MEAS_EN", "2": "GND"}, src="
      desc="Keeps the sense switches off in reset/sleep")
 
 # ------------------------------------------------------------------ test points, mechanics
-for i, net in enumerate(["VBAT1", "VBAT2", "VIN1", "VIN2", "VOUT1", "VOUT2", "3V3_PWR", "+3V3", "GND", "GND"], 1):
+TEST_PADS = ["VBAT1", "VBAT2", "VIN1", "VIN2", "VOUT1", "VOUT2", "3V3_PWR", "+3V3", "GND", "GND", "EN"]
+for i, net in enumerate(TEST_PADS, 1):
     part(f"TP{i}", "Connector:TestPoint", net.replace("+", ""), "TestPoint:TestPoint_Pad_D1.5mm", {"1": net},
          in_bom=False, desc="Test pad")
 part("FID1", "Mechanical:Fiducial", "FID", "Fiducial:Fiducial_1mm_Mask2mm", {}, in_bom=False)

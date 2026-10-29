@@ -5,7 +5,8 @@
 ## 1. Chưa có phần cứng thật
 
 Không có bo nào được sản xuất, lắp ráp, cấp nguồn hay đo. Những gì đã được kiểm (ĐÃ XÁC MINH):
-- firmware build sạch cho ESP32-H2 với hai profile (`docs/reports/firmware_build.md`);
+- firmware build sạch từ bản clone mới cho ESP32-H2: profile battery, debug và battery + lớp phủ prod (`docs/reports/firmware_build.md`);
+- chuỗi script phần cứng tái tạo schematic và board giống từng byte;
 - 40 unit test / 208 kiểm tra logic thuần trên máy host, 0 lỗi (`docs/reports/host_tests.txt`);
 - ERC 0 lỗi 0 cảnh báo; DRC 0 vi phạm, 0 pad chưa nối, schematic parity 0 lỗi (`hardware/reports/`);
 - pin map firmware ↔ schematic khớp (`tools/check_pinmap.py`).
@@ -35,9 +36,10 @@ Panasonic khuyến nghị diode chặn ngược **và** điện trở bảo vệ
 ## 5. Matter
 
 - Bản build mặc định dùng dữ liệu thử nghiệm (VID 0xFFF1/PID 0x8000, passcode 20202021, DAC thử nghiệm): chỉ để phát triển.
-- Lớp phủ sản xuất `sdkconfig.defaults.prod` **CHƯA KIỂM THỬ**; cần dữ liệu factory riêng cho từng máy và chứng nhận Matter (ngoài phạm vi).
+- Lớp phủ sản xuất `sdkconfig.defaults.prod` build được (ĐÃ XÁC MINH) nhưng chạy **CHƯA KIỂM THỬ**; cần dữ liệu factory riêng cho từng máy và chứng nhận Matter (ngoài phạm vi).
 - Chưa thử với bất kỳ hệ sinh thái thương mại nào; không giả định chúng chấp nhận firmware này.
 - **OTA không được triển khai** (`CONFIG_ENABLE_OTA_REQUESTOR=n`). Cập nhật firmware chỉ qua USB/UART (J1).
+- **Secure Boot V2, Flash Encryption và NVS encryption đều tắt** trong mọi profile (kể cả lớp phủ prod). Với thiết bị thật chứa DAC và passcode riêng, cần bật và kiểm thử chúng trước khi sản xuất; việc ghi eFuse **không đảo ngược được**, nên không bật thử trên bo duy nhất.
 - Không có chứng nhận Matter, FCC, CE, an toàn pin nào được tuyên bố.
 
 ## 6. Cảm biến
@@ -53,7 +55,8 @@ Panasonic khuyến nghị diode chặn ngược **và** điện trở bảo vệ
 ## 8. PCB
 
 - Layout được sinh bằng script và router tự viết. Kết quả đạt DRC nhưng có vài đường chéo dài; vài đoạn nhảy B.Cu ngắn (trong đó có +3V3 và EN) cắt mặt GND dưới cạnh dưới module; 9 kết nối dùng via (`hardware/reports/routing_log.txt`).
-- 21 ký hiệu linh kiện ở vùng dày đặc chỉ có trên lớp Fab (bản vẽ `assembly_top.pdf`), không có trên silkscreen.
+- 20 ký hiệu linh kiện ở vùng dày đặc chỉ có trên lớp Fab (bản vẽ `assembly_top.pdf`), không có trên silkscreen. Test pad được ghi tên net thay cho số TP.
+- Yêu cầu gốc nêu điểm "VBAT_OR"; topology C không có nút này (hai cell chỉ gặp nhau sau bộ chuyển đổi). Điểm OR là 3V3_PWR (TP7), điện áp từng cell ở TP1/TP2.
 - Render 3D chỉ có mô hình 3D của module; các linh kiện khác hiện là footprint trần vì gói mô hình 3D của KiCad không có trong môi trường sinh file.
 - Hiệu năng anten khi lắp trong vỏ và gần hai cell chưa được đo; HDG khuyến nghị ≥ 15 mm khoảng trống quanh anten bên trong vỏ.
 

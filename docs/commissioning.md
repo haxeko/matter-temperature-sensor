@@ -56,7 +56,8 @@ Thêm lớp phủ `firmware/sdkconfig.defaults.prod` khi build (sau `sdkconfig.d
 
 - passcode, discriminator, verifier (SPAKE2+) riêng cho từng máy; số serial; rotating device ID unique ID;
 - DAC/PAI của nhà sản xuất có VID thật và Certification Declaration — cần thành viên CSA và chứng nhận Matter, **ngoài phạm vi dự án này**;
-- nạp vào phân vùng `fctry` (0x3E0000) và `esp_secure_cert` (0xD000) của từng máy.
+- nạp vào phân vùng `fctry` (0x3E0000) và `esp_secure_cert` (0xD000) của từng máy;
+- Secure Boot V2 / Flash Encryption / NVS encryption hiện **tắt**; cần quyết định và kiểm thử trước khi sản xuất (ghi eFuse không đảo ngược được) — `docs/limitations.md` mục 5.
 
 **Không bao giờ sao chép toàn bộ flash/NVS, Thread dataset hay thông tin xác thực từ máy này sang máy khác.** Mỗi thiết bị phải được commission riêng.
 

@@ -41,7 +41,7 @@ Kết quả lần chạy cuối: `pin map OK: 14 defines, 5 unused GPIOs checked
 |---|---|---|---|
 | 3 | 3V3 | +3V3 | C24 100 nF đặt sát trong dải 2 mm bên trái module |
 | 15 | VBAT | +3V3 | nội bộ module nối 3V3 mặc định; nối thêm ở ngoài |
-| 8 | EN | EN | R22 10 kΩ từ TPS3839 (nRST), C25 1 µF, nút RST (SW2) |
+| 8 | EN | EN | R22 10 kΩ từ TPS3839 (nRST), C25 1 µF, nút RST (SW2), test pad TP11 |
 | 1, 2, 11, 14, 36–53 | GND | GND | 3 × 3 ô pad 49 ở giữa có 4 via GND giữa các ô |
 | 4, 7, 17, 28, 29, 32–35 | NC | — | không nối |
 
