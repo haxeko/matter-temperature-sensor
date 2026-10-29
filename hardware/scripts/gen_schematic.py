@@ -33,8 +33,11 @@ SYM = {}
 
 
 def load_symbols():
+    vendored = os.path.join(LIB, "th_sensor.kicad_sym")
     for lib_id, (path, name) in D.SYMBOLS.items():
         nick, new_name = lib_id.split(":")
+        if not os.path.exists(path) and nick == "th_sensor":
+            path, name = vendored, new_name          # external library absent: use the copy in the repo
         overrides = None
         if lib_id == "th_sensor:ESP32-H2-MINI-1":
             overrides = {"Footprint": "th_sensor:ESP32-H2-MINI-1",
@@ -52,14 +55,16 @@ def write_project_libs():
         for e in entries:
             f.write("\t" + e + "\n")
         f.write(")\n")
-    # module footprint + 3D model from the Espressif library
-    src_fp = os.path.join(D.ESPRESSIF_LIB, "footprints", "Espressif.pretty", "ESP32-H2-MINI-1.kicad_mod")
-    fp = open(src_fp).read()
-    fp = re.sub(r'\(model "[^"]*"', '(model "${KIPRJMOD}/lib/3dmodels/ESP32-H2-MINI-1.STEP"', fp)
-    open(os.path.join(LIB, "th_sensor.pretty", "ESP32-H2-MINI-1.kicad_mod"), "w").write(fp)
-    shutil.copyfile(os.path.join(D.ESPRESSIF_LIB, "3dmodels", "espressif.3dshapes", "ESP32-H2-MINI-1.STEP"),
-                    os.path.join(LIB, "3dmodels", "ESP32-H2-MINI-1.STEP"))
-    shutil.copyfile(os.path.join(D.ESPRESSIF_LIB, "LICENSE.md"), os.path.join(LIB, "LICENSE-espressif-kicad-libraries.md"))
+    # module footprint + 3D model from the Espressif library (kept as vendored copies when it is absent)
+    if os.path.isdir(D.ESPRESSIF_LIB):
+        src_fp = os.path.join(D.ESPRESSIF_LIB, "footprints", "Espressif.pretty", "ESP32-H2-MINI-1.kicad_mod")
+        fp = open(src_fp).read()
+        fp = re.sub(r'\(model "[^"]*"', '(model "${KIPRJMOD}/lib/3dmodels/ESP32-H2-MINI-1.STEP"', fp)
+        open(os.path.join(LIB, "th_sensor.pretty", "ESP32-H2-MINI-1.kicad_mod"), "w").write(fp)
+        shutil.copyfile(os.path.join(D.ESPRESSIF_LIB, "3dmodels", "espressif.3dshapes", "ESP32-H2-MINI-1.STEP"),
+                        os.path.join(LIB, "3dmodels", "ESP32-H2-MINI-1.STEP"))
+        shutil.copyfile(os.path.join(D.ESPRESSIF_LIB, "LICENSE.md"),
+                        os.path.join(LIB, "LICENSE-espressif-kicad-libraries.md"))
     open(os.path.join(LIB, "th_sensor.pretty", "L_Murata_DFE201612E.kicad_mod"), "w").write(murata_dfe201612e())
     with open(os.path.join(OUT, "sym-lib-table"), "w") as f:
         f.write('(sym_lib_table\n\t(version 7)\n\t(lib (name "th_sensor")(type "KiCad")(uri "${KIPRJMOD}/lib/th_sensor.kicad_sym")'

@@ -20,7 +20,7 @@ Architectures compared (same cells, same load profiles, same capacitors):
       VOUT->VIN) and (2) the output Schottky. The Schottky drop is taken at the
       rail (3.07-3.33 V, inside the module's 3.0-3.6 V range) instead of at the
       converter input, so the cell can sag to the 1.65 V UVLO before dropping out.
-  C50 C with a 50 mA input current limit (RCFG2 = 1.15 kOhm).
+  C50 C with a 50 mA input current limit (VO(2) = 3.4 V: RCFG1 0 Ohm, RCFG2 13.3 kOhm).
   B0  B with a P-MOSFET instead of the Schottky: no second barrier (reference).
 
 Inputs and their sources (discussion in docs/power_budget.md):
@@ -37,8 +37,8 @@ Inputs and their sources (discussion in docs/power_budget.md):
     ~2.4 V at -10 degC).
   * Diodes: Shockley fits to onsemi RB521S30T1G rev. 9 fig. 1/2 and JSCJ B5819W.
   * TPS63900 SLVSET3D: UVLO 1.75 V rising / 1.65 V falling, average input current
-    limit 100 mA (RCFG2 511 Ohm), efficiency: TI's own design rule "use ... 0.9 as
-    an assumption"; 75 nA IQ.
+    limit 100 mA (table 7-2, VO(2) = 3.4 V: RCFG1 0 Ohm, RCFG2 10.5 kOhm),
+    efficiency: TI's own design rule "use ... 0.9 as an assumption"; 75 nA IQ.
   * Commissioning load: NO Espressif measurement found; three assumed profiles
     (optimistic / nominal / pessimistic) are simulated.
 

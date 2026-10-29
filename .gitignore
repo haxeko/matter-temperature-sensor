@@ -4,6 +4,7 @@ firmware/managed_components/
 firmware/sdkconfig
 firmware/sdkconfig.old
 firmware/test/host/build/
+/build/
 
 # KiCad user/session files and caches
 *.kicad_prl

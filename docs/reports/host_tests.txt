@@ -1,0 +1,42 @@
+sht40: CRC datasheet example                     ok
+sht40: conversion endpoints                      ok
+sht40: conversion == formula (all ticks)         ok
+sht40: decode valid frame                        ok
+sht40: CRC errors rejected (all 1-bit)           ok
+sht40: stuck bus patterns rejected               ok
+sht40: T range check, RH crop                    ok
+sht40: serial number                             ok
+scale: milli->centi rounding                     ok
+scale: temperature null/signed/offset            ok
+scale: temperature clamp to Min/Max              ok
+scale: humidity null/clamp                       ok
+policy: deadband and forced publish              ok
+policy: failures -> null once                    ok
+policy: null before first value                  ok
+policy: success resets failure count             ok
+config: defaults valid, offsets zero             ok
+config: offset limits                            ok
+config: interval/tx/deadband limits              ok
+config: change detection                         ok
+button: short press                              ok
+button: triple press within 2 s                  ok
+button: slow triple ignored                      ok
+button: double click ignored                     ok
+button: >=10 s hold resets on release            ok
+button: stuck button cancels reset               ok
+button: long release without ticks               ok
+button: medium press / glitch                    ok
+button: click then long press                    ok
+button: ms counter wrap-around                   ok
+battery: percent table monotonic                 ok
+battery: pack aggregate / missing cell           ok
+battery: pack charge level hysteresis            ok
+battery: percent jitter filter                   ok
+backoff: doubling and saturation                 ok
+backoff: n-th attempt                            ok
+guard: normal boots and stable mark              ok
+guard: brown-out loop backs off                  ok
+guard: new cells / restart clear                 ok
+guard: low battery backoff                       ok
+
+208 checks, 0 failures

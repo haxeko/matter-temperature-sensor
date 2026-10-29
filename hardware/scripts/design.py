@@ -17,7 +17,10 @@ REV = "A"
 DATE = "2026-10-29"
 
 KSYM = "/usr/share/kicad/symbols/"
-ESPRESSIF_LIB = "/tmp/claude-0/ext/espressif-kicad-libraries"   # git dd76561812ab300351234ba6e0ec1295641796f0
+# Espressif KiCad libraries (github.com/espressif/kicad-libraries, git dd76561812ab300351234ba6e0ec1295641796f0).
+# Only needed to refresh the vendored copies in hardware/kicad/lib; without it the generators use those copies.
+import os as _os
+ESPRESSIF_LIB = _os.environ.get("ESPRESSIF_KICAD_LIB", "/tmp/claude-0/ext/espressif-kicad-libraries")
 
 # symbol sources: lib_id -> (library file, symbol name in that file, nick)
 SYMBOLS = {

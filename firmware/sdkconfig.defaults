@@ -77,7 +77,7 @@ CONFIG_FREERTOS_HZ=1000
 CONFIG_FREERTOS_USE_TICKLESS_IDLE=y
 CONFIG_IEEE802154_SLEEP_ENABLE=y
 
-# Console on USB Serial/JTAG (pogo header J1). While a host is connected the
+# Console on USB Serial/JTAG (debug header J1). While a host is connected the
 # chip stays out of auto light sleep so the maintenance console works.
 CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
 CONFIG_ESP_CONSOLE_SECONDARY_NONE=y
