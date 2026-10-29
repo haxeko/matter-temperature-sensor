@@ -32,21 +32,25 @@
 #define BOARD_I2C_FREQ_HZ           100000
 
 /* ---- Status LED (active high, 0603 red LED + 1k to GND) ----------------- */
-#define BOARD_GPIO_LED              12  /* module pad 16, net LED */
+#define BOARD_GPIO_LED              22  /* module pad 24, net LED */
 #define BOARD_LED_ACTIVE            1
 
 /* ---- Cell voltage sense (one switched 470k/470k divider per cell) --------
  * Power path (docs/architecture.md): each CR2032 feeds its own TPS63900, so
  * there is no common VBAT_OR node; VBAT1/VBAT2 are the holder terminals.
- * GPIO0 drives both gates of the low-side NMOS pair (Q4A/Q4B) that connect the
- * divider bottoms to GND (1M gate pull-down keeps them off in reset/sleep).
+ * GPIO12 drives the gates of the two low-side NMOS switches (Q3, Q4) that
+ * connect the divider bottoms to GND (1M gate pull-down keeps them off in
+ * reset/sleep).
+ * All three pins sit on the module's bottom edge: the left edge is reserved
+ * for 3V3 and EN because the module is placed <= 2 mm from the board edge
+ * (antenna keepout, docs/decisions.md).
  * Divider mid-points have 22 nF to GND: tau = 235 kOhm * 22 nF = 5.2 ms.
  */
-#define BOARD_GPIO_VBAT_MEAS_EN     0   /* module pad 9,  net VBAT_MEAS_EN */
-#define BOARD_GPIO_VBAT1_SENSE      1   /* module pad 10, net VBAT1_SENSE, ADC1_CH0 */
+#define BOARD_GPIO_VBAT_MEAS_EN     12  /* module pad 16, net VBAT_MEAS_EN */
+#define BOARD_GPIO_VBAT1_SENSE      5   /* module pad 19, net VBAT1_SENSE, ADC1_CH4 */
 #define BOARD_GPIO_VBAT2_SENSE      4   /* module pad 18, net VBAT2_SENSE, ADC1_CH3 */
 #define BOARD_VBAT_ADC_UNIT         0   /* ADC_UNIT_1 */
-#define BOARD_VBAT1_ADC_CHANNEL     0   /* ADC_CHANNEL_0 */
+#define BOARD_VBAT1_ADC_CHANNEL     4   /* ADC_CHANNEL_4 */
 #define BOARD_VBAT2_ADC_CHANNEL     3   /* ADC_CHANNEL_3 */
 #define BOARD_VBAT_DIVIDER_NUM      2   /* V_cell = V_sense * NUM / DEN */
 #define BOARD_VBAT_DIVIDER_DEN      1
@@ -67,4 +71,4 @@
  * cannot float (ESP32-H2 HW design guidelines, section "GPIO").
  * GPIO25 has no internal pulls; input is disabled instead.
  */
-#define BOARD_UNUSED_GPIO_LIST      { 2, 3, 5, 22, 25 }
+#define BOARD_UNUSED_GPIO_LIST      { 0, 1, 2, 3, 25 }

@@ -30,7 +30,7 @@ SYMBOLS = {
     "Device:Crystal": (KSYM + "Device.kicad_sym", "Crystal"),
     "Switch:SW_Push": (KSYM + "Switch.kicad_sym", "SW_Push"),
     "Connector:TestPoint": (KSYM + "Connector.kicad_sym", "TestPoint"),
-    "Connector_Generic:Conn_01x08": (KSYM + "Connector_Generic.kicad_sym", "Conn_01x08"),
+    "Connector_Generic:Conn_01x07": (KSYM + "Connector_Generic.kicad_sym", "Conn_01x07"),
     "Jumper:SolderJumper_2_Open": (KSYM + "Jumper.kicad_sym", "SolderJumper_2_Open"),
     "Regulator_Switching:TPS63900": (KSYM + "Regulator_Switching.kicad_sym", "TPS63900"),
     "Power_Supervisor:TPS3839DBZ": (KSYM + "Power_Supervisor.kicad_sym", "TPS3839DBZ"),
@@ -159,11 +159,11 @@ part("SW2", "Switch:SW_Push", "RST", "Button_Switch_SMD:SW_Push_1P1T_XKB_TS-1187
 # ------------------------------------------------------------------ module
 part("U4", "th_sensor:ESP32-H2-MINI-1", "ESP32-H2-MINI-1-H4S", "th_sensor:ESP32-H2-MINI-1",
      {"3": "+3V3", "15": "+3V3", "8": "EN",
-      "9": "VBAT_MEAS_EN", "10": "VBAT1_SENSE", "18": "VBAT2_SENSE",
+      "16": "VBAT_MEAS_EN", "19": "VBAT1_SENSE", "18": "VBAT2_SENSE",
       "12": "XTAL_32K_P", "13": "XTAL_32K_N",
-      "20": "I2C_SDA", "21": "I2C_SCL", "16": "LED", "22": "STRAP_GPIO8", "23": "BTN_USER",
+      "20": "I2C_SDA", "21": "I2C_SCL", "24": "LED", "22": "STRAP_GPIO8", "23": "BTN_USER",
       "26": "USB_DM", "27": "USB_DP", "30": "U0RXD", "31": "U0TXD",
-      "5": None, "6": None, "19": None, "24": None, "25": None,
+      "5": None, "6": None, "9": None, "10": None, "25": None,
       **{str(p): "GND" for p in [1, 2, 11, 14] + list(range(36, 54))}},
      src="H2MINI", desc="4 MB flash, PCB antenna; JLC stock 0 on 2026-10-29")
 part("C23", "Device:C", "10uF", FP_C0603, {"1": "+3V3", "2": "GND"}, src="10u", spec="10V X5R 0603", desc="Module decoupling")
@@ -185,10 +185,10 @@ part("D3", "Device:LED", "red", "LED_SMD:LED_0603_1608Metric", {"1": "GND", "2":
      desc="Status LED")
 part("R28", "Device:R", "22R", FP_R0603, {"1": "USB_DM", "2": "USB_DM_J"}, src="22R", desc="USB D- series")
 part("R29", "Device:R", "22R", FP_R0603, {"1": "USB_DP", "2": "USB_DP_J"}, src="22R", desc="USB D+ series")
-part("J1", "Connector_Generic:Conn_01x08", "DEBUG", "Connector_PinHeader_2.54mm:PinHeader_1x08_P2.54mm_Vertical",
-     {"1": "3V3_DBG", "2": "U0TXD", "3": "U0RXD", "4": "USB_DP_J", "5": "USB_DM_J", "6": "EN", "7": "BTN_USER",
-      "8": "GND"}, dnp=True,
-     desc="Debug/programming pads (not fitted): 1 3V3_DBG 2 TX 3 RX 4 D+ 5 D- 6 EN 7 BOOT 8 GND")
+part("J1", "Connector_Generic:Conn_01x07", "DEBUG", "Connector_PinHeader_2.54mm:PinHeader_1x07_P2.54mm_Vertical",
+     {"1": "U0TXD", "2": "U0RXD", "3": "USB_DP_J", "4": "USB_DM_J", "5": "BTN_USER", "6": "3V3_DBG",
+      "7": "GND"}, dnp=True,
+     desc="Debug/programming pads (not fitted): 1 TX 2 RX 3 D+ 4 D- 5 BOOT 6 3V3_DBG 7 GND")
 
 # ------------------------------------------------------------------ sensor
 part("U5", "Sensor_Humidity:SHT4x", "SHT40-AD1B-R3",

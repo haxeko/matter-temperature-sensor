@@ -19,9 +19,9 @@ static const char *TAG = "battery";
 #define VBAT_ADC_ATTEN    ADC_ATTEN_DB_6  /* 0..~1.9 V, enough for 3.6 V / 2 */
 #define VBAT_SAMPLES      8
 
-static const adc_channel_t k_channels[BATTERY_CELLS] = {ADC_CHANNEL_0, ADC_CHANNEL_3};
+static const adc_channel_t k_channels[BATTERY_CELLS] = {ADC_CHANNEL_4, ADC_CHANNEL_3};
 
-_Static_assert(BOARD_GPIO_VBAT1_SENSE == 1 && BOARD_VBAT1_ADC_CHANNEL == 0, "GPIO1 = ADC1_CH0");
+_Static_assert(BOARD_GPIO_VBAT1_SENSE == 5 && BOARD_VBAT1_ADC_CHANNEL == 4, "GPIO5 = ADC1_CH4");
 _Static_assert(BOARD_GPIO_VBAT2_SENSE == 4 && BOARD_VBAT2_ADC_CHANNEL == 3, "GPIO4 = ADC1_CH3");
 
 static esp_err_t cali_create(adc_channel_t chan, adc_cali_handle_t *out)

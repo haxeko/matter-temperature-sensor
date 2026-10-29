@@ -36,7 +36,7 @@ bool board_led_get_enabled(void);
  * Light sleep is blocked only while a pattern is running. */
 void board_led_show(board_led_pattern_t pattern);
 
-/* Battery sense divider switch (GPIO0 -> NMOS gate). */
+/* Battery sense divider switches (GPIO12 -> NMOS gates). */
 void board_vbat_sense_enable(bool on);
 
 #ifdef __cplusplus

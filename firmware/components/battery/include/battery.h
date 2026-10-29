@@ -1,6 +1,6 @@
 /*
- * Per-cell voltage measurement: VBAT1 (ADC1_CH0) and VBAT2 (ADC1_CH3), each
- * through its own switched 470k/470k divider (both switches on GPIO0).
+ * Per-cell voltage measurement: VBAT1 (ADC1_CH4) and VBAT2 (ADC1_CH3), each
+ * through its own switched 470k/470k divider (both switches on GPIO12).
  */
 #pragma once
 

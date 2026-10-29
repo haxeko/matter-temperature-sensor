@@ -424,15 +424,16 @@ def module_block():
     S.place("R29", 373.38, 154.94, 90, ref_off=(-1.27, -2.54), val_off=(-1.27, 3.81))
     S.stubs("R28")
     S.stubs("R29")
-    S.place("J1", 396.24, 113.03, 0, ref_off=(-2.54, -13.97), val_off=(-2.54, -11.43))
-    S.stubs("J1", [str(i) for i in range(1, 8)], length=5.08)
-    g = S.pin("J1", "8")
+    S.place("J1", 396.24, 113.03, 0, ref_off=(-2.54, -11.43), val_off=(-2.54, -8.89))
+    S.stubs("J1", [str(i) for i in range(1, 7)], length=5.08)
+    g = S.pin("J1", "7")
     S.wire(g, (g[0] - 2.54, g[1]), (g[0] - 2.54, g[1] + 2.54))
     S.power("GND", (g[0] - 2.54, g[1] + 2.54), 0)
     S.text("GPIO8/GPIO9 are strapping pins: GPIO9 low at reset (SW1 held) = download mode.\n"
            "VBAT (pad 15) is tied to 3V3 inside the module (R2 = 0R); connected here as well.\n"
-           "Unused GPIO2/3/5/22/25: no connect, firmware disables input + pull-down.\n"
-           "J1 is a pad row (not fitted): pin 1 3V3_DBG only reaches the rail when JP1 is closed.",
+           "Unused GPIO0/1/2/3/25: no connect, firmware disables input + pull-down.\n"
+           "J1 is a pad row (not fitted): pin 6 3V3_DBG only reaches the rail when JP1 is closed.\n"
+           "Reset for programming: SW2 (RST) or the USB-Serial/JTAG reset; EN is not on J1.",
            (x1 + 1.27, 195.58))
 
 
