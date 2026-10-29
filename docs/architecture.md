@@ -11,16 +11,19 @@ Chưa có bo mạch nào được sản xuất. Mọi hành vi trên thiết b�
 ## 1. Sơ đồ khối
 
 ```
- CR2032 #1 ── R1 0R ── Q1 AO3401A ── VIN1 ── U1 TPS63900 (3.4 V, 100 mA in) ── D1 B5819W ─┐
- (BT1)        (đo dòng)  (chống ngược cực)   C1/C2/C3                C4                     │
-                                                                                            ├─ 3V3_PWR ── R21 0R ── +3V3
- CR2032 #2 ── R11 0R ── Q2 AO3401A ── VIN2 ── U2 TPS63900 (3.4 V, 100 mA in) ── D2 B5819W ─┘   C21/C22     (đo dòng tải)
- (BT2)                                         C11/C12/C13           C14                       2 x 100 uF
-                                                                                                      │
-   VBAT1 ─ 470k/470k + 22 nF ─ Q3 ─┐                                                                  ├─ ESP32-H2-MINI-1-H4S (U4)
-   VBAT2 ─ 470k/470k + 22 nF ─ Q4 ─┴─ GPIO12 bật/tắt; ADC1_CH4 (GPIO5) / ADC1_CH3 (GPIO4)            ├─ SHT40 (U5, trên lưỡi tách nhiệt)
-                                                                                                      ├─ TPS3839K33 (U3) → EN
-   JP1 (hở) ── J1 pin 6 (3V3_DBG, nguồn ngoài khi debug)                                              └─ LED, nút USER (GPIO9), nút RST
+ CR2032 #1 ── R1  0R ── Q1 AO3401A ── VIN1 ── U1 TPS63900 (3.4 V) ── D1 B5819W ─┐
+ (BT1)        (đo dòng)  (chống ngược)   C1/C2/C3              C4               │
+                                                                                ├─ 3V3_PWR ── R21 0R ──┬─ +3V3
+ CR2032 #2 ── R11 0R ── Q2 AO3401A ── VIN2 ── U2 TPS63900 (3.4 V) ── D2 B5819W ─┘   C21/C22            │
+ (BT2)                                   C11/C12/C13           C14                  2 × 100 µF         │
+                                                                                                       ├─ ESP32-H2-MINI-1-H4S (U4)
+                                                                                                       ├─ SHT40 (U5, trên lưỡi tách nhiệt)
+                                                                                                       ├─ TPS3839K33 (U3) → R22 → EN
+                                                                                                       └─ LED (GPIO22), nút USER/BOOT (GPIO9), nút RST (EN), TP11 (EN)
+
+ VBAT1 ─ 470k/470k + 22 nF ─ Q3 ─┐
+ VBAT2 ─ 470k/470k + 22 nF ─ Q4 ─┴─ GPIO12 bật/tắt; ADC1_CH4 (GPIO5) / ADC1_CH3 (GPIO4)
+ JP1 (hở) ── J1 pin 6 (3V3_DBG, nguồn ngoài khi debug) ── 3V3_PWR
 ```
 
 ## 2. Đường nguồn (topology "C")

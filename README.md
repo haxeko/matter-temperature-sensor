@@ -38,6 +38,34 @@ Chưa có đơn đặt PCB hay linh kiện nào. Chưa đo dòng, chưa ghép Ma
 5. **Không bao giờ sao chép** toàn bộ flash/NVS, Thread dataset hay thông tin xác thực giữa các thiết bị.
 6. **Chỉ dùng CR2032, không sạc** (in trên silkscreen: "CR2032 ONLY" / "NO CHARGE", cực + cạnh mỗi holder). Rev A không có điện trở bảo vệ nối tiếp theo khuyến nghị Panasonic — xem `docs/limitations.md` mục 3.
 
+## Sơ đồ khối
+
+```
+CR2032 #1 ─ R1  0R ─ Q1 AO3401A ─ U1 TPS63900 (3.4 V) ─ D1 B5819W ─┐
+            (đo dòng)  (chống ngược)                               ├─ 3V3_PWR ─ R21 0R ─ +3V3
+CR2032 #2 ─ R11 0R ─ Q2 AO3401A ─ U2 TPS63900 (3.4 V) ─ D2 B5819W ─┘   2 × 100 µF   (đo dòng tải)
+
++3V3 ─┬─ U4 ESP32-H2-MINI-1-H4S ── I2C (GPIO10/11) ── U5 SHT40 (trên lưỡi tách nhiệt)
+      ├─ U3 TPS3839K33 (2.93 V) ─ R22 ─ EN ── SW2 RST, TP11
+      └─ LED (GPIO22), SW1 USER/BOOT (GPIO9), J1 debug (UART0, USB D+/D−)
+VBAT1/VBAT2 ─ 470k/470k (2N7002 đóng bằng GPIO12) ─ ADC1_CH4 (GPIO5) / ADC1_CH3 (GPIO4)
+```
+
+Chi tiết và lý do chọn kiến trúc: `docs/architecture.md`, `docs/decisions.md`.
+
+## Cấu hình linh kiện chính
+
+| Linh kiện | Cấu hình | Nguồn |
+|---|---|---|
+| U1, U2 TPS63900 | SEL = EN = VIN ⇒ VO(2) = 3.4 V; RCFG1 0 Ω, RCFG2 10.5 kΩ (giới hạn dòng vào trung bình 100 mA), RCFG3 16.2 kΩ (VO(1) 3.3 V, không dùng); L 2.2 µH Murata DFE201612E; vào 10 µF + 2 × 100 µF, ra 22 µF | TI SLVSET3D, bảng 7-2/7-3 |
+| Q1, Q2 AO3401A | P-MOSFET chống lắp ngược cell: D phía cell, S phía VIN, G nối GND | |
+| D1, D2 B5819W | OR hai đầu ra, rào cản thứ hai chống dòng ngược vào cell; rail 3.07–3.40 V (ƯỚC TÍNH) | |
+| U3 TPS3839K33 | ngưỡng 2.93 V, trễ 200 ms, đẩy-kéo, qua R22 10 kΩ tới EN; C25 1 µF | TI SBVS193D |
+| U5 SHT40-AD1B-R3 | I2C địa chỉ 0x44, 100 kHz, kéo lên 10 kΩ; lệnh đo độ lặp cao (0xFD), có kiểm CRC; không bật heater khi đo | Sensirion SHT4x v7.3 |
+| Cầu chia pin | mỗi cell 470 kΩ / 470 kΩ + 22 nF, công tắc 2N7002 phía thấp; GPIO12 bật ~30 ms mỗi 6 h | |
+| Y1 | 32.768 kHz Epson FC-135 (CL 12.5 pF), tụ tải 18 pF — ƯỚC TÍNH, chỉnh ở T-09 | |
+| U4 | pin map đầy đủ (pad module ↔ GPIO ↔ net), chân strap, chân không dùng | `docs/pinmap.md` |
+
 ## Cấu trúc repo
 
 ```
@@ -61,10 +89,30 @@ docs/                        tài liệu thiết kế (danh sách bên dưới),
 
 ## Firmware
 
-Cần: ESP-IDF **v5.5.5** (đã dùng toolchain riscv32-esp-elf esp-14.2.0_20260121, CMake 3.28, Ninja 1.11). Component manager tự tải `espressif/esp_matter` 1.6.0~1, `espressif/button` 4.2.1 và các phụ thuộc theo `firmware/dependencies.lock`; không cần checkout ESP-Matter riêng.
+### Khóa phiên bản
+
+| Thành phần | Phiên bản | Khóa ở đâu |
+|---|---|---|
+| ESP-IDF | v5.5.5 (toolchain riscv32-esp-elf GCC 14.2.0, esp-14.2.0_20260121) | `firmware/main/idf_component.yml` (`idf: ==5.5.5`) |
+| espressif/esp_matter | 1.6.0~1 | `idf_component.yml` (`==`), phiên bản + hash đầy đủ trong `firmware/dependencies.lock` |
+| espressif/button | 4.2.1 | như trên |
+| KiCad | 9.0.9 (phần cứng) | `docs/sources.md` |
+
+Đổi bất kỳ phiên bản nào ở trên là một thay đổi thiết kế: build lại cả ba cấu hình và chạy lại unit test.
+
+### Cài toolchain
 
 ```sh
-. $HOME/esp/esp-idf-v5.5.5/export.sh        # đường dẫn tùy máy
+git clone -b v5.5.5 --recursive https://github.com/espressif/esp-idf.git ~/esp/esp-idf-v5.5.5
+cd ~/esp/esp-idf-v5.5.5 && ./install.sh esp32h2
+```
+
+Component manager tự tải `espressif/esp_matter`, `espressif/button` và các phụ thuộc theo `firmware/dependencies.lock` ở lần build đầu (cần mạng); không cần checkout ESP-Matter riêng. Đã dùng CMake 3.28 và Ninja 1.11.
+
+### Build, nạp, monitor
+
+```sh
+. ~/esp/esp-idf-v5.5.5/export.sh
 cd firmware
 P=battery                                    # hoặc: debug
 idf.py -B build_$P -D SDKCONFIG=build_$P/sdkconfig \
@@ -96,6 +144,22 @@ Chi tiết: `docs/architecture.md` mục 4.4.
 
 `status` (cảm biến, pin, Matter/Thread, power guard, heap), `measure`, `battery`, `config` / `config set <key> <value>` (khóa: `temp_offset`, `rh_offset`, `meas_interval`, `bat_interval`, `temp_deadband`, `rh_deadband`, `led`, `tx_power`; chỉ ghi NVS khi giá trị đổi), `heater <20|110> <100|1000>` (xung heater để bảo trì; số đo lúc nóng không được phát; phép đo thường không bao giờ bật heater), `window`, `factory_reset confirm`, `reboot`. Khi USB đang nối, chip không vào light sleep (có chủ đích): rút USB khi đo dòng ngủ.
 
+### Ghép Matter (tóm tắt, CHƯA KIỂM THỬ trên thiết bị)
+
+1. Chuẩn bị một OpenThread Border Router và `chip-tool`; lấy active operational dataset (hex) của mạng Thread.
+2. Dùng **pin mới** hoặc nguồn bench (mô hình dự đoán reset khi commissioning với pin đã dùng một nửa hoặc khi lạnh).
+3. Thiết bị chưa có fabric quảng bá BLE 180 s sau khi khởi động; quá thời gian thì nhấn USER 3 lần.
+4. Với dữ liệu thử nghiệm của bản build mặc định:
+   ```sh
+   chip-tool pairing ble-thread 1 hex:<dataset> 20202021 3840
+   chip-tool temperaturemeasurement read measured-value 1 1
+   chip-tool relativehumiditymeasurement read measured-value 1 2
+   chip-tool powersource read bat-voltage 1 0
+   ```
+5. Thêm hệ sinh thái thứ hai: nhấn USER 3 lần (giữ fabric cũ) hoặc dùng chức năng chia sẻ của controller đầu tiên.
+
+Reset: nút RST = reset phần cứng (EN); factory reset = giữ USER ≥ 10 s rồi thả, hoặc `factory_reset confirm`. Chi tiết, xử lý sự cố, dữ liệu sản xuất: `docs/commissioning.md`.
+
 ### Unit test trên host
 
 ```sh
@@ -121,7 +185,16 @@ python3 tools/check_pinmap.py                # board_pins.h ↔ netlist
 
 Chạy lại chuỗi trên cho ra schematic và board **giống từng byte**; chỉ dấu thời gian trong Gerber/drill/báo cáo/PDF/ZIP và ảnh render 3D thay đổi.
 
-Điểm đo trên bo (silkscreen ghi tên net): VBAT1, VBAT2, VIN1/VIN2, VOUT1/VOUT2, 3V3_PWR (điểm OR hai nhánh), 3V3, GND × 2, EN; BOOT ở J1 chân 5. Link đo dòng: R1 (cell 1), R11 (cell 2), R21 (tải 3V3), đều là 0R 0805. Thứ tự bring-up: `docs/test_plan.md`.
+### Bring-up và đo dòng
+
+Điểm đo trên bo (silkscreen ghi tên net): VBAT1, VBAT2, VIN1/VIN2, VOUT1/VOUT2, 3V3_PWR (điểm OR hai nhánh), 3V3, GND × 2, EN; BOOT ở J1 chân 5. Link đo dòng: R1 (cell 1), R11 (cell 2), R21 (tải 3V3), đều là 0R 0805.
+
+1. **Trước khi lắp pin** (T-01…T-08): kiểm ngắn mạch; tháo R21; cấp nguồn bench có giới hạn dòng vào holder; kiểm VOUT1/VOUT2 = 3.40 V, 3V3_PWR 3.07–3.40 V; thử ngược cực và dòng ngược vào cell; kiểm supervisor (nRST, EN).
+2. Hàn lại R21, nạp firmware `debug`, chạy `status`, `measure`, `battery` (T-09…T-17).
+3. Commissioning và kiểm Matter (T-20…T-25).
+4. **Đo dòng** (T-30…T-38): tháo R21 (dòng tải 3V3) hoặc R1/R11 (dòng từng cell), nối máy đo dòng lấy mẫu nhanh (PPK2, Joulescope…) vào hai pad, **rút USB** (USB-Serial/JTAG giữ chip thức). Đo đáy ngủ, điện tích mỗi poll/report, dạng dòng khởi động và commissioning, dòng trung bình 24 h; rồi chạy lại `power_model.py` với số đo và cập nhật `docs/power_budget.md`.
+
+Tiêu chí đạt và thứ tự đầy đủ: `docs/test_plan.md`.
 
 Mô hình năng lượng: `python3 hardware/analysis/power_model.py --plots` (~5 phút). Tra lại tồn kho JLC trước khi đặt: `python3 tools/jlc_lookup.py --json <mã LCSC…>` (endpoint không chính thức của trang jlcpcb.com/parts).
 
