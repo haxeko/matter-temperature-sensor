@@ -58,7 +58,7 @@ menu "TH sensor application"
         default 5
         help
             Upper limit +8 dBm is set by the coin-cell power path (one
-            TPS63900 per cell, 100 mA input current limit each), see
+            TPS63900 with a 100 mA input current limit), see
             docs/power_budget.md. Tune downwards only after a link-budget test.
 
     config APP_BAT_CELL_PRESENT_MV
@@ -66,16 +66,19 @@ menu "TH sensor application"
         range 500 2500
         default 1500
         help
-            An empty holder reads ~0 V through the switched divider.
+            An empty holder reads ~0 V through the switched divider. Rev B has
+            no other supply, so a reading below this while running points to a
+            sense-path fault (R31/R32, Q3, GPIO5) and reports Critical.
 
     config APP_BAT_WARN_PCT
         int "Pack charge below which BatChargeLevel = Warning (%)"
         range 5 80
         default 40
         help
-            ESTIMATE: the power model (docs/power_budget.md) predicts that radio
-            bursts start to fail when the stronger cell reaches mid-life while the
-            weaker one is near end of life, i.e. well before the capacity is used.
+            ESTIMATE: the power model (docs/power_budget.md) predicts that
+            reports start to fail once about half of the CR2450's nominal
+            capacity is used (internal resistance, not voltage, ends the cell's
+            life), i.e. well before the capacity is used up.
 
     config APP_BAT_CRIT_PCT
         int "Pack charge below which BatChargeLevel = Critical (%)"
@@ -87,19 +90,19 @@ menu "TH sensor application"
         default y
 
     config APP_BOOT_MIN_CELL_MV
-        int "Minimum voltage of the best cell to start the radio (mV)"
+        int "Minimum cell voltage to start the radio (mV)"
         depends on APP_POWER_GUARD_ENABLE
         range 1700 3000
         default 2400
 
     config APP_GUARD_RECOVERY_MV
-        int "Best-cell rise that counts as new cells (mV)"
+        int "Cell voltage rise that counts as a new cell (mV)"
         depends on APP_POWER_GUARD_ENABLE
         range 50 1000
         default 150
         help
             After repeated unstable boots the guard backs off with deep sleep.
-            A boot whose best-cell voltage is this much higher than at the last
+            A boot whose cell voltage is this much higher than at the last
             unstable boot is treated as a battery change and clears the backoff.
 
     config APP_GUARD_BACKOFF_MIN_S

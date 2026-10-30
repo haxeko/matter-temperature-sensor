@@ -12,8 +12,7 @@ from kicad_sexpr import new_uuid
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.normpath(os.path.join(HERE, "..", "kicad", D.PROJECT + ".kicad_pro"))
 
-POWER_NETS = ["VBAT1", "VBAT2", "VBAT1_L", "VBAT2_L", "VIN1", "VIN2", "VOUT1", "VOUT2", "3V3_PWR", "+3V3", "GND",
-              "LX1_1", "LX2_1", "LX1_2", "LX2_2"]
+POWER_NETS = ["VBAT", "VBAT_L", "VIN", "VOUT", "+3V3", "GND", "LX1", "LX2"]
 
 
 def netclass(name, track, clearance, via_d=0.6, via_drill=0.3, priority=0):

@@ -80,6 +80,7 @@ static int64_t s_last_manual_us = INT64_MIN / 2;
 static int64_t s_stable_at_us;
 static bool s_stable_marked;
 
+_Static_assert(BAT_CELL_COUNT == 1, "logging and status print one cell (Rev B)");
 static const bat_policy_t k_bat_policy =
     BAT_POLICY_INIT(CONFIG_APP_BAT_CELL_PRESENT_MV, CONFIG_APP_BAT_WARN_PCT, CONFIG_APP_BAT_CRIT_PCT);
 
@@ -204,18 +205,19 @@ static void do_battery(void)
         s_batt.have_reported_pct = true;
         pub.present = pack.cells_present > 0;
         pub.voltage_valid = pack.cells_present > 0;
-        pub.voltage_mv = pack.best_mv;  /* BatVoltage = the cell that currently sustains the rail */
+        pub.voltage_mv = pack.best_mv;  /* BatVoltage = cell voltage under the awake load */
         pub.percent_valid = true;
         pub.percent_half = half;
         pub.charge_level = (uint8_t)level;
         pub.replacement_needed = (level != BAT_LEVEL_OK);
         if (level != prev) {
-            ESP_LOGW(TAG, "battery level %d -> %d (VBAT1 %u mV, VBAT2 %u mV, pack %u.%u %%)", prev, level,
-                     pack.cell_mv[0], pack.cell_mv[1], pack.pack_half_pct / 2, (pack.pack_half_pct % 2) * 5);
+            ESP_LOGW(TAG, "battery level %d -> %d (VBAT %u mV, %u.%u %%)", prev, level, pack.cell_mv[0],
+                     pack.pack_half_pct / 2, (pack.pack_half_pct % 2) * 5);
         }
-        if (pack.cells_present < BAT_CELL_COUNT) {
-            ESP_LOGW(TAG, "only %u of %d cells present: radio bursts may brown out", pack.cells_present,
-                     BAT_CELL_COUNT);
+        if (pack.cells_present == 0) {
+            /* the board has no other supply: the reading, not the cell, is missing */
+            ESP_LOGW(TAG, "VBAT reads %u mV (< %u mV) while running: check divider R31/R32, Q3, GPIO5",
+                     pack.cell_mv[0], k_bat_policy.present_mv);
         }
     } else {
         /* No fresh value: voltage/percent become null, level keeps its last state. */
@@ -465,18 +467,17 @@ static void print_status(void)
            m.ok_count, m.fail_count, esp_err_to_name(m.last_err), sht40_decode_str(m.last_diag.decode),
            m.last_diag.attempts);
     if (b.have_reading) {
-        printf("battery           : VBAT1 %u mV%s, VBAT2 %u mV%s, pack %u.%u %% (published %u.%u %%), "
-               "level %d, %lld s ago\n",
-               b.pack.cell_mv[0], b.pack.present[0] ? "" : " (empty)", b.pack.cell_mv[1],
-               b.pack.present[1] ? "" : " (empty)", b.pack.pack_half_pct / 2, (b.pack.pack_half_pct % 2) * 5,
-               b.half_pct / 2, (b.half_pct % 2) * 5, bm.level, (long long)((t - b.t_us) / 1000000));
+        printf("battery           : VBAT %u mV%s, %u.%u %% (published %u.%u %%), level %d, %lld s ago\n",
+               b.pack.cell_mv[0], b.pack.present[0] ? "" : " (below present threshold)",
+               b.pack.pack_half_pct / 2, (b.pack.pack_half_pct % 2) * 5, b.half_pct / 2, (b.half_pct % 2) * 5,
+               bm.level, (long long)((t - b.t_us) / 1000000));
     } else {
         printf("battery           : no reading (%s)\n", esp_err_to_name(b.last_err));
     }
     printf("matter            : server %s, fabrics %u, window %s, thread %s\n",
            ms.server_ready ? "ready" : "not ready", ms.fabric_count, ms.window_open ? "open" : "closed",
            ms.thread_attached ? "attached" : "detached");
-    printf("power guard       : reset %s, boot #%" PRIu32 ", unstable boots %u (last best cell %u mV)%s\n",
+    printf("power guard       : reset %s, boot #%" PRIu32 ", unstable boots %u (last cell reading %u mV)%s\n",
            power_guard_reset_reason_str(pg.reset_reason), pg.boot_count, pg.unstable_boots, pg.last_best_mv,
            pg.nvs_ok ? "" : ", NVS unavailable");
     printf("heap              : free %" PRIu32 " B, minimum since boot %" PRIu32 " B\n", esp_get_free_heap_size(),

@@ -66,6 +66,8 @@ def write_project_libs():
         shutil.copyfile(os.path.join(D.ESPRESSIF_LIB, "LICENSE.md"),
                         os.path.join(LIB, "LICENSE-espressif-kicad-libraries.md"))
     open(os.path.join(LIB, "th_sensor.pretty", "L_Murata_DFE201612E.kicad_mod"), "w").write(murata_dfe201612e())
+    open(os.path.join(LIB, "th_sensor.pretty", "BatteryHolder_MYOUNG_BS-24-B4AA016_1x2450.kicad_mod"), "w").write(
+        myoung_bs24_b4aa016())
     with open(os.path.join(OUT, "sym-lib-table"), "w") as f:
         f.write('(sym_lib_table\n\t(version 7)\n\t(lib (name "th_sensor")(type "KiCad")(uri "${KIPRJMOD}/lib/th_sensor.kicad_sym")'
                 '(options "")(descr "TH-SENSOR-H2 project symbols"))\n)\n')
@@ -102,6 +104,61 @@ def murata_dfe201612e():
 		(placement (enabled no) (sheetname ""))
 		(fill (thermal_gap 0.5) (thermal_bridge_width 0.5))
 		(polygon (pts (xy -0.35 -0.9) (xy 0.35 -0.9) (xy 0.35 0.9) (xy -0.35 0.9))))
+	(embedded_fonts no)
+)
+'''
+
+
+def myoung_bs24_b4aa016():
+    """CR2450 SMT holder MYOUNG BS-24-B4AA016 (LCSC C964809), drawing MY-CP-0138 (2018-05-30):
+    land pattern 2 x 3.62 x 4.50 mm pads, 37.00 mm over the outer pad edges, 29.75 mm between them;
+    body 27.0 x 16.0 mm (32.8 mm over the contact tabs, tab width 7.0 mm), 7.5 mm high; the
+    24.5 mm cell overhangs the body on both long sides. Pad 1 = + (right), pad 2 = - (left)."""
+    u = lambda s_: new_uuid("fp-bs24-" + s_)
+    import math as _m
+    # courtyard: union of pads (+0.25), tabs, body and the cell circle (r 12.25 + 0.25)
+    r = 12.5
+    yb = 8.25
+    xa = _m.sqrt(r * r - yb * yb)
+    arc = [(r * _m.cos(t), r * _m.sin(t)) for t in
+           [_m.atan2(yb, xa) + k * (_m.pi - 2 * _m.atan2(yb, xa)) / 16 for k in range(17)]]
+    top = [(18.75, 2.5), (16.65, 2.5), (16.65, 3.75), (13.75, 3.75), (13.75, yb)] + \
+          [(x, y) for x, y in arc] + [(-13.75, yb), (-13.75, 3.75), (-16.65, 3.75), (-16.65, 2.5), (-18.75, 2.5)]
+    poly = top + [(x, -y) for x, y in reversed(top)]
+    crt = " ".join("(xy %.3f %.3f)" % (x, y) for x, y in poly)
+    # silkscreen: body long edges and the parts of the cell outline outside the body, + / - marks
+    silk_arc = lambda sgn, tag: (f'\t(fp_arc (start {-xa + 0.0:.3f} {sgn * 8.12:.3f}) (mid 0 {sgn * 12.37:.3f}) '
+                                 f'(end {xa - 0.0:.3f} {sgn * 8.12:.3f}) (stroke (width 0.12) (type solid)) '
+                                 f'(layer "F.SilkS") (uuid "{u(tag)}"))')
+    return f'''(footprint "BatteryHolder_MYOUNG_BS-24-B4AA016_1x2450"
+	(version 20241229)
+	(generator "th_sensor_gen")
+	(layer "F.Cu")
+	(descr "CR2450 SMT coin cell holder, MYOUNG BS-24-B4AA016 (LCSC C964809), gold-plated contacts, LCP housing, 7.5 mm high; land pattern per drawing MY-CP-0138: pads 3.62 x 4.50 mm, 33.37 mm pitch")
+	(tags "battery holder coin cell CR2450 smd")
+	(property "Reference" "REF**" (at 0 -13.6 0) (layer "F.SilkS") (uuid "{u('ref')}") (effects (font (size 1 1) (thickness 0.15))))
+	(property "Value" "BatteryHolder_MYOUNG_BS-24-B4AA016_1x2450" (at 0 13.6 0) (layer "F.Fab") (uuid "{u('val')}") (effects (font (size 1 1) (thickness 0.15))))
+	(attr smd)
+	(fp_line (start -13.62 -8.12) (end -{xa:.3f} -8.12) (stroke (width 0.12) (type solid)) (layer "F.SilkS") (uuid "{u('s1')}"))
+	(fp_line (start {xa:.3f} -8.12) (end 13.62 -8.12) (stroke (width 0.12) (type solid)) (layer "F.SilkS") (uuid "{u('s2')}"))
+	(fp_line (start -13.62 8.12) (end -{xa:.3f} 8.12) (stroke (width 0.12) (type solid)) (layer "F.SilkS") (uuid "{u('s3')}"))
+	(fp_line (start {xa:.3f} 8.12) (end 13.62 8.12) (stroke (width 0.12) (type solid)) (layer "F.SilkS") (uuid "{u('s4')}"))
+	(fp_line (start -13.62 -8.12) (end -13.62 -3.62) (stroke (width 0.12) (type solid)) (layer "F.SilkS") (uuid "{u('s5')}"))
+	(fp_line (start -13.62 8.12) (end -13.62 3.62) (stroke (width 0.12) (type solid)) (layer "F.SilkS") (uuid "{u('s6')}"))
+	(fp_line (start 13.62 -8.12) (end 13.62 -3.62) (stroke (width 0.12) (type solid)) (layer "F.SilkS") (uuid "{u('s7')}"))
+	(fp_line (start 13.62 8.12) (end 13.62 3.62) (stroke (width 0.12) (type solid)) (layer "F.SilkS") (uuid "{u('s8')}"))
+{silk_arc(-1, 'a1')}
+{silk_arc(1, 'a2')}
+	(fp_line (start 10.6 -5.6) (end 12.6 -5.6) (stroke (width 0.2) (type solid)) (layer "F.SilkS") (uuid "{u('p1')}"))
+	(fp_line (start 11.6 -6.6) (end 11.6 -4.6) (stroke (width 0.2) (type solid)) (layer "F.SilkS") (uuid "{u('p2')}"))
+	(fp_line (start -12.6 -5.6) (end -10.6 -5.6) (stroke (width 0.2) (type solid)) (layer "F.SilkS") (uuid "{u('m1')}"))
+	(fp_rect (start -13.5 -8.0) (end 13.5 8.0) (stroke (width 0.1) (type solid)) (fill no) (layer "F.Fab") (uuid "{u('fb')}"))
+	(fp_rect (start -16.4 -3.5) (end 16.4 3.5) (stroke (width 0.1) (type solid)) (fill no) (layer "F.Fab") (uuid "{u('ft')}"))
+	(fp_circle (center 0 0) (end 12.25 0) (stroke (width 0.1) (type solid)) (fill no) (layer "F.Fab") (uuid "{u('fc')}"))
+	(fp_poly (pts {crt}) (stroke (width 0.05) (type solid)) (fill no) (layer "F.CrtYd") (uuid "{u('crt')}"))
+	(fp_text user "${{REFERENCE}}" (at 0 0 0) (layer "F.Fab") (uuid "{u('fabref')}") (effects (font (size 1 1) (thickness 0.15))))
+	(pad "1" smd rect (at 16.685 0) (size 3.62 4.5) (layers "F.Cu" "F.Mask" "F.Paste") (uuid "{u('pad1')}"))
+	(pad "2" smd rect (at -16.685 0) (size 3.62 4.5) (layers "F.Cu" "F.Mask" "F.Paste") (uuid "{u('pad2')}"))
 	(embedded_fonts no)
 )
 '''
@@ -253,103 +310,89 @@ ROOT_UUID = new_uuid("root-sheet")
 CELL_RIGHT = 210.82
 
 
-def cell_block(n, o, yc):
-    x0 = 12.7
-    S.frame(x0, yc - 15.24, CELL_RIGHT, yc + 50.8,
-            f"CELL {n}: CR2032 -> P-MOSFET -> TPS63900 (3.4 V) -> Schottky -> 3V3_PWR")
-    bt, r, q, u, l, d = f"BT{n}", f"R{1 + o}", f"Q{n}", f"U{n}", f"L{n}", f"D{n}"
-    c_in = [f"C{1 + o}", f"C{2 + o}", f"C{3 + o}"]
-    c_out = f"C{4 + o}"
-    rcfg = [f"R{2 + o}", f"R{3 + o}", f"R{4 + o}"]
-    tp_vbat, tp_vin, tp_vout = f"TP{n}", f"TP{2 + n}", f"TP{4 + n}"
-    S.place(bt, 22.86, yc + 5.08, 0, ref_off=(3.81, -1.27), val_off=(3.81, 1.27))
-    S.place(r, 40.64, yc, 90, ref_off=(-1.27, -2.54), val_off=(-1.27, 3.81))
-    S.place(q, 63.5, yc + 2.54, 90, ref_off=(3.81, 2.54), val_off=(3.81, 5.08))
+def power_block(yc):
+    x0, dx = 12.7, 12.7
+    S.frame(x0, yc - 15.24, CELL_RIGHT, yc + 50.8, "CR2450 -> P-MOSFET -> TPS63900 (3.3 V) -> VOUT")
+    c_in = ["C1", "C2", "C3", "C5"]
+    rcfg = ["R2", "R3", "R4"]
+    S.place("BT1", 22.86, yc + 5.08, 0, ref_off=(3.81, -1.27), val_off=(3.81, 1.27))
+    S.place("R1", 40.64, yc, 90, ref_off=(-1.27, -2.54), val_off=(-1.27, 3.81))
+    S.place("Q1", 63.5, yc + 2.54, 90, ref_off=(3.81, 2.54), val_off=(3.81, 5.08))
     for i, c in enumerate(c_in):
-        S.place(c, 81.28 + i * 12.7, yc + 3.81, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
-    S.place(u, 139.7, yc + 10.16, 0, ref_off=(-7.62, -14.22), val_off=(3.81, 13.97))
-    S.place(l, 119.38, yc + 15.24, 0, ref_off=(-5.08, -1.27), val_off=(-7.62, 1.27))
-    S.place(c_out, 165.1, yc + 3.81, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
-    S.place(d, 186.69, yc, 180, ref_off=(-2.54, -2.54), val_off=(-3.81, 3.81))
+        S.place(c, 76.2 + i * 10.16, yc + 3.81, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
+    S.place("U1", 139.7 + dx, yc + 10.16, 0, ref_off=(-7.62, -14.22), val_off=(3.81, 13.97))
+    S.place("L1", 119.38 + dx, yc + 15.24, 0, ref_off=(-5.08, -1.27), val_off=(-7.62, 1.27))
+    S.place("C4", 165.1 + dx, yc + 3.81, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
     for i, rr in enumerate(rcfg):
-        S.place(rr, 162.56 + i * 10.16, yc + 26.67, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
-    for tp, x in ((tp_vbat, 30.48), (tp_vin, 116.84), (tp_vout, 172.72)):
+        S.place(rr, 162.56 + dx + i * 10.16, yc + 26.67, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
+    for tp, x in (("TP1", 30.48), ("TP2", 116.84 + dx)):
         S.place(tp, x, yc - 5.08, 0, ref_off=(1.27, -3.81), val_off=(1.27, -6.35))
     # main chain along y = yc, split at every connection point
-    S.wire(S.pin(bt, "1"), (30.48, yc), S.pin(r, "1"))
-    S.wire(S.pin(tp_vbat, "1"), (30.48, yc))
+    S.wire(S.pin("BT1", "1"), (30.48, yc), S.pin("R1", "1"))
+    S.wire(S.pin("TP1", "1"), (30.48, yc))
     S.junction((30.48, yc))
-    S.label(f"VBAT{n}", (24.13, yc), 0)
-    S.wire(S.pin(r, "2"), S.pin(q, "3"))
-    S.label(f"VBAT{n}_L", (46.99, yc), 0)
-    vin_pts = [S.pin(q, "2"), (73.66, yc)] + [S.pin(c, "1") for c in c_in] + [(116.84, yc), (124.46, yc),
-                                                                            S.pin(u, "10")]
+    S.label("VBAT", (24.13, yc), 0)
+    S.wire(S.pin("R1", "2"), S.pin("Q1", "3"))
+    S.label("VBAT_L", (46.99, yc), 0)
+    vin_pts = [S.pin("Q1", "2"), (71.12, yc)] + [S.pin(c, "1") for c in c_in] + [(116.84 + dx, yc),
+                                                                              (124.46 + dx, yc), S.pin("U1", "10")]
     S.wire(*vin_pts)
     for p in vin_pts[1:-1]:
         S.junction(p)
-    S.wire(S.pin(tp_vin, "1"), (116.84, yc))
-    S.power("PWR_FLAG", (73.66, yc - 5.08), 0)
-    S.wire((73.66, yc - 5.08), (73.66, yc))
-    S.label(f"VIN{n}", (86.36, yc), 0)
-    # EN and SEL tied to VIN
-    S.wire((124.46, yc), (124.46, yc + 5.08), (124.46, yc + 7.62))
-    S.wire((124.46, yc + 5.08), S.pin(u, "1"))
-    S.wire((124.46, yc + 7.62), S.pin(u, "2"))
-    S.junction((124.46, yc + 5.08))
+    S.wire(S.pin("TP2", "1"), (116.84 + dx, yc))
+    S.power("PWR_FLAG", (71.12, yc - 5.08), 0)
+    S.wire((71.12, yc - 5.08), (71.12, yc))
+    S.label("VIN", (99.06, yc), 0)
+    # EN tied to VIN, SEL to GND (VO(1) = 3.3 V)
+    S.wire((124.46 + dx, yc), (124.46 + dx, yc + 5.08), S.pin("U1", "1"))
+    S.stub("U1", "2", length=2.54)
     # inductor
-    lx1, lx2 = S.pin(u, "9"), S.pin(u, "7")
-    S.wire(lx1, (119.38, lx1[1]), S.pin(l, "1"))
-    S.wire(lx2, (119.38, lx2[1]), S.pin(l, "2"))
-    S.label(f"LX1_{n}", (120.65, lx1[1]), 0)
-    S.label(f"LX2_{n}", (120.65, lx2[1]), 0)
-    S.stub(q, "1", length=2.54)
-    S.stub(bt, "2")
-    for c in c_in + [c_out]:
+    lx1, lx2 = S.pin("U1", "9"), S.pin("U1", "7")
+    S.wire(lx1, (119.38 + dx, lx1[1]), S.pin("L1", "1"))
+    S.wire(lx2, (119.38 + dx, lx2[1]), S.pin("L1", "2"))
+    S.label("LX1", (120.65 + dx, lx1[1]), 0)
+    S.label("LX2", (120.65 + dx, lx2[1]), 0)
+    S.stub("Q1", "1", length=2.54)
+    S.stub("BT1", "2")
+    for c in c_in + ["C4"]:
         S.stub(c, "2")
-    S.stub(u, "8", length=2.54)
-    # output side
-    out_pts = [S.pin(u, "6"), S.pin(c_out, "1"), (172.72, yc), S.pin(d, "2")]
+    S.stub("U1", "8", length=2.54)
+    # output: the converter output VOUT is the rail before the R21 link (no OR diode in Rev B)
+    out_pts = [S.pin("U1", "6"), S.pin("C4", "1"), (196.85, yc)]
     S.wire(*out_pts)
-    S.junction(S.pin(c_out, "1"))
-    S.junction((172.72, yc))
-    S.wire(S.pin(tp_vout, "1"), (172.72, yc))
-    S.label(f"VOUT{n}", (152.4, yc), 0)
-    S.wire(S.pin(d, "1"), (196.85, yc))
-    S.label("3V3_PWR", (196.85, yc), 0)
+    S.junction(S.pin("C4", "1"))
+    S.label("VOUT", (196.85, yc), 0)
     # configuration resistors via labels
     for pin in ("3", "4", "5"):
-        S.stub(u, pin, length=5.08)
+        S.stub("U1", pin, length=5.08)
     for rr in rcfg:
         S.stub(rr, "1", label_angle=0)
         S.stub(rr, "2")
-    S.text("SEL = H: VO(2) = 3.4 V (RCFG1 0R), input limit 100 mA (RCFG2 10.5k; 13.3k = 50 mA option),\n"
-           "VO(1) = 3.3 V (RCFG3 16.2k, unused). TI SLVSET3D tables 7-2/7-3, +-1 % resistors.",
+    S.text("SEL = L: VO(1) = 3.3 V (RCFG3 16.2k, table 7-3). Input current limit 100 mA from RCFG1 0R / RCFG2 10.5k\n"
+           "(table 7-2; 13.3k = 50 mA option). TI SLVSET3D, +-1 % resistors. C5: 470 uF electrolytic buffer.",
            (x0 + 1.27, yc + 41.91), size=1.27)
 
 
 def rail_block():
     x1, y1 = 213.36, 17.78
-    S.frame(x1, y1, 303.53, 86.36, "3V3 RAIL, SUPERVISOR, RESET, DEBUG SUPPLY")
+    S.frame(x1, y1, 303.53, 86.36, "3V3 RAIL, SUPERVISOR, RESET")
     y = 35.56
-    S.label("3V3_PWR", (228.6, y), 180)
-    S.place("TP7", 233.68, y - 5.08, 0, ref_off=(1.27, -3.81), val_off=(1.27, -6.35))
+    S.label("VOUT", (228.6, y), 180)
+    S.place("TP3", 233.68, y - 5.08, 0, ref_off=(1.27, -3.81), val_off=(1.27, -6.35))
     S.place("C21", 241.3, y + 3.81, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
     S.place("C22", 256.54, y + 3.81, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
-    S.place("JP1", 266.7, y - 10.16, 0, ref_off=(-1.27, 3.81), val_off=(-3.81, 6.35))
     S.place("R21", 280.67, y, 90, ref_off=(-1.27, -2.54), val_off=(-1.27, 3.81))
-    S.place("TP8", 289.56, y + 5.08, 180, ref_off=(1.905, 3.81), val_off=(1.905, 6.35))
-    rail = [(228.6, y), (233.68, y), S.pin("C21", "1"), S.pin("C22", "1"), (270.51, y), S.pin("R21", "1")]
+    S.place("TP4", 289.56, y + 5.08, 180, ref_off=(1.905, 3.81), val_off=(1.905, 6.35))
+    rail = [(228.6, y), (233.68, y), S.pin("C21", "1"), S.pin("C22", "1"), S.pin("R21", "1")]
     S.wire(*rail)
     for p in rail[1:-1]:
         S.junction(p)
-    S.wire(S.pin("TP7", "1"), (233.68, y))
-    S.wire(S.pin("JP1", "2"), (270.51, y - 10.16), (270.51, y))
-    S.stub("JP1", "1")
+    S.wire(S.pin("TP3", "1"), (233.68, y))
     S.stub("C21", "2")
     S.stub("C22", "2")
     S.wire(S.pin("R21", "2"), (289.56, y), (297.18, y))
     S.junction((289.56, y))
-    S.wire(S.pin("TP8", "1"), (289.56, y))
+    S.wire(S.pin("TP4", "1"), (289.56, y))
     S.power("+3V3", (297.18, y), 0)
     S.power("PWR_FLAG", (297.18, y), 180)
 
@@ -368,8 +411,8 @@ def rail_block():
     S.junction(S.pin("C25", "1"))
     S.junction(S.pin("SW2", "1"))
     S.label("EN", (297.18, ys), 0)
-    S.place("TP11", 293.37, ys - 5.08, 0, ref_off=(1.27, -3.81), val_off=(1.27, -6.35))
-    S.wire(S.pin("TP11", "1"), (293.37, ys))
+    S.place("TP6", 293.37, ys - 5.08, 0, ref_off=(1.27, -3.81), val_off=(1.27, -6.35))
+    S.wire(S.pin("TP6", "1"), (293.37, ys))
     S.junction((293.37, ys))
     S.stub("C25", "2")
     S.stub("SW2", "2")
@@ -433,15 +476,15 @@ def module_block():
     S.stubs("R28")
     S.stubs("R29")
     S.place("J1", 396.24, 113.03, 0, ref_off=(-2.54, -11.43), val_off=(-2.54, -8.89))
-    S.stubs("J1", [str(i) for i in range(1, 7)], length=5.08)
-    g = S.pin("J1", "7")
+    S.stubs("J1", [str(i) for i in range(1, 6)], length=5.08)
+    g = S.pin("J1", "6")
     S.wire(g, (g[0] - 2.54, g[1]), (g[0] - 2.54, g[1] + 2.54))
     S.power("GND", (g[0] - 2.54, g[1] + 2.54), 0)
     S.text("GPIO8/GPIO9 are strapping pins: GPIO9 low at reset (SW1 held) = download mode.\n"
            "VBAT (pad 15) is tied to 3V3 inside the module (R2 = 0R); connected here as well.\n"
-           "Unused GPIO0/1/2/3/25: no connect, firmware disables input + pull-down.\n"
-           "J1 is a pad row (not fitted): pin 6 3V3_DBG only reaches the rail when JP1 is closed.\n"
-           "Reset for programming: SW2 (RST) or the USB-Serial/JTAG reset; EN is on test pad TP11, not on J1.",
+           "Unused GPIO0/1/2/3/4/25: no connect, firmware disables input + pull-down.\n"
+           "J1 is a pad row (not fitted) without a supply pin: the cell (or a bench supply on its contacts) powers the board.\n"
+           "Reset for programming: SW2 (RST) or the USB-Serial/JTAG reset; EN is on test pad TP6, not on J1.",
            (x1 + 1.27, 195.58))
 
 
@@ -468,57 +511,54 @@ def sensor_block():
 
 
 def sense_block():
-    x1, y1 = 12.7, 165.1
-    S.frame(x1, y1, CELL_RIGHT, 231.14, "CELL VOLTAGE SENSE (switched 470k/470k dividers, ADC1_CH0 / ADC1_CH3)")
-    for n, o, x in ((1, 0, 45.72), (2, 2, 121.92)):
-        rt, rb, c, q = f"R{31 + o}", f"R{32 + o}", f"C{30 + n}", f"Q{2 + n}"
-        S.place(rt, x, 182.88, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
-        S.place(rb, x, 196.85, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
-        S.place(c, x + 12.7, 194.31, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
-        S.place(q, x - 2.54, 210.82, 0, ref_off=(3.81, -1.27), val_off=(3.81, 1.27))
-        S.stub(rt, "1", label_angle=0)
-        mid = (x, 189.23)
-        S.wire(S.pin(rt, "2"), mid, S.pin(rb, "1"))
-        S.wire(mid, (x + 12.7, 189.23), S.pin(c, "1"))
-        S.wire((x + 12.7, 189.23), (x + 22.86, 189.23))
-        S.junction(mid)
-        S.junction((x + 12.7, 189.23))
-        S.label(f"VBAT{n}_SENSE", (x + 22.86, 189.23), 0)
-        S.wire(S.pin(rb, "2"), S.pin(q, "3"))
-        S.label(f"SNS{n}_LO", (x, 203.2), 0)
-        S.stub(c, "2")
-        S.stub(q, "2")
-        S.stub(q, "1", length=5.08)
-    S.place("R35", 167.64, 210.82, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
+    x1, y1 = 12.7, 91.44
+    S.frame(x1, y1, CELL_RIGHT, 157.48, "CELL VOLTAGE SENSE (switched 470k/470k divider, ADC1_CH4 on GPIO5)")
+    x = 45.72
+    S.place("R31", x, 109.22, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
+    S.place("R32", x, 123.19, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
+    S.place("C31", x + 12.7, 120.65, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
+    S.place("Q3", x - 2.54, 137.16, 0, ref_off=(3.81, -1.27), val_off=(3.81, 1.27))
+    S.stub("R31", "1", label_angle=0)
+    mid = (x, 115.57)
+    S.wire(S.pin("R31", "2"), mid, S.pin("R32", "1"))
+    S.wire(mid, (x + 12.7, 115.57), S.pin("C31", "1"))
+    S.wire((x + 12.7, 115.57), (x + 22.86, 115.57))
+    S.junction(mid)
+    S.junction((x + 12.7, 115.57))
+    S.label("VBAT_SENSE", (x + 22.86, 115.57), 0)
+    S.wire(S.pin("R32", "2"), S.pin("Q3", "3"))
+    S.label("SNS_LO", (x, 129.54), 0)
+    S.stub("C31", "2")
+    S.stub("Q3", "2")
+    S.stub("Q3", "1", length=5.08)
+    S.place("R35", 121.92, 137.16, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
     S.stubs("R35")
-    S.text("Switches open: no divider current. GPIO12 high for ~30 ms every 6 h: 470k/470k -> 3.3 uA per cell.\n"
-           "Each divider top is at the holder terminal (before the 0R link), so a missing cell reads ~0 V.",
-           (x1 + 1.27, 222.25))
+    S.text("Switch open: no divider current. GPIO12 high for ~30 ms every 6 h: 470k/470k -> ~3.2 uA while on.\n"
+           "The divider top is at the holder terminal (before the 0R link), so a missing cell reads ~0 V.",
+           (x1 + 1.27, 148.59))
 
 
 def misc_block():
-    x1, y1 = 12.7, 238.76
-    S.frame(x1, y1, CELL_RIGHT, 284.48, "TEST PADS, MECHANICAL, NOTES")
-    for k, i in enumerate((9, 10)):
-        S.place(f"TP{i}", 22.86 + k * 12.7, 254.0, 0, ref_off=(1.27, -3.81), val_off=(1.27, -6.35))
-        S.stub(f"TP{i}", "1")
-    S.power("PWR_FLAG", (50.8, 251.46), 0)
-    S.wire((50.8, 251.46), (50.8, 256.54))
-    S.power("GND", (50.8, 256.54), 0)
+    x1, y1 = 12.7, 165.1
+    S.frame(x1, y1, CELL_RIGHT, 210.82, "TEST PADS, MECHANICAL, NOTES")
+    S.place("TP5", 22.86, 180.34, 0, ref_off=(1.27, -3.81), val_off=(1.27, -6.35))
+    S.stub("TP5", "1")
+    S.power("PWR_FLAG", (50.8, 177.8), 0)
+    S.wire((50.8, 177.8), (50.8, 182.88))
+    S.power("GND", (50.8, 182.88), 0)
     for k, ref in enumerate(["FID1", "FID2"]):
-        S.place(ref, 71.12 + k * 15.24, 254.0, 0, ref_off=(-2.54, -5.08), val_off=(-2.54, 5.08))
-    S.text("CR2032 ONLY - NOT RECHARGEABLE. Both cells must be the same brand/lot and replaced together.\n"
+        S.place(ref, 71.12 + k * 15.24, 180.34, 0, ref_off=(-2.54, -5.08), val_off=(-2.54, 5.08))
+    S.text("CR2450 ONLY - NOT RECHARGEABLE. No other supply can reach the rail: the cell is the only energy source.\n"
            "Power-path decision and its limits: docs/decisions.md, docs/power_budget.md (ESTIMATE until measured).\n"
-           "Current measurement: remove R1 / R11 (per cell) or R21 (load) and insert the ammeter.\n"
-           "U3 TPS3839K33: 2.93 V typ (2.857-2.974 V), push-pull ~RESET, 200 ms delay; R22 keeps it from fighting SW2 / TP11 (EN).",
-           (x1 + 1.27, 266.7))
+           "Current measurement: remove R1 (cell) or R21 (load) and insert the ammeter.\n"
+           "U3 TPS3839K33: 2.93 V typ (2.857-2.974 V), push-pull ~RESET, 200 ms delay; R22 keeps it from fighting SW2 / TP6 (EN).",
+           (x1 + 1.27, 193.04))
 
 
 def build():
     load_symbols()
     write_project_libs()
-    cell_block(1, 0, 33.02)
-    cell_block(2, 10, 106.68)
+    power_block(33.02)
     rail_block()
     module_block()
     sensor_block()
@@ -529,7 +569,7 @@ def build():
         raise SystemExit("not placed: %s" % missing)
     lib_symbols = "\n".join(SYM[k].embedded() for k in sorted(SYM))
     title = ('(title_block (title "%s") (date "%s") (rev "%s") (company "TH-SENSOR-H2") '
-             '(comment 1 "ESP32-H2 Matter over Thread, SHT40, 2 x CR2032 (one TPS63900 per cell)") '
+             '(comment 1 "ESP32-H2 Matter over Thread, SHT40, 1 x CR2450, TPS63900 3.3 V") '
              '(comment 4 "Generated by hardware/scripts/gen_schematic.py from design.py - edit there") '
              '(comment 2 "Power path and battery life figures are ESTIMATES (docs/power_budget.md)") '
              '(comment 3 "ERC/DRC reports: hardware/reports"))' % (D.TITLE, D.DATE, D.REV))

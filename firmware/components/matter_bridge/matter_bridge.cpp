@@ -45,7 +45,7 @@ std::atomic<int8_t> s_tx_power{0};
 
 constexpr uint16_t kTempToleranceCenti = 20;    /* SHT40 typ. accuracy 0.2 degC (DS v7.3 table 2) */
 constexpr uint16_t kRhToleranceCenti = 180;     /* SHT40 typ. accuracy 1.8 %RH (DS v7.3 table 1) */
-constexpr uint32_t kBatCapacityMah = 220;       /* per cell, conservative CR2032 rating */
+constexpr uint32_t kBatCapacityMah = 620;       /* CR2450 nominal (Panasonic datasheet, Feb 2026) */
 
 void notify(mb_event_t ev)
 {
@@ -187,7 +187,7 @@ esp_err_t add_power_source(node_t *node)
     endpoint::power_source::config_t ps;
     ps.power_source.status = chip::to_underlying(PowerSource::PowerSourceStatusEnum::kActive);
     ps.power_source.order = 0;
-    strncpy(ps.power_source.description, "2x CR2032, one buck-boost per cell",
+    strncpy(ps.power_source.description, "1x CR2450, buck-boost 3.3 V",
             sizeof(ps.power_source.description) - 1);
     ps.power_source.feature_flags = cluster::power_source::feature::battery::get_id() |
                                     cluster::power_source::feature::replaceable::get_id();
@@ -196,9 +196,9 @@ esp_err_t add_power_source(node_t *node)
     ps.power_source.features.battery.bat_replaceability =
         chip::to_underlying(PowerSource::BatReplaceabilityEnum::kUserReplaceable);
     strncpy(ps.power_source.features.replaceable.bat_replacement_description,
-            "Replace both CR2032 cells together (same brand/lot)",
+            "Replace with a new CR2450 (primary lithium, never recharge)",
             sizeof(ps.power_source.features.replaceable.bat_replacement_description) - 1);
-    ps.power_source.features.replaceable.bat_quantity = 2;
+    ps.power_source.features.replaceable.bat_quantity = 1;
     esp_err_t err = endpoint::power_source::add(root, &ps);
     if (err != ESP_OK) {
         return err;
@@ -211,7 +211,7 @@ esp_err_t add_power_source(node_t *node)
     psa::create_bat_voltage(c, nullable<uint32_t>(), nullable<uint32_t>(0), nullable<uint32_t>(6000));
     psa::create_bat_percent_remaining(c, nullable<uint8_t>(), nullable<uint8_t>(0), nullable<uint8_t>(200));
     psa::create_bat_present(c, true);
-    psa::create_bat_iec_designation(c, "CR2032", strlen("CR2032"));
+    psa::create_bat_iec_designation(c, "CR2450", strlen("CR2450"));
     psa::create_bat_approved_chemistry(c, chip::to_underlying(PowerSource::BatApprovedChemistryEnum::kLithiumManganeseDioxide),
                                        0, 0xFF);
     psa::create_bat_capacity(c, kBatCapacityMah, 0, UINT32_MAX);

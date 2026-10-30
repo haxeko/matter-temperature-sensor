@@ -1,19 +1,20 @@
 /*
  * Boot guard decision logic (pure C, unit tested on the host).
  *
- * Why it exists: near end of life the coin cells can power the idle chip but
+ * Why it exists: near end of life the coin cell can power the idle chip but
  * collapse during radio bursts. The 3V3 supervisor (TPS3839) then pulls EN low,
  * which is a full power-on reset: RTC memory is lost and the reset reason reads
  * "power-on". Without persistent state the device would boot, attach, brown
- * out and repeat, draining the cells. The state below is kept in NVS:
+ * out and repeat, draining the cell. The state below is kept in NVS:
  *
  *   unstable_boots  run attempts that did not reach "stable" (default 10 min)
- *   last_best_mv    best-cell voltage recorded at the last attempt
+ *   last_best_mv    cell voltage recorded at the last attempt (name from Rev A,
+ *                   two cells: the higher of the two)
  *
  * Rules (gp_decide):
  *   1. A software restart (factory reset, console reboot) clears the count.
- *   2. A best cell >= last_best_mv + recovery_mv means new cells: clear.
- *   3. Best cell below boot_min_mv: count an attempt and sleep (backoff).
+ *   2. A cell reading >= last_best_mv + recovery_mv means a new cell: clear.
+ *   3. Cell below boot_min_mv: count an attempt and sleep (backoff).
  *   4. Count > 0 and this is not the wake from a guard sleep: sleep (backoff).
  *   5. Otherwise run, counting this boot as an attempt until marked stable.
  */

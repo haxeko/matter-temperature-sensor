@@ -1,12 +1,12 @@
 /*
  * TH-SENSOR-H2: Matter-over-Thread temperature/humidity sensor
- * (ESP32-H2-MINI-1, SHT40, 2 x CR2032, one TPS63900 buck-boost per cell).
+ * (ESP32-H2-MINI-1, SHT40, 1 x CR2450, one TPS63900 buck-boost).
  *
  * Boot sequence:
  *   1. NVS, power guard state (reset reason, unstable-boot count)
  *   2. board GPIO, persisted configuration
  *   3. power management (automatic light sleep, tickless idle)
- *   4. cell voltages, guard decision before any radio activity (may deep-sleep)
+ *   4. cell voltage, guard decision before any radio activity (may deep-sleep)
  *   5. SHT40 presence check (a missing sensor only yields null values)
  *   6. controller queue, USER button, Matter data model, Matter start
  *   7. controller task, maintenance console

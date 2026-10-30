@@ -4,7 +4,8 @@ Build hardware/kicad/th_sensor_h2.kicad_pcb from design.py: placement, board
 outline, rule areas, hand-routed converter blocks, routing (router.py), ground
 planes, stitching vias and silkscreen.
 
-Board: 72 x 58 mm, 2 layers, 1.6 mm FR-4, all parts on the top side.
+Board (Rev B): 41.5 x 57.5 mm, 2 layers, 1.6 mm FR-4, all parts on the top side, one CR2450
+holder along the bottom edge (Rev A: 72 x 58 mm with two CR2032).
 Coordinates below are relative to the board's top-left corner (KiCad y down).
 
 Usage: python3 gen_pcb.py [--no-route]
@@ -28,7 +29,7 @@ PROJ_FP = os.path.join(KDIR, "lib", "th_sensor.pretty")
 REPORTS = os.path.normpath(os.path.join(HERE, "..", "reports"))
 
 OX, OY = 100.0, 60.0          # board origin on the KiCad page
-W, H = 72.0, 58.0             # board size
+W, H = 41.5, 57.5             # board size
 CORNER_R = 1.5
 
 # Module position follows the ESP32-H2 hardware design guidelines, section
@@ -38,9 +39,12 @@ CORNER_R = 1.5
 # no board material for >= 15 mm beside the 5.4 mm antenna region.
 MOD_X, MOD_Y = 8.6, 8.8                      # module centre; body 13.2 x 16.6 mm
 MOD_L, MOD_T = MOD_X - 6.6, MOD_Y - 8.3      # 2.0 / 0.5 mm from the edges
-NOTCH_X1, NOTCH_X2, NOTCH_D = MOD_X + 7.0, MOD_X + 7.0 + 15.2, 6.0
-SHT_TONGUE = dict(x1=61.0, slot_y=13.0, bridge_y2=3.4, slot_w=1.0)
-CELL_R = 10.6                                 # CR2032 radius 10.0 + 0.6 margin
+NOTCH_X1, NOTCH_X2, NOTCH_D = MOD_X + 7.0, MOD_X + 7.0 + 16.2, 6.0
+# SHT40 tongue in the top-right corner: x1..W, 0..y2, cut free by a 1 mm slot that continues the
+# notch edge downwards and turns right under the tongue; only the bridge (bridge_x1..W) holds it.
+SHT_TONGUE = dict(x1=NOTCH_X2 + 1.0, y2=12.0, slot_w=1.0, bridge_x1=W - 3.4)
+CELL_R = 12.25 + 0.6                          # CR2450 radius 12.25 + 0.6 margin
+CELL_BODY = (13.6, 8.1)                       # holder body half-size (27.0 x 16.0 mm + margin)
 SIGNAL_W, POWER_W = 0.25, 0.4
 
 mm = pcbnew.FromMM
@@ -62,86 +66,74 @@ def at(ref, x, y, rot=0):
 at("U4", MOD_X, MOD_Y, 0)
 at("C24", 1.0, 7.6, 90)            # 100 nF beside pad 3 (3V3), in the 2 mm strip left of the module
 # debug header (not fitted) under the antenna notch: order follows the module pins
-at("J1", 17.3, 7.9, 90)            # 1 TXD 2 RXD 3 D+ 4 D- 5 BOOT 6 3V3_DBG 7 GND, pitch 2.54 along +x
+at("J1", 17.3, 7.9, 90)            # 1 TXD 2 RXD 3 D+ 4 D- 5 BOOT 6 GND, pitch 2.54 along +x
 at("R29", 18.0, 12.4, 0)           # USB D+ 22R
 at("R28", 18.0, 14.2, 0)           # USB D- 22R
 at("R25", 16.2, 17.4, 90)          # LED, beside the module corner (LED pad at the bottom)
 at("D3", 17.9, 17.4, 90)           # anode at the top, next to R25
-# user/boot button, pull-ups, rail junction (bulk caps, load link, debug-supply jumper, test pads)
-at("SW1", 36.0, 3.2, 180)          # BTN pads at the bottom
-at("R23", 41.4, 5.2, 180)
-at("R24", 41.4, 7.0, 180)
-at("JP1", 30.0, 11.5, 270)
-at("TP7", 30.0, 14.6, 0)
-at("C21", 32.6, 13.0, 90)          # 3V3_PWR pad at the bottom
-at("C22", 35.2, 13.0, 90)
-at("R21", 37.8, 13.4, 90)
-at("TP8", 40.2, 11.6, 0)
-at("FID2", 47.0, 9.0, 0)
-# SHT40 on the slotted tongue (top-right corner), pull-ups on the main board side of the bridge
-at("U5", 67.4, 5.4, 270)
-at("C29", 67.4, 8.6, 0)
-at("R26", 54.8, 4.6, 270)
-at("R27", 56.6, 4.6, 270)
+# user/boot button and strap pull-ups under J1
+at("SW1", 27.0, 13.4, 0)           # BTN pads at the top
+at("R23", 21.6, 11.0, 0)
+at("R24", 21.6, 12.8, 0)
+# SHT40 on the tongue (top-right corner), pull-ups on the main board below the bridge
+at("U5", 35.4, 3.0, 0)
+at("C29", 38.0, 3.0, 90)
+at("R26", 34.6, 14.8, 90)
+at("R27", 36.4, 14.8, 90)
 # 32.768 kHz crystal under XTAL_32K_P/N (pads 12/13), load caps under it
 at("Y1", 3.6, 20.4, 180)
 at("C27", 2.35, 23.3, 270)
 at("C28", 4.85, 23.3, 270)
-# cell-voltage dividers below pads 16/18/19
-at("C32", 9.4, 23.1, 270)
-at("R34", 9.4, 26.5, 270)
-at("Q4", 9.4, 30.1, 90)
-at("R33", 11.6, 25.1, 90)
-at("C31", 14.2, 23.1, 270)
-at("R32", 14.2, 26.5, 270)
-at("Q3", 14.2, 30.1, 90)
-at("R31", 16.4, 25.1, 90)
+# cell-voltage divider below pads 16/19
+at("C31", 9.4, 23.1, 270)
+at("R32", 9.4, 26.5, 270)
+at("Q3", 9.4, 30.1, 90)
+at("R31", 11.6, 25.1, 90)
 at("R35", 11.8, 33.1, 0)
-# supervisor, EN RC, module bulk cap, reset button: along the EN lane on the left edge
-at("U3", 3.8, 27.6, 0)
-at("C26", 6.6, 28.6, 270)
-at("C23", 6.6, 32.2, 270)
-at("R22", 2.6, 31.0, 180)
-at("C25", 2.6, 33.2, 180)
-at("SW2", 3.0, 38.75, 90)
-at("TP11", 8.0, 35.8, 0)           # EN, between the reset button and the divider switches
-at("TP9", 21.0, 33.2, 0)           # GND, between the divider group and cell 1's test pads
-at("FID1", 16.4, 33.6, 0)
-at("TP10", 69.4, 38.0, 0)
+# supervisor, EN RC, module bulk cap, reset button: down the left edge beside the holder
+at("U3", 3.8, 26.8, 0)
+at("C26", 6.6, 27.8, 270)
+at("C23", 6.6, 31.4, 270)
+at("R22", 2.6, 30.2, 180)
+at("C25", 2.6, 32.2, 180)
+at("SW2", 3.0, 36.8, 90)
+at("TP6", 8.4, 34.8, 0)            # EN
+# 3V3 rail between the converter output and the module
+at("C21", 15.0, 22.0, 90)
+at("C22", 15.0, 26.6, 90)
+at("R21", 15.0, 30.6, 0)
+at("TP4", 18.6, 30.6, 0)           # +3V3
+at("TP5", 31.5, 31.5, 0)           # GND
+at("C5", 37.6, 31.6, 270)          # 470 uF bulk at VIN (+ pad up), in the shoulder right of the cell
+at("FID1", 1.8, 52.0, 0)
+at("FID2", 39.7, 52.0, 0)
 
 
-# one cell's converter, laid out like the TPS63900 datasheet example: inductor
-# above the IC, input capacitors left, output capacitor right, CFG resistors below
-def block_refs(n, o):
-    return dict(U=f"U{n}", L=f"L{n}", Q=f"Q{n}", D=f"D{n}", RL=f"R{1 + o}", C1=f"C{1 + o}", C2=f"C{2 + o}",
-                C3=f"C{3 + o}", C4=f"C{4 + o}", RC1=f"R{2 + o}", RC2=f"R{3 + o}", RC3=f"R{4 + o}",
-                TPB=f"TP{n}", TPI=f"TP{2 + n}", TPO=f"TP{4 + n}")
-
-
-def block_nets(n):
-    return dict(VIN=f"VIN{n}", VBAT=f"VBAT{n}", VBAT_L=f"VBAT{n}_L", LX1=f"LX1_{n}", LX2=f"LX2_{n}",
-                VOUT=f"VOUT{n}", CFG1=f"CFG1_{n}", CFG2=f"CFG2_{n}", CFG3=f"CFG3_{n}", GND="GND")
-
-
-BLOCKS = {1: dict(o=0, ux=37.9, uy=27.0), 2: dict(o=10, ux=59.4, uy=27.0)}
+# the converter, laid out like the TPS63900 datasheet example (inductor next to the IC, input
+# capacitors on one side, output capacitor on the other, CFG resistors opposite the inductor).
+# Local coordinates below are the Rev A block; Rev B places it rotated by 180 degrees so that the
+# input side faces the cell's + contact on the right.
+BLOCK = dict(ux=23.5, uy=24.5, rot180=True)
+BLOCK_REFS = dict(U="U1", L="L1", Q="Q1", RL="R1", C1="C1", C2="C2", C3="C3", C4="C4", RC1="R2", RC2="R3",
+                  RC3="R4", TPB="TP1", TPI="TP2", TPO="TP3")
 BLOCK_PLACE = [("U", 0.0, 0.0, 90), ("L", 0.0, -3.15, 0), ("C1", -2.4, -0.45, 270), ("C2", -7.5, 0.25, 270),
                ("C3", -5.0, 0.25, 270), ("C4", 2.7, -0.25, 270), ("RC1", 0.0, 3.6, 270), ("RC2", 1.65, 3.6, 270),
-               ("RC3", 3.3, 3.6, 270), ("D", 3.0, -4.6, 270), ("Q", -10.75, -0.275, 180),
+               ("RC3", 3.3, 3.6, 270), ("Q", -10.75, -0.275, 180),
                ("RL", -12.6, 3.3, 90), ("TPB", -12.6, 6.7, 0), ("TPI", -6.25, -3.6, 0), ("TPO", 5.55, -1.0, 0)]
-# hand-routed copper inside a block: (net, width, points); a point is (part key, pad) or local (x, y)
+# hand-routed copper inside the block: (net, width, points); a point is (part key, pad) or local (x, y)
 BLOCK_ROUTES = [
     ("VIN", 0.5, [("Q", "2"), ("C2", "1"), ("C3", "1"), (-3.5, -1.225), ("C1", "1"), (-1.6, -1.225)]),
     ("VIN", 0.25, [(-1.6, -1.225), ("U", "10")]),
     ("VIN", 0.4, [("TPI", "1"), (-6.25, -1.225)]),
-    ("VIN", 0.25, [("U", "2"), (-0.5, 1.75), (-3.5, 1.75), (-3.5, -1.225)]),     # EN = SEL = VIN
-    ("VIN", 0.25, [("U", "1"), (-1.0, 1.75)]),
+    ("VIN", 0.25, [("U", "1"), (-1.0, 1.75), (-3.5, 1.75), (-3.5, -1.225)]),     # EN = VIN
+    ("GND", 0.25, [("U", "2"), (-0.5, 0.0)]),                                    # SEL = GND: VO(1)
     ("VBAT_L", 0.5, [("Q", "3"), (-12.25, -0.275), (-12.25, 2.35), ("RL", "2")]),
     ("VBAT", 0.5, [("RL", "1"), ("TPB", "1")]),
     ("LX1", 0.25, [("U", "9"), (-0.5, -2.45), ("L", "1")]),
     ("LX2", 0.25, [("U", "7"), (0.5, -2.45), ("L", "2")]),
     ("GND", 0.25, [("U", "8"), (0.0, -0.3)]),
     ("VOUT", 0.25, [("U", "6"), (1.6, -1.21)]),
-    ("VOUT", 0.5, [(1.6, -1.21), ("C4", "1"), (3.0, -1.2), ("D", "2")]),
+    ("VOUT", 0.5, [(1.6, -1.21), ("C4", "1")]),
     ("VOUT", 0.4, [("C4", "1"), ("TPO", "1")]),
     ("GND", 0.3, [("C1", "2"), (-1.95, 0.2), (-0.6, 0.2)]),
     ("GND", 0.3, [(0.6, 0.35), (2.7, 0.35)]),
@@ -156,36 +148,42 @@ BLOCK_ROUTES = [
 ]
 BLOCK_VIAS = [("GND", (4.2, 1.0)), ("GND", (-6.25, 3.0)), ("GND", (-1.1, 4.375))]
 
-for n, b in BLOCKS.items():
-    refs = block_refs(n, b["o"])
-    for key, x, y, rot in BLOCK_PLACE:
-        at(refs[key], b["ux"] + x, b["uy"] + y, rot)
 
-# holders: + pad (pad 1) on the right with rotation 180; cell centre = footprint origin
-CELLS = {"BT1": (19.0, 46.6), "BT2": (53.0, 46.6)}
+def block_xy(x, y):
+    if BLOCK["rot180"]:
+        return BLOCK["ux"] - x, BLOCK["uy"] - y
+    return BLOCK["ux"] + x, BLOCK["uy"] + y
+
+
+for key, x, y, rot in BLOCK_PLACE:
+    at(BLOCK_REFS[key], *block_xy(x, y), (rot + (180 if BLOCK["rot180"] else 0)) % 360)
+
+# holder: + pad (pad 1) on the right; cell centre = footprint origin, 0.5 mm from the bottom edge
+CELLS = {"BT1": (W / 2, H - 12.75)}
 for ref, (x, y) in CELLS.items():
-    at(ref, x, y, 180)
+    at(ref, x, y, 0)
 
 # module GND pad array (pad 49, 3 x 3): vias in the gaps between the pads, tented
 MOD_GND_VIAS = [(MOD_X + dx, MOD_Y + dy) for dx in (-0.9875, 0.9875) for dy in (1.7125, 3.6875)]
 MOD_STUB = 1.2           # straight escape from every used module pad, routed before anything else
 
-# fixed copper outside the converter blocks: pad 3 decoupling, and the SHT40 tongue. The four
-# sensor nets cross the bridge in the pads' cyclic order (SDA, SCL, VDD, GND) so nothing crosses
-# inside the tongue, where vias are not allowed; GND wraps round C29 and drops to a via on the
-# main board next to the slot.
+# fixed copper outside the converter block: pad 3 decoupling, and the SHT40 tongue. The four
+# sensor nets leave the package in its cyclic pin order (SDA, SCL, VDD, GND) and reach the bridge
+# in the same order from left to right, so nothing crosses on the tongue, where vias are not
+# allowed; they end just below the bridge and the router takes over there.
 FIXED_ROUTES = [
     ("+3V3", 0.3, [("U4", "3"), (1.7, 9.1), ("C24", "1")]),
     ("GND", 0.3, [("C24", "2"), (1.7, 7.5), ("U4", "1")]),
-    ("I2C_SDA", SIGNAL_W, [(58.6, 0.85), (67.8, 0.85), ("U5", "1")]),
-    ("I2C_SCL", SIGNAL_W, [(58.6, 1.45), (67.0, 1.45), ("U5", "2")]),
-    ("+3V3", 0.3, [(58.6, 2.05), (65.8, 2.05), (65.8, 7.0), (67.0, 7.0), ("U5", "3")]),
-    ("+3V3", 0.3, [(65.8, 7.0), (65.8, 8.6), ("C29", "1")]),
-    ("GND", 0.3, [(59.3, 4.3), (59.3, 2.65), (65.0, 2.65), (65.0, 9.6), (68.9, 9.6), (68.9, 7.0), (67.8, 7.0),
-                  ("U5", "4")]),
-    ("GND", 0.3, [("C29", "2"), (68.9, 8.6)]),
+    # every trace leaves its pad outwards: the SHT4x footprint keeps copper out of the package area
+    ("I2C_SDA", SIGNAL_W, [("U5", "1"), (33.55, 2.6), (33.55, 8.4), (38.65, 8.4), (38.65, 13.9)]),
+    ("I2C_SCL", SIGNAL_W, [("U5", "2"), (34.25, 3.4), (34.25, 6.6), (39.2, 6.6), (39.2, 13.9)]),
+    ("+3V3", SIGNAL_W, [("U5", "3"), (37.0, 3.4), ("C29", "1")]),
+    ("+3V3", 0.3, [("C29", "1"), (39.8, 3.825), (39.8, 13.9)]),
+    ("GND", SIGNAL_W, [("U5", "4"), (37.0, 2.6), ("C29", "2")]),
+    ("GND", 0.3, [("C29", "2"), (38.0, 1.4), (40.45, 1.4), (40.45, 13.9), (40.75, 14.2)]),
 ]
-FIXED_VIAS = [("GND", (59.3, 4.3))]
+# the GND via sits right of the +3V3 lane so that a 0.4 mm +3V3 track can continue straight down
+FIXED_VIAS = [("GND", (40.75, 14.2))]
 
 
 # ------------------------------------------------------------------ helpers
@@ -250,28 +248,36 @@ def corner(board, layer, cx, cy, r, a0):
     add_arc(board, layer, *pts)
 
 
+def outline_points():
+    """Board outline as one closed polygon (y down): antenna notch top-left, SHT40 tongue top-right
+    cut free by a 1 mm slot (straight-ended here; outline() rounds the slot end)."""
+    t = SHT_TONGUE
+    sw = t["slot_w"]
+    return [(0, 0), (NOTCH_X1, 0), (NOTCH_X1, NOTCH_D), (NOTCH_X2, NOTCH_D), (NOTCH_X2, t["y2"] + sw),
+            (t["bridge_x1"], t["y2"] + sw), (t["bridge_x1"], t["y2"]), (t["x1"], t["y2"]), (t["x1"], 0),
+            (W, 0), (W, H), (0, H)]
+
+
 def outline(board):
-    """Rounded rectangle; antenna notch top-left; SHT40 tongue top-right cut free by 1 mm slots."""
+    """Rounded outer corners; the slot under the tongue ends in a half circle (router bit)."""
     L = pcbnew.Edge_Cuts
     r = CORNER_R
     t = SHT_TONGUE
     sw = t["slot_w"]
-    xs, ys, by2 = t["x1"], t["slot_y"], t["bridge_y2"]
+    xb, y2 = t["bridge_x1"], t["y2"]
     path = [((r, 0), (NOTCH_X1, 0)),
             ((NOTCH_X1, 0), (NOTCH_X1, NOTCH_D)),
             ((NOTCH_X1, NOTCH_D), (NOTCH_X2, NOTCH_D)),
-            ((NOTCH_X2, NOTCH_D), (NOTCH_X2, 0)),
-            ((NOTCH_X2, 0), (W - r, 0))]
+            ((NOTCH_X2, NOTCH_D), (NOTCH_X2, y2 + sw)),
+            ((NOTCH_X2, y2 + sw), (xb - sw / 2, y2 + sw)),
+            ((xb - sw / 2, y2), (t["x1"], y2)),
+            ((t["x1"], y2), (t["x1"], 0)),
+            ((t["x1"], 0), (W - r, 0))]
     for a, b in path:
         add_line(board, L, a, b)
+    add_arc(board, L, (xb - sw / 2, y2 + sw), (xb, y2 + sw / 2), (xb - sw / 2, y2))    # slot end
     corner(board, L, W - r, r, r, -90)                                   # top-right
-    add_line(board, L, (W, r), (W, ys))                                  # tongue right edge
-    add_line(board, L, (W, ys), (xs, ys))                                # tongue bottom edge
-    add_line(board, L, (xs, ys), (xs, by2 + sw / 2))                     # tongue left edge (slot side)
-    add_arc(board, L, (xs, by2 + sw / 2), (xs - sw / 2, by2), (xs - sw, by2 + sw / 2))   # slot end
-    add_line(board, L, (xs - sw, by2 + sw / 2), (xs - sw, ys + sw))      # main board side of the slot
-    add_line(board, L, (xs - sw, ys + sw), (W, ys + sw))                 # main board edge under the slot
-    add_line(board, L, (W, ys + sw), (W, H - r))
+    add_line(board, L, (W, r), (W, H - r))
     corner(board, L, W - r, H - r, r, 0)                                 # bottom-right
     add_line(board, L, (W - r, H), (r, H))
     corner(board, L, r, H - r, r, 90)                                    # bottom-left
@@ -280,13 +286,13 @@ def outline(board):
 
 
 def outline_polygon():
-    """Simplified board outline (no slot) used for the copper zones."""
+    """Outline polygon for the copper zones (corners approximated; zones are clipped by the edge)."""
     r = CORNER_R
-    pts = [(r, 0), (NOTCH_X1, 0), (NOTCH_X1, NOTCH_D), (NOTCH_X2, NOTCH_D), (NOTCH_X2, 0), (W - r, 0)]
+    pts = [(r, 0)] + outline_points()[1:10]
     for cx, cy, a0 in ((W - r, r, -90), (W - r, H - r, 0), (r, H - r, 90), (r, r, 180)):
         for k in range(0, 91, 15):
-            t = math.radians(a0 + k)
-            pts.append((cx + r * math.cos(t), cy + r * math.sin(t)))
+            tt = math.radians(a0 + k)
+            pts.append((cx + r * math.cos(tt), cy + r * math.sin(tt)))
     return pts
 
 
@@ -407,7 +413,7 @@ def build_board(path=PCB):
     tb.SetTitle("TH-SENSOR-H2")
     tb.SetRevision(D.REV)
     tb.SetDate(D.DATE)
-    tb.SetComment(0, "ESP32-H2 Matter/Thread thermo-hygrometer, 2 x CR2032 (one TPS63900 per cell)")
+    tb.SetComment(0, "ESP32-H2 Matter/Thread thermo-hygrometer, 1 x CR2450, TPS63900 3.3 V")
     tb.SetComment(1, "Generated by hardware/scripts/gen_pcb.py - 2 layers, 1.6 mm, JLCPCB standard rules")
 
     paths, sch_pins = schematic_netlist()
@@ -465,31 +471,31 @@ def build_board(path=PCB):
     rule_area(board, "ANTENNA_KEEPOUT", [(0, 0), (NOTCH_X1, 0), (NOTCH_X1, NOTCH_D), (0, NOTCH_D)])
     t = SHT_TONGUE
     # tongue: tracks only, no vias, no pour (thermal isolation of the SHT40)
-    rule_area(board, "SHT40_TONGUE", [(t["x1"] - t["slot_w"], 0), (W, 0), (W, t["slot_y"]),
-                                      (t["x1"] - t["slot_w"], t["slot_y"])], tracks=False, vias=True, pour=True)
-    # nothing on F.Cu under the cells: the CR2032 can (+) rim sits close to the board surface
+    rule_area(board, "SHT40_TONGUE", [(t["x1"], 0), (W, 0), (W, t["y2"]), (t["x1"], t["y2"])],
+              tracks=False, vias=True, pour=True)
+    # nothing on F.Cu under the cell and the holder body: the cell overhangs the 16 mm body and its
+    # can (+) sits close to the board surface
+    bx, by = CELL_BODY
     for ref, (cx, cy) in CELLS.items():
         rule_area(board, "CELL_" + ref, circle_pts(cx, cy, CELL_R), layers=("F.Cu",))
+        rule_area(board, "HOLDER_" + ref, [(cx - bx, cy - by), (cx + bx, cy - by), (cx + bx, cy + by),
+                                           (cx - bx, cy + by)], layers=("F.Cu",))
     return board, nets
 
 
 def hand_routes(board, nets):
     """Converter blocks, module GND vias: fixed copper drawn before the router runs."""
-    for n, b in BLOCKS.items():
-        refs = block_refs(n, b["o"])
-        bn = block_nets(n)
+    def point(p):
+        if isinstance(p[0], str):
+            return pad_xy(board, BLOCK_REFS[p[0]], p[1])
+        return block_xy(*p)
 
-        def point(p):
-            if isinstance(p[0], str):
-                return pad_xy(board, refs[p[0]], p[1])
-            return (b["ux"] + p[0], b["uy"] + p[1])
-
-        for net, w, pts in BLOCK_ROUTES:
-            ps = [point(p) for p in pts]
-            for a, c in zip(ps[:-1], ps[1:]):
-                add_track(board, nets[bn[net]], a, c, w)
-        for net, (x, y) in BLOCK_VIAS:
-            add_via(board, nets[bn[net]], (b["ux"] + x, b["uy"] + y))
+    for net, w, pts in BLOCK_ROUTES:
+        ps = [point(p) for p in pts]
+        for a, c in zip(ps[:-1], ps[1:]):
+            add_track(board, nets[net], a, c, w)
+    for net, p in BLOCK_VIAS:
+        add_via(board, nets[net], block_xy(*p))
     for p in MOD_GND_VIAS:
         add_via(board, nets["GND"], p)
     u4 = board.FindFootprintByReference("U4")
@@ -534,17 +540,14 @@ ROUTE_PLAN = [
     ("I2C_SDA", SIGNAL_W, (1.0, 2.5)),
     # divider nets go down below the east-going lanes
     ("VBAT_MEAS_EN", SIGNAL_W, (1.0, 3.0)),
-    ("VBAT2_SENSE", SIGNAL_W, (1.0, 3.0)),
-    ("VBAT1_SENSE", SIGNAL_W, (1.0, 3.0)),
-    ("SNS1_LO", SIGNAL_W, (1.0, 3.0)),
-    ("SNS2_LO", SIGNAL_W, (1.0, 3.0)),
+    ("VBAT_SENSE", SIGNAL_W, (1.0, 3.0)),
+    ("SNS_LO", SIGNAL_W, (1.0, 3.0)),
     ("EN", SIGNAL_W, (1.0, 3.0)),
     ("nRST", SIGNAL_W, (1.0, 3.0)),
-    ("3V3_PWR", POWER_W, (1.0, 5.0)),
-    ("3V3_DBG", POWER_W, (1.0, 3.0)),
+    ("VIN", POWER_W, (1.0, 5.0)),
+    ("VOUT", POWER_W, (1.0, 5.0)),
     ("+3V3", POWER_W, (1.0, 4.0)),
-    ("VBAT1", POWER_W, (1.0, 5.0)),
-    ("VBAT2", POWER_W, (1.0, 5.0)),
+    ("VBAT", POWER_W, (1.0, 3.0)),
 ]
 
 
@@ -575,7 +578,7 @@ def route(board, nets):
     gnd_pads = []
     skip = {"U4", "J1"}                                   # module: pour + pad-array vias; J1: through-hole
     for fp in board.GetFootprints():
-        if fp.GetReference() in skip or fp.GetReference().startswith(tuple(f"U{n}" for n in BLOCKS)):
+        if fp.GetReference() in skip or fp.GetReference() == BLOCK_REFS["U"]:
             continue
         for p in fp.Pads():
             if p.GetNetname() == "GND":
@@ -654,7 +657,7 @@ def remove_dangling(board):
 
 def stitch(board, R):
     """GND stitching: dense row along the antenna keepout edge, then a 3.5 mm grid."""
-    sites = [(x, NOTCH_D + 0.9) for x in [NOTCH_X1 + 1.0 + 1.5 * k for k in range(10)]]
+    sites = [(x, NOTCH_D + 0.9) for x in [NOTCH_X1 + 1.0 + 1.5 * k for k in range(10)] if x < NOTCH_X2 - 0.9]
     sites += [(0.8, 6.9)]
     step = 3.5
     y = 2.0
@@ -689,6 +692,15 @@ def prune_stitching(board, vias):
     return removed
 
 
+# silkscreen regions (x1, y1, x2, y2) searched for a free spot, board coordinates
+SILK_WARNING_REGION = (20.0, 29.4, 29.0, 30.6)     # two lines between the converter and the holder
+SILK_NAME_REGION = (5.0, 17.6, 10.0, 19.2)         # one line under the module
+# (label, part it names, region, angles)
+SILK_LABELS = (("RST", "SW2", (0.6, 41.0, 1.8, 46.0), (90,)),       # strip left of the holder, below SW2
+               ("USER/BOOT", "SW1", (23.0, 16.6, 31.0, 17.6), (0,)),
+               ("SHT40", "U5", (33.2, 9.0, 38.0, 11.6), (0, 90)))
+
+
 class SilkPlacer:
     """Places silkscreen text where it overlaps no pad, no other silk, no courtyard of another part
     and stays clear of the board edge. Coordinates in mm relative to the board corner."""
@@ -703,7 +715,11 @@ class SilkPlacer:
                 if pad.IsOnLayer(pcbnew.F_Cu) or pad.IsOnLayer(pcbnew.F_Mask):
                     self._add(pad.GetBoundingBox(), 0.2, None)
             for it in fp.GraphicalItems():
-                if it.GetLayer() == pcbnew.F_SilkS:
+                if it.GetLayer() != pcbnew.F_SilkS:
+                    continue
+                if it.GetClass() == "PCB_SHAPE" and it.GetShape() in (pcbnew.SHAPE_T_ARC, pcbnew.SHAPE_T_CIRCLE):
+                    self._add_curve(it, ref)     # the bounding box of the holder arc would block 19 x 4 mm
+                else:
                     self._add(it.GetBoundingBox(), 0.15, ref)
         # courtyards as a raster (holder courtyards are far from rectangular)
         import numpy as np
@@ -729,14 +745,32 @@ class SilkPlacer:
             if t.GetClass() == "PCB_VIA" and not t.IsTented(pcbnew.F_Mask):
                 self._add(t.GetBoundingBox(), 0.1, None)
         t = SHT_TONGUE
-        self.cuts = [(t["x1"] - t["slot_w"], t["bridge_y2"], t["x1"], t["slot_y"] + t["slot_w"]),
-                     (t["x1"] - t["slot_w"], t["slot_y"], W, t["slot_y"] + t["slot_w"]),
-                     (NOTCH_X1, 0, NOTCH_X2, NOTCH_D)]
+        self.cuts = [(NOTCH_X2, NOTCH_D, t["x1"], t["y2"] + t["slot_w"]),
+                     (NOTCH_X2, t["y2"], t["bridge_x1"], t["y2"] + t["slot_w"]),
+                     (NOTCH_X1, 0, t["x1"], NOTCH_D)]
 
     def _add(self, bb, grow, owner):
         mmr = pcbnew.ToMM
         self.obst.append((mmr(bb.GetX()) - OX - grow, mmr(bb.GetY()) - OY - grow, mmr(bb.GetRight()) - OX + grow,
                           mmr(bb.GetBottom()) - OY + grow, owner))
+
+    def _add_curve(self, it, owner):
+        """Arc or circle as a chain of small boxes along the curve."""
+        c, r = it.GetCenter(), it.GetRadius()
+        if it.GetShape() == pcbnew.SHAPE_T_CIRCLE:
+            a0, sweep = 0.0, 2 * math.pi
+        else:
+            ang = lambda p: math.atan2(p.y - c.y, p.x - c.x)
+            a0, am, a1 = ang(it.GetStart()), ang(it.GetArcMid()), ang(it.GetEnd())
+            sweep = (a1 - a0) % (2 * math.pi)
+            if (am - a0) % (2 * math.pi) > sweep:
+                sweep -= 2 * math.pi
+        n = max(8, int(abs(sweep) * pcbnew.ToMM(r) / 0.4) + 1)
+        pts = [(c.x + r * math.cos(a0 + sweep * k / n), c.y + r * math.sin(a0 + sweep * k / n)) for k in range(n + 1)]
+        grow = 0.15 + pcbnew.ToMM(it.GetWidth()) / 2
+        for (xa, ya), (xb, yb) in zip(pts[:-1], pts[1:]):
+            self.obst.append((pcbnew.ToMM(min(xa, xb)) - OX - grow, pcbnew.ToMM(min(ya, yb)) - OY - grow,
+                              pcbnew.ToMM(max(xa, xb)) - OX + grow, pcbnew.ToMM(max(ya, yb)) - OY + grow, owner))
 
     def _bbox(self, text):
         bb = text.GetBoundingBox()
@@ -787,14 +821,32 @@ class SilkPlacer:
         cx, cyy = (x1 + x2) / 2, (y1 + y2) / 2
         tw = 0.75 * len(ref.GetText()) + 0.2
         cands = []
-        for d in (0.0, -0.8, 0.8, -1.6, 1.6):
-            cands += [(cx + d, y1 - 0.55, 0), (cx + d, y2 + 0.55, 0),
-                      (x1 - tw / 2 - 0.1, cyy + d, 0), (x2 + tw / 2 + 0.1, cyy + d, 0),
-                      (x1 - 0.55, cyy + d, 90), (x2 + 0.55, cyy + d, 90)]
+        for gap in (0.55, 0.75):                  # nearest ring first, shifted along the side in 0.2 mm steps
+            for d in [0.0] + [sgn * 0.2 * i for i in range(1, 9) for sgn in (-1, 1)]:
+                cands += [(cx + d, y1 - gap, 0), (cx + d, y2 + gap, 0),
+                          (x1 - tw / 2 - gap + 0.45, cyy + d, 0), (x2 + tw / 2 + gap - 0.45, cyy + d, 0),
+                          (x1 - gap, cyy + d, 90), (x2 + gap, cyy + d, 90)]
         if self.place_text(ref, cands, owner=fp.GetReference()):
             ref.SetVisible(True)
             return True
         ref.SetVisible(False)          # stays on the assembly drawing (F.Fab carries ${REFERENCE})
+        return False
+
+    def place_pair(self, t1, t2, region, dy, step=0.1):
+        """Two centred lines, t2 dy below t1, at the first spot in region where both fit."""
+        rx1, ry1, rx2, ry2 = region
+        y = ry1
+        while y <= ry2 + 1e-9:
+            x = rx1
+            while x <= rx2 + 1e-9:
+                t1.SetPosition(V(x, y))
+                t2.SetPosition(V(x, y + dy))
+                if self.free(self._bbox(t1)) and self.free(self._bbox(t2)):
+                    self.claim(t1)
+                    self.claim(t2)
+                    return True
+                x += step
+            y += step
         return False
 
     def free_spot(self, text, region, step=0.5, angles=(0,)):
@@ -824,30 +876,24 @@ def silkscreen(board):
         texts.append(t)
         return t
 
-    # front: the cell warning between the two holders (visible with cells fitted), then the board name
+    # front: the cell warning above the holder (both lines or none), then the board name
     missing = []
-    t = txt("CR2032 ONLY", 1.0, bold=True)
-    if not sp.free_spot(t, (30.0, 33.6, 42.0, 36.0), step=0.1):
-        missing.append("CR2032 ONLY")
-    else:
-        x, y = pcbnew.ToMM(t.GetPosition().x) - OX, pcbnew.ToMM(t.GetPosition().y) - OY
-        t2 = txt("NO CHARGE", 1.0, bold=True)
-        if not sp.free_spot(t2, (x - 0.6, y + 1.4, x + 0.6, y + 2.0), step=0.1):
-            missing.append("NO CHARGE")
-    name = txt("TH-SENSOR-H2 Rev " + D.REV, 1.0, bold=True)
-    if not sp.free_spot(name, (50.0, 16.5, 58.0, 19.0), step=0.5):
-        missing.append("board name")
-    for label, ref, region in (("RST", "SW2", (0.6, 33.0, 8.0, 43.0)), ("USER/BOOT", "SW1", (31.0, 6.5, 41.0, 9.8)),
-                               ("SHT40", "U5", (62.0, 10.0, 71.0, 12.6))):
+    t1, t2 = txt("CR2450 ONLY", 0.8, bold=True), txt("NO CHARGE", 0.8, bold=True)
+    if not sp.place_pair(t1, t2, SILK_WARNING_REGION, dy=1.2):
+        missing.append("CR2450 ONLY / NO CHARGE")
+    t = txt("TH-SENSOR-H2 Rev " + D.REV, 0.8, bold=True)
+    if not sp.free_spot(t, SILK_NAME_REGION, step=0.2):
+        missing.append(t.GetText())
+    for label, ref, region, angles in SILK_LABELS:
         t = txt(label, 0.8)
-        if not sp.free_spot(t, region, step=0.25, angles=(0, 90)):
+        if not sp.free_spot(t, region, step=0.2, angles=angles):
             missing.append(label)
     # current-measurement links first: the bring-up procedure refers to them by name
-    links = ("R1", "R11", "R21")
+    links = ("R1", "R21")
     for ref in links:
         if not sp.place_reference(board.FindFootprintByReference(ref)):
-            hidden.append(ref)
-    # test pads show their net name (VBAT1, 3V3, GND, EN, ...); the TP numbers stay on the assembly drawing.
+            missing.append(ref)
+    # test pads show their net name (VBAT, VIN, 3V3, GND, EN, ...); the TP numbers stay on the assembly drawing.
     # Greedy placement, retried once with the pads that failed placed first.
     tps = sorted((f for f in board.GetFootprints() if f.GetReference().startswith("TP")),
                  key=lambda f: int(f.GetReference()[2:]))
@@ -868,21 +914,27 @@ def silkscreen(board):
     for fp in order:
         if fp.GetReference().startswith("TP") or fp.GetReference() in links:
             continue
-        if not sp.place_reference(fp):
+        # the holder carries its own +/- marks and the warning above it; its only free spot is beside
+        # "RST", where "BT1 RST" would read as one label
+        if fp.GetReference() == "BT1" or not sp.place_reference(fp):
+            fp.Reference().SetVisible(False)
             hidden.append(fp.GetReference())
     # back: the full story, mirrored
-    silk_text(board, "TH-SENSOR-H2 Rev %s  %s" % (D.REV, D.DATE), 36.0, 30.0, 1.2, layer="B.SilkS", bold=True)
-    silk_text(board, "ESP32-H2 Matter/Thread temperature & humidity", 36.0, 32.0, 0.8, layer="B.SilkS")
-    silk_text(board, "2 x CR2032 (one TPS63900 buck-boost per cell)", 36.0, 33.6, 0.8, layer="B.SilkS")
-    silk_text(board, "Primary lithium cells only - never recharge", 36.0, 35.2, 0.8, layer="B.SilkS")
+    cx = W / 2
+    silk_text(board, "TH-SENSOR-H2 Rev %s  %s" % (D.REV, D.DATE), cx, 24.0, 1.2, layer="B.SilkS", bold=True)
+    silk_text(board, "ESP32-H2 Matter/Thread", cx, 26.2, 0.8, layer="B.SilkS")
+    silk_text(board, "temperature & humidity", cx, 27.6, 0.8, layer="B.SilkS")
+    silk_text(board, "1 x CR2450, TPS63900 3.3 V", cx, 29.0, 0.8, layer="B.SilkS")
+    silk_text(board, "CR2450 ONLY - NO CHARGE", cx, 31.4, 1.2, layer="B.SilkS", bold=True)
+    silk_text(board, "primary lithium cell - never recharge", cx, 33.4, 0.8, layer="B.SilkS")
     jx, jy, _ = PLACE["J1"]
-    for i, lab in enumerate(["TX", "RX", "D+", "D-", "BOOT", "3V3", "GND"]):
+    for i, lab in enumerate(["TX", "RX", "D+", "D-", "BOOT", "GND"]):
         t = silk_text(board, lab, jx + 2.54 * i, jy, 0.8, rot=90, layer="B.SilkS")
         bb = t.GetBoundingBox()
         top = pcbnew.ToMM(bb.GetY()) - OY
         t.SetPosition(V(jx + 2.54 * i, jy + (jy + 1.35 - top)))     # text starts 0.5 mm below the pad
-    silk_text(board, "J1 debug (not fitted): 3V3 pad powers the board only with JP1 closed", 36.0, 13.6, 0.8,
-              layer="B.SilkS")
+    silk_text(board, "J1 debug (not fitted): no supply pin,", cx, 17.2, 0.8, layer="B.SilkS")
+    silk_text(board, "the cell powers the board", cx, 18.6, 0.8, layer="B.SilkS")
     silk_text(board, "ANTENNA KEEPOUT", 8.6, 3.2, 0.8, layer="B.SilkS")
     return hidden
 
@@ -911,7 +963,7 @@ if __name__ == "__main__":
         report.append("stitching vias: %d placed, %d removed (single plane)" % (len(vias), removed))
         pcbnew.ZONE_FILLER(board).Fill(board.Zones())
         hidden = silkscreen(board)
-        report.append("references on F.Fab only (no room on silk): %s" % (", ".join(sorted(hidden)) or "none"))
+        report.append("references on F.Fab only (no room on silk; BT1 by choice): %s" % (", ".join(sorted(hidden)) or "none"))
         os.makedirs(REPORTS, exist_ok=True)
         with open(os.path.join(REPORTS, "routing_log.txt"), "w") as f:
             f.write("\n".join(report) + "\n")
@@ -922,5 +974,11 @@ if __name__ == "__main__":
         print("unrouted:", len(R.unrouted), R.unrouted[:20])
     else:
         silkscreen(board)
+    pcbnew.SaveBoard(PCB, board)
+    # NewBoard() wrote a default project file: write the real one (net classes, rules) and refill the
+    # zones under it, so that the saved fill is the one DRC and the fab outputs see
+    subprocess.run([sys.executable, os.path.join(HERE, "gen_project.py")], check=True)
+    board = pcbnew.LoadBoard(PCB)
+    pcbnew.ZONE_FILLER(board).Fill(board.Zones())
     pcbnew.SaveBoard(PCB, board)
     print("saved", PCB)

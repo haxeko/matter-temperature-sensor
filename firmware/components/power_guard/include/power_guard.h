@@ -2,12 +2,12 @@
  * Boot-time protection against brown-out reset loops and against starting the
  * radio on exhausted cells (decision logic: app_logic/guard_policy.h).
  *
- * A CR2032 pair near end of life can power the idle chip but collapses during
- * radio bursts. The TPS3839 supervisor then resets the module through EN,
- * which is a full power-on reset (RTC memory is lost, the reset reason reads
- * "power-on"), so the guard keeps its state in NVS. Unstable or low-battery
- * boots back off with exponentially growing deep sleep (timer, or the USER
- * button wakes the device earlier).
+ * A CR2450 near end of life, or a cold one, can power the idle chip but
+ * collapses during radio bursts. The TPS3839 supervisor then resets the module
+ * through EN, which is a full power-on reset (RTC memory is lost, the reset
+ * reason reads "power-on"), so the guard keeps its state in NVS. Unstable or
+ * low-battery boots back off with exponentially growing deep sleep (timer, or
+ * the USER button wakes the device earlier).
  */
 #pragma once
 

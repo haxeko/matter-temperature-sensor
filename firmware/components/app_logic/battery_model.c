@@ -2,9 +2,11 @@
 
 #include <stddef.h>
 
-/* Rest-voltage (mV) to remaining-capacity (%) points for a CR2032 at light
- * load, derived from the shape of the Panasonic CR2032 discharge curve
- * (datasheet Feb-2026, 15 kOhm, 20 degC). Indicative only. */
+/* Rest-voltage (mV) to remaining-capacity (%) points for a Li-MnO2 coin cell at
+ * light load, derived from the shape of the Panasonic CR2032 discharge curve
+ * (datasheet Feb-2026, 15 kOhm, 20 degC). Rev B applies it to the CR2450 on the
+ * assumption that the same chemistry gives the same voltage-vs-fraction shape;
+ * not checked against a CR2450 curve. Indicative only. */
 static const struct {
     uint16_t mv;
     uint8_t pct;

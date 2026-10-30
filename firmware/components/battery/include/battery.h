@@ -1,6 +1,7 @@
 /*
- * Per-cell voltage measurement: VBAT1 (ADC1_CH4) and VBAT2 (ADC1_CH3), each
- * through its own switched 470k/470k divider (both switches on GPIO12).
+ * Cell voltage measurement: VBAT (ADC1_CH4) through a switched 470k/470k
+ * divider (switch on GPIO12). Rev B has one CR2450; the reading structure keeps
+ * a per-cell array so that the battery model stays independent of the count.
  */
 #pragma once
 
@@ -11,7 +12,7 @@
 extern "C" {
 #endif
 
-#define BATTERY_CELLS 2
+#define BATTERY_CELLS 1
 
 typedef struct {
     uint32_t cell_mv[BATTERY_CELLS];   /* reconstructed cell voltage (divider ratio applied) */
@@ -21,13 +22,13 @@ typedef struct {
 
 /*
  * Blocks for ~40 ms (divider settling + conversions) with light sleep held off,
- * so the switches stay closed. Both cells are read in one session.
+ * so the switch stays closed.
  * Returns ESP_ERR_NOT_SUPPORTED if no ADC calibration scheme can be created
  * (no uncalibrated value is ever reported).
  */
 esp_err_t battery_measure(battery_reading_t *out);
 
-/* Highest of the two readings (the cell that currently sustains the rail). */
+/* Highest cell reading (with one cell: that cell). */
 uint32_t battery_best_cell_mv(const battery_reading_t *r);
 
 #ifdef __cplusplus

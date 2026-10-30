@@ -197,32 +197,33 @@ static void test_percent_table(void)
     CHECK(monotonic);
 }
 
-static bat_pack_t pack_of(uint32_t mv1, uint32_t mv2)
+static bat_pack_t pack_of(uint32_t mv)
 {
-    const uint32_t mv[BAT_CELL_COUNT] = {mv1, mv2};
+    const uint32_t cells[BAT_CELL_COUNT] = {mv};
     bat_pack_t p;
-    bat_pack_from_cells(&p, mv, 1500);
+    bat_pack_from_cells(&p, cells, 1500);
     return p;
 }
 
 static void test_pack_aggregate(void)
 {
-    bat_pack_t p = pack_of(3050, 2900);          /* 100 % and 50 % */
-    CHECK_EQ_INT(p.cells_present, 2);
-    CHECK_EQ_INT(p.best_mv, 3050);
-    CHECK_EQ_INT(p.cell_half_pct[0], 200);
-    CHECK_EQ_INT(p.cell_half_pct[1], 100);
-    CHECK_EQ_INT(p.pack_half_pct, 150);          /* 75 % */
-    p = pack_of(0, 3050);                        /* empty holder counts as 0 % */
+    CHECK_EQ_INT(BAT_CELL_COUNT, 1);             /* Rev B: one CR2450 */
+    bat_pack_t p = pack_of(2900);                /* 50 % */
     CHECK_EQ_INT(p.cells_present, 1);
-    CHECK(!p.present[0] && p.present[1]);
-    CHECK_EQ_INT(p.best_mv, 3050);
-    CHECK_EQ_INT(p.pack_half_pct, 100);
-    p = pack_of(1499, 1200);
+    CHECK(p.present[0]);
+    CHECK_EQ_INT(p.best_mv, 2900);
+    CHECK_EQ_INT(p.cell_half_pct[0], 100);
+    CHECK_EQ_INT(p.pack_half_pct, 100);          /* one cell: the pack is that cell */
+    p = pack_of(3050);
+    CHECK_EQ_INT(p.pack_half_pct, 200);
+    p = pack_of(1499);                           /* below the present threshold */
     CHECK_EQ_INT(p.cells_present, 0);
+    CHECK(!p.present[0]);
     CHECK_EQ_INT(p.best_mv, 0);
     CHECK_EQ_INT(p.pack_half_pct, 0);
-    p = pack_of(70000, 3000);                    /* out-of-range reading saturates */
+    p = pack_of(1500);                           /* the threshold itself counts as present */
+    CHECK_EQ_INT(p.cells_present, 1);
+    p = pack_of(70000);                          /* out-of-range reading saturates */
     CHECK_EQ_INT(p.cell_mv[0], 0xFFFF);
 }
 
@@ -230,32 +231,32 @@ static void test_pack_level(void)
 {
     const bat_policy_t pol = BAT_POLICY_INIT(1500, 40, 20);
     bat_state_t st = {0};
-    bat_pack_t p = pack_of(3050, 3050);
+    bat_pack_t p = pack_of(3050);
     CHECK_EQ_INT(bat_pack_update(&st, &pol, &p), BAT_LEVEL_OK);
-    p = pack_of(2850, 2850);                     /* 35 % < 40 % */
+    p = pack_of(2850);                           /* 35 % < 40 % */
     CHECK_EQ_INT(bat_pack_update(&st, &pol, &p), BAT_LEVEL_WARNING);
-    p = pack_of(2875, 2875);                     /* 42.5 %: inside hysteresis */
+    p = pack_of(2875);                           /* 42.5 %: inside hysteresis */
     CHECK_EQ_INT(bat_pack_update(&st, &pol, &p), BAT_LEVEL_WARNING);
-    p = pack_of(2900, 2900);                     /* 50 % >= 45 % exit */
+    p = pack_of(2900);                           /* 50 % >= 45 % exit */
     CHECK_EQ_INT(bat_pack_update(&st, &pol, &p), BAT_LEVEL_OK);
-    p = pack_of(0, 3050);                        /* one cell removed */
-    CHECK_EQ_INT(bat_pack_update(&st, &pol, &p), BAT_LEVEL_WARNING);
-    p = pack_of(2700, 2650);                     /* best cell 2700 mV, pack ~10.5 % < 20 % */
+    p = pack_of(2700);                           /* 12 % < 20 % */
     CHECK_EQ_INT(bat_pack_update(&st, &pol, &p), BAT_LEVEL_CRITICAL);
-    p = pack_of(2400, 2590);                     /* best cell below 2600 mV */
-    CHECK_EQ_INT(bat_pack_update(&st, &pol, &p), BAT_LEVEL_CRITICAL);
-    p = pack_of(2850, 2900);                     /* recovered above the exits: WARNING */
+    p = pack_of(2800);                           /* 25 % >= 25 % exit, cell >= 2650 mV: WARNING */
     CHECK_EQ_INT(bat_pack_update(&st, &pol, &p), BAT_LEVEL_WARNING);
-    p = pack_of(3100, 3100);                     /* new cells */
+    p = pack_of(2590);                           /* cell below 2600 mV */
+    CHECK_EQ_INT(bat_pack_update(&st, &pol, &p), BAT_LEVEL_CRITICAL);
+    p = pack_of(3100);                           /* new cell */
+    CHECK_EQ_INT(bat_pack_update(&st, &pol, &p), BAT_LEVEL_OK);
+    p = pack_of(0);                              /* reading fault while running */
+    CHECK_EQ_INT(bat_pack_update(&st, &pol, &p), BAT_LEVEL_CRITICAL);
+    p = pack_of(3100);
     CHECK_EQ_INT(bat_pack_update(&st, &pol, &p), BAT_LEVEL_OK);
     bat_state_t st2 = {0};
-    p = pack_of(0, 0);                           /* no cells (debug supply only) */
+    p = pack_of(2400);                           /* first reading on a worn cell */
     CHECK_EQ_INT(bat_pack_update(&st2, &pol, &p), BAT_LEVEL_CRITICAL);
-    p = pack_of(3100, 3100);
-    CHECK_EQ_INT(bat_pack_update(&st2, &pol, &p), BAT_LEVEL_OK);
     bat_state_t st3 = {0};
-    p = pack_of(3100, 0);                        /* first reading with one cell: WARNING */
-    CHECK_EQ_INT(bat_pack_update(&st3, &pol, &p), BAT_LEVEL_WARNING);
+    p = pack_of(2875);                           /* first reading inside the hysteresis band */
+    CHECK_EQ_INT(bat_pack_update(&st3, &pol, &p), BAT_LEVEL_OK);
 }
 
 static void test_percent_filter(void)
@@ -284,7 +285,7 @@ void test_gesture_all(void)
 void test_battery_all(void)
 {
     run_test("battery: percent table monotonic", test_percent_table);
-    run_test("battery: pack aggregate / missing cell", test_pack_aggregate);
+    run_test("battery: one-cell pack / missing reading", test_pack_aggregate);
     run_test("battery: pack charge level hysteresis", test_pack_level);
     run_test("battery: percent jitter filter", test_percent_filter);
 }

@@ -1,7 +1,7 @@
 /*
  * Board pin map — single source of truth for firmware.
  *
- * Board: TH-SENSOR-H2 Rev A (hardware/kicad/th_sensor_h2.kicad_sch)
+ * Board: TH-SENSOR-H2 Rev B (hardware/kicad/th_sensor_h2.kicad_sch)
  * Module: ESP32-H2-MINI-1-H4S (datasheet v1.6, Table 3 "Pin Definitions").
  *
  * Every assignment below must match docs/pinmap.md and the net names in the
@@ -35,23 +35,20 @@
 #define BOARD_GPIO_LED              22  /* module pad 24, net LED */
 #define BOARD_LED_ACTIVE            1
 
-/* ---- Cell voltage sense (one switched 470k/470k divider per cell) --------
- * Power path (docs/architecture.md): each CR2032 feeds its own TPS63900, so
- * there is no common VBAT_OR node; VBAT1/VBAT2 are the holder terminals.
- * GPIO12 drives the gates of the two low-side NMOS switches (Q3, Q4) that
- * connect the divider bottoms to GND (1M gate pull-down keeps them off in
- * reset/sleep).
- * All three pins sit on the module's bottom edge: the left edge is reserved
- * for 3V3 and EN because the module is placed <= 2 mm from the board edge
+/* ---- Cell voltage sense (switched 470k/470k divider) ---------------------
+ * Power path (docs/architecture.md): one CR2450 feeds one TPS63900; VBAT is
+ * the holder + terminal (before the 0R measurement link).
+ * GPIO12 drives the gate of the low-side NMOS switch (Q3) that connects the
+ * divider bottom to GND (1M gate pull-down keeps it off in reset/sleep).
+ * Both pins sit on the module's bottom edge: the left edge is reserved for
+ * 3V3 and EN because the module is placed <= 2 mm from the board edge
  * (antenna keepout, docs/decisions.md).
- * Divider mid-points have 22 nF to GND: tau = 235 kOhm * 22 nF = 5.2 ms.
+ * The divider mid-point has 22 nF to GND: tau = 235 kOhm * 22 nF = 5.2 ms.
  */
 #define BOARD_GPIO_VBAT_MEAS_EN     12  /* module pad 16, net VBAT_MEAS_EN */
-#define BOARD_GPIO_VBAT1_SENSE      5   /* module pad 19, net VBAT1_SENSE, ADC1_CH4 */
-#define BOARD_GPIO_VBAT2_SENSE      4   /* module pad 18, net VBAT2_SENSE, ADC1_CH3 */
+#define BOARD_GPIO_VBAT_SENSE       5   /* module pad 19, net VBAT_SENSE, ADC1_CH4 */
 #define BOARD_VBAT_ADC_UNIT         0   /* ADC_UNIT_1 */
-#define BOARD_VBAT1_ADC_CHANNEL     4   /* ADC_CHANNEL_4 */
-#define BOARD_VBAT2_ADC_CHANNEL     3   /* ADC_CHANNEL_3 */
+#define BOARD_VBAT_ADC_CHANNEL      4   /* ADC_CHANNEL_4 */
 #define BOARD_VBAT_DIVIDER_NUM      2   /* V_cell = V_sense * NUM / DEN */
 #define BOARD_VBAT_DIVIDER_DEN      1
 #define BOARD_VBAT_SETTLE_MS        30  /* > 5 tau */
@@ -60,15 +57,15 @@
 #define BOARD_GPIO_XTAL32K_P        13  /* module pad 12, net XTAL_32K_P */
 #define BOARD_GPIO_XTAL32K_N        14  /* module pad 13, net XTAL_32K_N */
 
-/* ---- Debug interfaces (J1, 1x7 pads under the antenna notch, not fitted) - */
+/* ---- Debug interfaces (J1, 1x6 pads under the antenna notch, not fitted) - */
 #define BOARD_GPIO_UART0_RX         23  /* module pad 30, net U0RXD (RXD0) */
 #define BOARD_GPIO_UART0_TX         24  /* module pad 31, net U0TXD (TXD0) */
 #define BOARD_GPIO_USB_DM           26  /* module pad 26, net USB_DM (22R series) */
 #define BOARD_GPIO_USB_DP           27  /* module pad 27, net USB_DP (22R series) */
 
-/* ---- Pins with no connection on Rev A -------------------------------------
+/* ---- Pins with no connection on Rev B -------------------------------------
  * Configured by board_init() as input-disabled with pull-down so that they
  * cannot float (ESP32-H2 HW design guidelines, section "GPIO").
  * GPIO25 has no internal pulls; input is disabled instead.
  */
-#define BOARD_UNUSED_GPIO_LIST      { 0, 1, 2, 3, 25 }
+#define BOARD_UNUSED_GPIO_LIST      { 0, 1, 2, 3, 4, 25 }

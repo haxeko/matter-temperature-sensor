@@ -1,4 +1,4 @@
-# ESP-IDF project: Matter-over-Thread temperature/humidity sensor (ESP32-H2, 2x CR2032).
+# ESP-IDF project: Matter-over-Thread temperature/humidity sensor (ESP32-H2, 1x CR2450).
 # ESP-Matter is consumed as a managed component (see main/idf_component.yml), so no
 # ESP_MATTER_PATH checkout is needed to build.
 cmake_minimum_required(VERSION 3.16)

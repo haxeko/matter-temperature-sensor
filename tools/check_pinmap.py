@@ -80,8 +80,7 @@ def main():
         elif net and not net.startswith("unconnected-"):
             errors.append("%s: pad %d carries net %s in the schematic, header names none" % (name, pad, net))
         rows.append((pad, gpio, name, net or "-"))
-    for n, chan_def in (("BOARD_GPIO_VBAT1_SENSE", "BOARD_VBAT1_ADC_CHANNEL"),
-                        ("BOARD_GPIO_VBAT2_SENSE", "BOARD_VBAT2_ADC_CHANNEL")):
+    for n, chan_def in (("BOARD_GPIO_VBAT_SENSE", "BOARD_VBAT_ADC_CHANNEL"),):
         g = gpio_of.get(n)
         ch = int(defs[chan_def][0]) if chan_def in defs else None
         if ADC1.get(g) != ch:

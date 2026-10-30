@@ -185,8 +185,8 @@ esp_err_t board_init(void)
     if (xTaskCreate(led_task, "led", 2048, NULL, 3, NULL) != pdPASS) {
         return ESP_ERR_NO_MEM;
     }
-    ESP_LOGI(TAG, "board init done (LED GPIO%d, cell sense enable GPIO%d, ADC GPIO%d/GPIO%d)",
-             BOARD_GPIO_LED, BOARD_GPIO_VBAT_MEAS_EN, BOARD_GPIO_VBAT1_SENSE, BOARD_GPIO_VBAT2_SENSE);
+    ESP_LOGI(TAG, "board init done (LED GPIO%d, cell sense enable GPIO%d, ADC GPIO%d)",
+             BOARD_GPIO_LED, BOARD_GPIO_VBAT_MEAS_EN, BOARD_GPIO_VBAT_SENSE);
     return ESP_OK;
 }
 

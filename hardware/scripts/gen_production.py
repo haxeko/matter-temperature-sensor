@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Fabrication and assembly outputs for TH-SENSOR-H2 Rev A (JLCPCB conventions).
+Fabrication and assembly outputs for TH-SENSOR-H2 (revision from design.py, JLCPCB conventions).
 
   hardware/production/gerbers/          Gerber X2 + Excellon (drill/place origin = board bottom-left)
-  hardware/production/th_sensor_h2_revA_gerbers.zip
+  hardware/production/th_sensor_h2_rev<REV>_gerbers.zip
   hardware/production/bom_jlc.csv       Comment, Designator, Footprint, LCSC Part #, ... (fitted parts only)
   hardware/production/cpl_jlc.csv       Designator, Mid X, Mid Y, Layer, Rotation (KiCad rotation, see below)
   hardware/production/assembly_top.pdf  fab layer drawing for hand assembly and for checking the CPL
@@ -41,9 +41,9 @@ LAYERS = "F.Cu,B.Cu,F.Paste,B.Paste,F.SilkS,B.SilkS,F.Mask,B.Mask,Edge.Cuts"
 POLARISED = {
     "U": "pin 1",
     "Q": "pin 1 (gate)",
-    "D1": "pad 1 = cathode (bar)", "D2": "pad 1 = cathode (bar)",
     "D3": "pad 1 = cathode",
-    "BT": "pad 1 = + contact (retainer side)",
+    "C5": "pad 1 = + (base-plate chamfers on this side; the can marking is on the - side)",
+    "BT": "pad 1 = + terminal (silkscreen '+')",
 }
 
 
@@ -63,7 +63,7 @@ def fab_files():
     run(["kicad-cli", "pcb", "export", "drill", "--format", "excellon", "--drill-origin", "plot",
          "--excellon-units", "mm", "--excellon-separate-th", "--generate-map", "--map-format", "pdf",
          "-o", GERB + "/", PCB])
-    z = os.path.join(OUT, "th_sensor_h2_revA_gerbers.zip")
+    z = os.path.join(OUT, "th_sensor_h2_rev%s_gerbers.zip" % D.REV)
     with zipfile.ZipFile(z, "w", zipfile.ZIP_DEFLATED) as zf:
         for f in sorted(os.listdir(GERB)):
             if not f.endswith(".pdf"):
@@ -170,7 +170,7 @@ def assembly_pdf():
 
 def blockers(rows, snap):
     stamp = next(iter(snap.values())).get("queried", "?")
-    lines = ["# Manufacturing blockers and open checks (Rev A)", "",
+    lines = ["# Manufacturing blockers and open checks (Rev %s)" % D.REV, "",
              "Status from the JLC parts snapshot taken %s (`jlc_parts_snapshot.jsonl`)." % stamp,
              "Nothing here has been ordered. Re-run `tools/jlc_lookup.py` and this script before ordering.", "",
              "## Blocking", ""]
@@ -188,12 +188,18 @@ def blockers(rows, snap):
     lines += ["- %s: %s (%s)" % (r["Designator"], r["MPN"], r["LCSC Part #"]) for r in ext]
     n_tp = sum(1 for p in D.PARTS if p["ref"].startswith("TP"))
     lines += ["", "## Checks that need a person", "",
-              "- Placement preview: every line of `orientation_check.md` (holders, diodes, LED, ICs, MOSFETs).",
-              "- Holders BT1/BT2 (Keystone 1060TR): the + retainer side must match the silkscreen '+' mark.",
-              "- J1 and JP1 are not fitted / not in the BOM (debug only).",
+              "- Placement preview: every line of `orientation_check.md` (holder, electrolytic, LED, ICs, "
+              "MOSFETs).",
+              "- Holder BT1 (MYOUNG BS-24-B4AA016): its + terminal must sit on pad 1, at the silkscreen '+' "
+              "(right). The footprint is drawn from the LCSC datasheet; compare it with a real part first "
+              "(docs/assembly.md).",
+              "- C5 (470 uF electrolytic): + pad up, towards the converter; reversed, it leaks heavily, drains the cell "
+              "and degrades.",
+              "- J1 is not fitted / not in the BOM (debug pads only).",
               "- Test pads TP1..TP%d (silkscreen shows their net names) and fiducials have no parts." % n_tp,
               "- PCB options: 2 layers, 1.6 mm FR-4, 1 oz, tented vias (set in the board file), "
-              "lead-free HASL or ENIG. The SHT40 tongue is cut by two 1 mm slots (routed, not V-cut).",
+              "lead-free HASL or ENIG. The SHT40 tongue is cut free by a 1 mm L-shaped slot that "
+              "opens into the antenna notch (routed, not V-cut).",
               "- Nothing here proves the design works: see docs/test_plan.md (no prototype has been built)."]
     with open(os.path.join(OUT, "manufacturing_blockers.md"), "w") as f:
         f.write("\n".join(lines) + "\n")

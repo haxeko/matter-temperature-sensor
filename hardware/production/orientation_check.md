@@ -7,17 +7,12 @@ side. If it does not, correct the rotation in JLC's tool (not in KiCad) and reco
 
 | Ref | Value | KiCad rotation | Pad 1 | Pad 1 direction | Pad 1 offset X, Y (mm) |
 |---|---|---|---|---|---|
-| BT1 | CR2032 holder | 180 | pad 1 = + contact (retainer side) | right | 14.65, -0.00 |
-| BT2 | CR2032 holder | 180 | pad 1 = + contact (retainer side) | right | 14.65, -0.00 |
-| D1 | B5819W | 270 | pad 1 = cathode (bar) | up | 0.00, 1.65 |
-| D2 | B5819W | 270 | pad 1 = cathode (bar) | up | 0.00, 1.65 |
+| BT1 | CR2450 holder | 0 | pad 1 = + terminal (silkscreen '+') | right | 16.68, -0.00 |
+| C5 | 470uF | 270 | pad 1 = + (base-plate chamfers on this side; the can marking is on the - side) | up | 0.00, 2.70 |
 | D3 | red | 90 | pad 1 = cathode | down | 0.00, -0.79 |
-| Q1 | AO3401A | 180 | pin 1 (gate) | right / down | 0.94, -0.95 |
-| Q2 | AO3401A | 180 | pin 1 (gate) | right / down | 0.94, -0.95 |
+| Q1 | AO3401A | 0 | pin 1 (gate) | left / up | -0.94, 0.95 |
 | Q3 | 2N7002 | 90 | pin 1 (gate) | left / down | -0.95, -0.94 |
-| Q4 | 2N7002 | 90 | pin 1 (gate) | left / down | -0.95, -0.94 |
-| U1 | TPS63900DSKR | 90 | pin 1 | left / down | -1.00, -1.21 |
-| U2 | TPS63900DSKR | 90 | pin 1 | left / down | -1.00, -1.21 |
+| U1 | TPS63900DSKR | 270 | pin 1 | right / up | 1.00, 1.21 |
 | U3 | TPS3839K33DBZR | 0 | pin 1 | left / up | -0.94, 0.95 |
 | U4 | ESP32-H2-MINI-1-H4S | 0 | pin 1 | left / up | -5.90, 1.30 |
-| U5 | SHT40-AD1B-R3 | 270 | pin 1 | right / up | 0.40, 0.70 |
+| U5 | SHT40-AD1B-R3 | 0 | pin 1 | left / up | -0.70, 0.40 |

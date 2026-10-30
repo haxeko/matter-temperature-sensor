@@ -1,18 +1,21 @@
 /*
- * Battery state estimation for 2 x CR2032, one TPS63900 per cell (pure C).
+ * Battery state estimation for one CR2450 behind one TPS63900 (pure C).
  *
- * What is measured: each cell's terminal voltage (VBAT1, VBAT2) through its
- * own switched divider while the chip is awake for the measurement (~10 mA at
- * the rail). The converter with the higher set point carries that load, so
- * its cell reads lower than its rest voltage; the other cell reads close to
- * its rest voltage. The estimate below is therefore an indication, not a
- * fuel gauge, and its thresholds are bring-up tunables (Kconfig).
+ * What is measured: the cell's terminal voltage (VBAT) through a switched
+ * divider while the chip is awake for the measurement. The cell carries that
+ * load through the converter, so it reads below its rest voltage by the load
+ * current times its internal resistance, which grows with age and with cold.
+ * The estimate below is therefore an indication, not a fuel gauge, and its
+ * thresholds are bring-up tunables (Kconfig).
  *
  * Li-MnO2 coin cells have a flat voltage curve; end of life under radio
  * bursts is set by internal resistance (TI SWRA349), which a voltage reading
- * does not see. The power model (docs/power_budget.md) predicts that bursts
- * start to fail while a large part of the pack capacity is still left, so the
+ * does not see. The power model (docs/power_budget.md) predicts that reports
+ * start to fail while a large part of the capacity is still left, so the
  * Warning/Critical thresholds are deliberately high.
+ *
+ * The logic keeps per-position arrays (BAT_CELL_COUNT; Rev A had two cells).
+ * With one cell the pack is that cell.
  */
 #pragma once
 
@@ -23,7 +26,7 @@
 extern "C" {
 #endif
 
-#define BAT_CELL_COUNT 2
+#define BAT_CELL_COUNT 1
 
 /* Values match Matter PowerSource BatChargeLevelEnum. */
 typedef enum {
@@ -35,7 +38,7 @@ typedef enum {
 typedef struct {
     uint16_t present_mv;       /* a cell is present above this voltage */
     uint8_t warn_enter_half;   /* pack charge (half-percent) below which -> WARNING */
-    uint8_t warn_exit_half;    /* back to OK at/above this (and both cells present) */
+    uint8_t warn_exit_half;    /* back to OK at/above this (and every cell present) */
     uint8_t crit_enter_half;   /* pack charge below which -> CRITICAL */
     uint8_t crit_exit_half;    /* CRITICAL -> WARNING at/above this */
     uint16_t crit_cell_mv;     /* best cell below this -> CRITICAL regardless of charge */
@@ -54,7 +57,7 @@ typedef struct {
     uint8_t cell_half_pct[BAT_CELL_COUNT];
     uint8_t cells_present;
     uint16_t best_mv;          /* highest present cell, 0 if none */
-    uint8_t pack_half_pct;     /* mean over both positions, an empty position counts 0 */
+    uint8_t pack_half_pct;     /* mean over all positions, an empty position counts 0 */
 } bat_pack_t;
 
 typedef struct {
@@ -72,7 +75,9 @@ uint8_t bat_filter_half_percent(bool have_last, uint8_t last, uint8_t fresh);
 void bat_pack_from_cells(bat_pack_t *out, const uint32_t cell_mv[BAT_CELL_COUNT], uint16_t present_mv);
 
 /* Charge level of the pack with hysteresis; the first call classifies directly.
- * A missing cell is at least WARNING (one cell cannot carry the radio bursts). */
+ * No cell present is CRITICAL; with BAT_CELL_COUNT > 1 a missing cell is at least
+ * WARNING. With one cell and no other supply, "no cell" while running means the
+ * reading is wrong (divider, switch or ADC fault), which CRITICAL also flags. */
 bat_level_t bat_pack_update(bat_state_t *st, const bat_policy_t *pol, const bat_pack_t *pack);
 
 #ifdef __cplusplus

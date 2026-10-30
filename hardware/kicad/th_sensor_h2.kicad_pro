@@ -137,39 +137,19 @@
     "netclass_patterns": [
       {
         "netclass": "Power",
-        "pattern": "VBAT1"
+        "pattern": "VBAT"
       },
       {
         "netclass": "Power",
-        "pattern": "VBAT2"
+        "pattern": "VBAT_L"
       },
       {
         "netclass": "Power",
-        "pattern": "VBAT1_L"
+        "pattern": "VIN"
       },
       {
         "netclass": "Power",
-        "pattern": "VBAT2_L"
-      },
-      {
-        "netclass": "Power",
-        "pattern": "VIN1"
-      },
-      {
-        "netclass": "Power",
-        "pattern": "VIN2"
-      },
-      {
-        "netclass": "Power",
-        "pattern": "VOUT1"
-      },
-      {
-        "netclass": "Power",
-        "pattern": "VOUT2"
-      },
-      {
-        "netclass": "Power",
-        "pattern": "3V3_PWR"
+        "pattern": "VOUT"
       },
       {
         "netclass": "Power",
@@ -181,19 +161,11 @@
       },
       {
         "netclass": "Power",
-        "pattern": "LX1_1"
+        "pattern": "LX1"
       },
       {
         "netclass": "Power",
-        "pattern": "LX2_1"
-      },
-      {
-        "netclass": "Power",
-        "pattern": "LX1_2"
-      },
-      {
-        "netclass": "Power",
-        "pattern": "LX2_2"
+        "pattern": "LX2"
       }
     ]
   },
@@ -212,7 +184,7 @@
     ]
   ],
   "text_variables": {
-    "REV": "A",
-    "DATE": "2026-10-29"
+    "REV": "B",
+    "DATE": "2026-10-30"
   }
 }

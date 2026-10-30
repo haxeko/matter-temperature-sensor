@@ -128,7 +128,7 @@ void power_guard_init(void)
     } else {
         ESP_LOGE(TAG, "NVS unavailable (%s): boot guard disabled for this boot", esp_err_to_name(err));
     }
-    ESP_LOGI(TAG, "reset reason: %s, boot #%lu, unstable boots %u (last best cell %u mV)",
+    ESP_LOGI(TAG, "reset reason: %s, boot #%lu, unstable boots %u (last cell reading %u mV)",
              power_guard_reset_reason_str(s_reason), (unsigned long)s_rtc.boots, s_state.unstable_boots,
              s_state.last_best_mv);
 }
@@ -161,7 +161,7 @@ void power_guard_check(bool have_mv, uint32_t best_cell_mv)
     state_save();
     switch (d.action) {
     case GP_SLEEP_LOW_BATTERY:
-        ESP_LOGW(TAG, "best cell %u mV < %d mV", mv, CONFIG_APP_BOOT_MIN_CELL_MV);
+        ESP_LOGW(TAG, "cell %u mV < %d mV", mv, CONFIG_APP_BOOT_MIN_CELL_MV);
         guard_sleep(d.sleep_s, "battery too low to start the radio");
         break;
     case GP_SLEEP_UNSTABLE:

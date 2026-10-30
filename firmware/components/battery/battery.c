@@ -19,10 +19,9 @@ static const char *TAG = "battery";
 #define VBAT_ADC_ATTEN    ADC_ATTEN_DB_6  /* 0..~1.9 V, enough for 3.6 V / 2 */
 #define VBAT_SAMPLES      8
 
-static const adc_channel_t k_channels[BATTERY_CELLS] = {ADC_CHANNEL_4, ADC_CHANNEL_3};
+static const adc_channel_t k_channels[BATTERY_CELLS] = {ADC_CHANNEL_4};
 
-_Static_assert(BOARD_GPIO_VBAT1_SENSE == 5 && BOARD_VBAT1_ADC_CHANNEL == 4, "GPIO5 = ADC1_CH4");
-_Static_assert(BOARD_GPIO_VBAT2_SENSE == 4 && BOARD_VBAT2_ADC_CHANNEL == 3, "GPIO4 = ADC1_CH3");
+_Static_assert(BOARD_GPIO_VBAT_SENSE == 5 && BOARD_VBAT_ADC_CHANNEL == 4, "GPIO5 = ADC1_CH4");
 
 static esp_err_t cali_create(adc_channel_t chan, adc_cali_handle_t *out)
 {
@@ -126,8 +125,7 @@ esp_err_t battery_measure(battery_reading_t *out)
         }
     }
     if (err == ESP_OK) {
-        ESP_LOGI(TAG, "VBAT1 %lu mV, VBAT2 %lu mV (%u samples each)", (unsigned long)out->cell_mv[0],
-                 (unsigned long)out->cell_mv[1], out->samples);
+        ESP_LOGI(TAG, "VBAT %lu mV (%u samples)", (unsigned long)out->cell_mv[0], out->samples);
     }
 
 out:

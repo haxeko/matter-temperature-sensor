@@ -1,20 +1,25 @@
 """
-TH-SENSOR-H2 Rev A - single source of truth for the electrical design.
+TH-SENSOR-H2 Rev B - single source of truth for the electrical design.
+
+Rev B runs from ONE CR2450 (Rev A: two CR2032 with one converter each). The power
+path keeps the Rev A principles: P-MOSFET reverse-polarity protection, one TPS63900
+with a 100 mA input current limit, current-measurement links; the output Schottky is
+gone because there is nothing to OR any more (docs/decisions.md D20).
 
 Every part: reference, symbol, footprint, value, sourcing fields and the net of
 every pin. gen_schematic.py draws the schematic from this table and then
 checks the netlist exported by KiCad against it (parity); gen_pcb.py loads the
 nets from the KiCad netlist.
 
-Sourcing fields were looked up on the JLCPCB parts API on 2026-10-29
+Sourcing fields were looked up on the JLCPCB parts API on 2026-10-29 / 2026-10-30
 (tools/jlc_lookup.py); stock and Basic/Extended status change daily and must be
 re-checked before ordering (docs/assembly.md).
 """
 
 PROJECT = "th_sensor_h2"
 TITLE = "TH-SENSOR-H2 thermo-hygrometer"
-REV = "A"
-DATE = "2026-10-29"
+REV = "B"
+DATE = "2026-10-30"
 
 KSYM = "/usr/share/kicad/symbols/"
 # Espressif KiCad libraries (github.com/espressif/kicad-libraries, git dd76561812ab300351234ba6e0ec1295641796f0).
@@ -26,6 +31,7 @@ ESPRESSIF_LIB = _os.environ.get("ESPRESSIF_KICAD_LIB", "/tmp/claude-0/ext/espres
 SYMBOLS = {
     "Device:R": (KSYM + "Device.kicad_sym", "R"),
     "Device:C": (KSYM + "Device.kicad_sym", "C"),
+    "Device:C_Polarized": (KSYM + "Device.kicad_sym", "C_Polarized"),
     "Device:L": (KSYM + "Device.kicad_sym", "L"),
     "Device:D_Schottky": (KSYM + "Device.kicad_sym", "D_Schottky"),
     "Device:LED": (KSYM + "Device.kicad_sym", "LED"),
@@ -33,8 +39,7 @@ SYMBOLS = {
     "Device:Crystal": (KSYM + "Device.kicad_sym", "Crystal"),
     "Switch:SW_Push": (KSYM + "Switch.kicad_sym", "SW_Push"),
     "Connector:TestPoint": (KSYM + "Connector.kicad_sym", "TestPoint"),
-    "Connector_Generic:Conn_01x07": (KSYM + "Connector_Generic.kicad_sym", "Conn_01x07"),
-    "Jumper:SolderJumper_2_Open": (KSYM + "Jumper.kicad_sym", "SolderJumper_2_Open"),
+    "Connector_Generic:Conn_01x06": (KSYM + "Connector_Generic.kicad_sym", "Conn_01x06"),
     "Regulator_Switching:TPS63900": (KSYM + "Regulator_Switching.kicad_sym", "TPS63900"),
     "Power_Supervisor:TPS3839DBZ": (KSYM + "Power_Supervisor.kicad_sym", "TPS3839DBZ"),
     "Sensor_Humidity:SHT4x": (KSYM + "Sensor_Humidity.kicad_sym", "SHT4x"),
@@ -76,11 +81,11 @@ SRC = {
     "18p": ("C1647", "Samsung", "CL10C180JB8NNNC"),
     "AO3401A": ("C15127", "Alpha & Omega", "AO3401A"),
     "2N7002": ("C8545", "JSCJ", "2N7002"),
-    "B5819W": ("C8598", "JSCJ", "B5819W SL"),
     "TPS63900": ("C1518762", "Texas Instruments", "TPS63900DSKR"),
     "TPS3839K33": ("C96333", "Texas Instruments", "TPS3839K33DBZR"),
     "DFE201612E": ("C337893", "Murata", "DFE201612E-2R2M=P2"),
-    "1060TR": ("C238069", "Keystone", "1060TR"),
+    "BS24SMT": ("C964809", "MYOUNG", "BS-24-B4AA016"),
+    "470u_elec": ("C2901342", "KNSCHA", "RVT470UF6.3V67RV0038"),
     "H2MINI": ("C47967030", "Espressif", "ESP32-H2-MINI-1-H4S"),
     "SHT40": ("C2848306", "Sensirion", "SHT40-AD1B-R3"),
     "FC135": ("C32346", "Seiko Epson", "Q13FC13500004"),
@@ -103,53 +108,46 @@ def part(ref, lib_id, value, footprint, pins, src=None, dnp=False, in_bom=True, 
                       mpn=mpn, dnp=dnp, in_bom=in_bom, on_board=on_board, desc=desc, spec=spec, extra=extra))
 
 
-# ------------------------------------------------------------------ power path, one per cell
-def cell_path(n, o):
-    """Cell n (1/2); o = reference offset (0 / 10)."""
-    vb, vbl, vin, vout = f"VBAT{n}", f"VBAT{n}_L", f"VIN{n}", f"VOUT{n}"
-    part(f"BT{n}", "Device:Battery_Cell", "CR2032 holder", "Battery:BatteryHolder_Keystone_1060_1x2032",
-         {"1": vb, "2": "GND"}, src="1060TR", desc=f"Cell {n}: Keystone 1060 SMT holder (pad 1 = + clip)")
-    part(f"R{1 + o}", "Device:R", "0R", FP_R0805, {"1": vb, "2": vbl}, src="0R_0805",
-         desc=f"Cell {n} current-measurement link (remove, insert ammeter)")
-    part(f"Q{n}", "th_sensor:AO3401A", "AO3401A", FP_SOT23, {"1": "GND", "2": vin, "3": vbl}, src="AO3401A",
-         desc="Reverse-polarity P-MOSFET (body diode forward, Vgs = -Vcell)")
-    part(f"C{1 + o}", "Device:C", "10uF", FP_C0603, {"1": vin, "2": "GND"}, src="10u",
-         spec="10V X5R 0603", desc="TPS63900 input cap, next to VIN")
-    part(f"C{2 + o}", "Device:C", "100uF", FP_C1206, {"1": vin, "2": "GND"}, src="100u_1206",
-         spec="6.3V X5R 1206", desc="Input buffer (coin cell pulse support)")
-    part(f"C{3 + o}", "Device:C", "100uF", FP_C1206, {"1": vin, "2": "GND"}, src="100u_1206",
-         spec="6.3V X5R 1206", desc="Input buffer (coin cell pulse support)")
-    part(f"U{n}", "Regulator_Switching:TPS63900", "TPS63900DSKR",
-         "Package_SON:WSON-10-1EP_2.5x2.5mm_P0.5mm_EP1.2x2mm",
-         {"10": vin, "1": vin, "2": vin, "9": f"LX1_{n}", "7": f"LX2_{n}", "6": vout,
-          "3": f"CFG1_{n}", "4": f"CFG2_{n}", "5": f"CFG3_{n}", "8": "GND", "11": "GND"},
-         src="TPS63900", desc="Buck-boost, SEL=H -> VO(2) = 3.4 V, input current limit 100 mA")
-    part(f"R{2 + o}", "Device:R", "0R", FP_R0603, {"1": f"CFG1_{n}", "2": "GND"}, src="0R_0603",
-         desc="RCFG1: VO(2) = 3.4 V (SLVSET3D table 7-2)")
-    part(f"R{3 + o}", "Device:R", "10.5k", FP_R0603, {"1": f"CFG2_{n}", "2": "GND"}, src="10.5k",
-         spec="1% 100ppm 0603", desc="RCFG2: 100 mA input current limit at VO(2) >= 3.4 V (option 13.3k = 50 mA)")
-    part(f"R{4 + o}", "Device:R", "16.2k", FP_R0603, {"1": f"CFG3_{n}", "2": "GND"}, src="16.2k",
-         spec="1% 100ppm 0603", desc="RCFG3: VO(1) = 3.3 V (unused, SEL tied high)")
-    part(f"L{n}", "Device:L", "2.2uH", "th_sensor:L_Murata_DFE201612E", {"1": f"LX1_{n}", "2": f"LX2_{n}"},
-         src="DFE201612E", desc="2.2 uH, Isat 2.4 A, 116 mOhm")
-    part(f"C{4 + o}", "Device:C", "22uF", FP_C0805, {"1": vout, "2": "GND"}, src="22u_0805",
-         spec="25V X5R 0805", desc="TPS63900 output cap, next to VOUT")
-    part(f"D{n}", "Device:D_Schottky", "B5819W", "Diode_SMD:D_SOD-123", {"1": "3V3_PWR", "2": vout},
-         src="B5819W", desc="Output OR-ing; second barrier against charging a cell")
+# ------------------------------------------------------------------ power path (one CR2450)
+part("BT1", "Device:Battery_Cell", "CR2450 holder", "th_sensor:BatteryHolder_MYOUNG_BS-24-B4AA016_1x2450",
+     {"1": "VBAT", "2": "GND"}, src="BS24SMT",
+     desc="CR2450 SMT holder, gold-plated contacts, LCP housing (pad 1 = +)")
+part("R1", "Device:R", "0R", FP_R0805, {"1": "VBAT", "2": "VBAT_L"}, src="0R_0805",
+     desc="Cell current-measurement link (remove, insert ammeter)")
+part("Q1", "th_sensor:AO3401A", "AO3401A", FP_SOT23, {"1": "GND", "2": "VIN", "3": "VBAT_L"}, src="AO3401A",
+     desc="Reverse-polarity P-MOSFET (body diode forward, Vgs = -Vcell)")
+part("C1", "Device:C", "10uF", FP_C0603, {"1": "VIN", "2": "GND"}, src="10u",
+     spec="10V X5R 0603", desc="TPS63900 input cap, next to VIN")
+part("C2", "Device:C", "100uF", FP_C1206, {"1": "VIN", "2": "GND"}, src="100u_1206",
+     spec="6.3V X5R 1206", desc="Input buffer (coin cell pulse support)")
+part("C3", "Device:C", "100uF", FP_C1206, {"1": "VIN", "2": "GND"}, src="100u_1206",
+     spec="6.3V X5R 1206", desc="Input buffer (coin cell pulse support)")
+part("C5", "Device:C_Polarized", "470uF", "Capacitor_SMD:CP_Elec_6.3x7.7", {"1": "VIN", "2": "GND"},
+     src="470u_elec", spec="6.3V Al electrolytic 6.3x7.7mm",
+     desc="Bulk input buffer: reports survive mid-life / cold cells (power model, ESTIMATE); leakage to be measured")
+part("U1", "Regulator_Switching:TPS63900", "TPS63900DSKR", "Package_SON:WSON-10-1EP_2.5x2.5mm_P0.5mm_EP1.2x2mm",
+     {"10": "VIN", "1": "VIN", "2": "GND", "9": "LX1", "7": "LX2", "6": "VOUT",
+      "3": "CFG1", "4": "CFG2", "5": "CFG3", "8": "GND", "11": "GND"},
+     src="TPS63900", desc="Buck-boost, SEL=L -> VO(1) = 3.3 V, input current limit 100 mA")
+part("R2", "Device:R", "0R", FP_R0603, {"1": "CFG1", "2": "GND"}, src="0R_0603",
+     desc="RCFG1 (SLVSET3D table 7-2 row RCFG1 = 0 Ohm)")
+part("R3", "Device:R", "10.5k", FP_R0603, {"1": "CFG2", "2": "GND"}, src="10.5k",
+     spec="1% 100ppm 0603", desc="RCFG2: 100 mA input current limit (table 7-2; option 13.3k = 50 mA)")
+part("R4", "Device:R", "16.2k", FP_R0603, {"1": "CFG3", "2": "GND"}, src="16.2k",
+     spec="1% 100ppm 0603", desc="RCFG3: VO(1) = 3.3 V (table 7-3), selected by SEL = low")
+part("L1", "Device:L", "2.2uH", "th_sensor:L_Murata_DFE201612E", {"1": "LX1", "2": "LX2"},
+     src="DFE201612E", desc="2.2 uH, Isat 2.4 A, 116 mOhm")
+part("C4", "Device:C", "22uF", FP_C0805, {"1": "VOUT", "2": "GND"}, src="22u_0805",
+     spec="25V X5R 0805", desc="TPS63900 output cap, next to VOUT")
 
-
-cell_path(1, 0)
-cell_path(2, 10)
 
 # ------------------------------------------------------------------ 3V3 rail, supervisor, reset
-part("C21", "Device:C", "100uF", FP_C1206, {"1": "3V3_PWR", "2": "GND"}, src="100u_1206",
+part("C21", "Device:C", "100uF", FP_C1206, {"1": "VOUT", "2": "GND"}, src="100u_1206",
      spec="6.3V X5R 1206", desc="Rail bulk")
-part("C22", "Device:C", "100uF", FP_C1206, {"1": "3V3_PWR", "2": "GND"}, src="100u_1206",
+part("C22", "Device:C", "100uF", FP_C1206, {"1": "VOUT", "2": "GND"}, src="100u_1206",
      spec="6.3V X5R 1206", desc="Rail bulk")
-part("R21", "Device:R", "0R", FP_R0805, {"1": "3V3_PWR", "2": "+3V3"}, src="0R_0805",
+part("R21", "Device:R", "0R", FP_R0805, {"1": "VOUT", "2": "+3V3"}, src="0R_0805",
      desc="Load current-measurement link (module, sensor, LED, supervisor)")
-part("JP1", "Jumper:SolderJumper_2_Open", "DEBUG_PWR", "Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm",
-     {"1": "3V3_DBG", "2": "3V3_PWR"}, in_bom=False, desc="Close to power the board from J1 pin 6 (<= 3.6 V, cells removed)")
 part("U3", "Power_Supervisor:TPS3839DBZ", "TPS3839K33DBZR", FP_SOT23, {"3": "+3V3", "1": "GND", "2": "nRST"},
      src="TPS3839K33", desc="2.93 V supervisor, push-pull, 200 ms delay")
 part("C26", "Device:C", "100nF", FP_C0603, {"1": "+3V3", "2": "GND"}, src="100n", desc="U3 bypass")
@@ -162,7 +160,7 @@ part("SW2", "Switch:SW_Push", "RST", "Button_Switch_SMD:SW_Push_1P1T_XKB_TS-1187
 # ------------------------------------------------------------------ module
 part("U4", "th_sensor:ESP32-H2-MINI-1", "ESP32-H2-MINI-1-H4S", "th_sensor:ESP32-H2-MINI-1",
      {"3": "+3V3", "15": "+3V3", "8": "EN",
-      "16": "VBAT_MEAS_EN", "19": "VBAT1_SENSE", "18": "VBAT2_SENSE",
+      "16": "VBAT_MEAS_EN", "19": "VBAT_SENSE", "18": None,
       "12": "XTAL_32K_P", "13": "XTAL_32K_N",
       "20": "I2C_SDA", "21": "I2C_SCL", "24": "LED", "22": "STRAP_GPIO8", "23": "BTN_USER",
       "26": "USB_DM", "27": "USB_DP", "30": "U0RXD", "31": "U0TXD",
@@ -188,10 +186,9 @@ part("D3", "Device:LED", "red", "LED_SMD:LED_0603_1608Metric", {"1": "GND", "2":
      desc="Status LED")
 part("R28", "Device:R", "22R", FP_R0603, {"1": "USB_DM", "2": "USB_DM_J"}, src="22R", desc="USB D- series")
 part("R29", "Device:R", "22R", FP_R0603, {"1": "USB_DP", "2": "USB_DP_J"}, src="22R", desc="USB D+ series")
-part("J1", "Connector_Generic:Conn_01x07", "DEBUG", "Connector_PinHeader_2.54mm:PinHeader_1x07_P2.54mm_Vertical",
-     {"1": "U0TXD", "2": "U0RXD", "3": "USB_DP_J", "4": "USB_DM_J", "5": "BTN_USER", "6": "3V3_DBG",
-      "7": "GND"}, dnp=True,
-     desc="Debug/programming pads (not fitted): 1 TX 2 RX 3 D+ 4 D- 5 BOOT 6 3V3_DBG 7 GND")
+part("J1", "Connector_Generic:Conn_01x06", "DEBUG", "Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical",
+     {"1": "U0TXD", "2": "U0RXD", "3": "USB_DP_J", "4": "USB_DM_J", "5": "BTN_USER", "6": "GND"}, dnp=True,
+     desc="Debug/programming pads (not fitted): 1 TX 2 RX 3 D+ 4 D- 5 BOOT 6 GND; board powered by the cell")
 
 # ------------------------------------------------------------------ sensor
 part("U5", "Sensor_Humidity:SHT4x", "SHT40-AD1B-R3",
@@ -202,20 +199,16 @@ part("R26", "Device:R", "10k", FP_R0603, {"1": "+3V3", "2": "I2C_SDA"}, src="10k
 part("R27", "Device:R", "10k", FP_R0603, {"1": "+3V3", "2": "I2C_SCL"}, src="10k", desc="I2C pull-up")
 
 # ------------------------------------------------------------------ cell voltage sense
-for n, o in ((1, 0), (2, 2)):
-    part(f"R{31 + o}", "Device:R", "470k", FP_R0603, {"1": f"VBAT{n}", "2": f"VBAT{n}_SENSE"}, src="470k",
-         desc="Divider top")
-    part(f"R{32 + o}", "Device:R", "470k", FP_R0603, {"1": f"VBAT{n}_SENSE", "2": f"SNS{n}_LO"}, src="470k",
-         desc="Divider bottom")
-    part(f"C{31 + n - 1}", "Device:C", "22nF", FP_C0603, {"1": f"VBAT{n}_SENSE", "2": "GND"}, src="22n",
-         desc="ADC hold cap, tau 5.2 ms")
-    part(f"Q{2 + n}", "th_sensor:2N7002", "2N7002", FP_SOT23, {"1": "VBAT_MEAS_EN", "2": "GND", "3": f"SNS{n}_LO"},
-         src="2N7002", desc="Divider low-side switch")
+part("R31", "Device:R", "470k", FP_R0603, {"1": "VBAT", "2": "VBAT_SENSE"}, src="470k", desc="Divider top")
+part("R32", "Device:R", "470k", FP_R0603, {"1": "VBAT_SENSE", "2": "SNS_LO"}, src="470k", desc="Divider bottom")
+part("C31", "Device:C", "22nF", FP_C0603, {"1": "VBAT_SENSE", "2": "GND"}, src="22n", desc="ADC hold cap, tau 5.2 ms")
+part("Q3", "th_sensor:2N7002", "2N7002", FP_SOT23, {"1": "VBAT_MEAS_EN", "2": "GND", "3": "SNS_LO"},
+     src="2N7002", desc="Divider low-side switch")
 part("R35", "Device:R", "1M", FP_R0603, {"1": "VBAT_MEAS_EN", "2": "GND"}, src="1M",
-     desc="Keeps the sense switches off in reset/sleep")
+     desc="Keeps the sense switch off in reset/sleep")
 
 # ------------------------------------------------------------------ test points, mechanics
-TEST_PADS = ["VBAT1", "VBAT2", "VIN1", "VIN2", "VOUT1", "VOUT2", "3V3_PWR", "+3V3", "GND", "GND", "EN"]
+TEST_PADS = ["VBAT", "VIN", "VOUT", "+3V3", "GND", "EN"]
 for i, net in enumerate(TEST_PADS, 1):
     part(f"TP{i}", "Connector:TestPoint", net.replace("+", ""), "TestPoint:TestPoint_Pad_D1.5mm", {"1": net},
          in_bom=False, desc="Test pad")
