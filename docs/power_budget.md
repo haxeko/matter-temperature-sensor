@@ -94,7 +94,7 @@ Mô hình: mạch tương đương cell (OCV − I·R − 2 phân cực RC), P-M
 
 ### 4.2 Tụ đệm tối thiểu (461 µF, tụ điện phân −20 %)
 
-Khác với 4.1 ở: giữa đời 0 °C và giữa đời −10 °C report bị **RESET**; mới −10 °C report còn ổn nhưng VIN xuống 1.68 V (sát UVLO 1.65 V).
+Khác với 4.1 ở: giữa đời 0 °C report bị **RESET**; mới −10 °C report còn ổn nhưng VIN xuống 1.68 V (sát UVLO 1.65 V).
 
 ### 4.3 Độ nhạy theo điện trở CR2450
 
@@ -152,7 +152,7 @@ Tụ điện phân có dòng rò: datasheet chỉ cho giới hạn ở điện �
 | Lắp ngược cell | — | P-MOSFET chặn | CHƯA KIỂM THỬ (T-03) |
 | Nguồn bench và pin cùng lúc | nguồn bench nạp ngược vào cell | quy trình: luôn tháo pin trước khi cấp nguồn vào TP1; J1 không có chân nguồn, cắm USB không cấp điện cho bo | quy trình, không có rào cản phần cứng |
 | Rò tụ điện phân | 0–5 µA (≤ 8 % ngân sách) | đo T-39; thay loại tụ nếu vượt | ƯỚC TÍNH |
-| Phần trăm pin | suy từ điện áp, lạc quan ở giữa đời (khoảng 90 % trong khi mô hình dự đoán đã không khởi động lại được) | BatChargeLevel Warning < 40 %, Critical < 20 % hoặc cell < 2.6 V; ngưỡng là tham số Kconfig, chỉnh sau T-35 | ƯỚC TÍNH |
+| Phần trăm pin | suy từ điện áp đo khi chip thức (tải nhẹ, sụt I·R ~0.1 V ở giữa đời); ở giữa đời số này còn quanh 50 % (bảng điện áp → phần trăm trong `firmware/components/app_logic/battery_model.c`) trong khi mô hình dự đoán đã không khởi động lại được | BatChargeLevel Warning < 40 %, Critical < 20 % hoặc cell < 2.6 V; ngưỡng là tham số Kconfig, chỉnh sau T-35/T-37 | ƯỚC TÍNH |
 
 ## 7. Phương án dự phòng nếu đo thực tế xác nhận "CHƯA ĐẠT"
 

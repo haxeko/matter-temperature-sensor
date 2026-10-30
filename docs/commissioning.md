@@ -1,4 +1,4 @@
-# Commissioning (ghép thiết bị vào mạng Matter) — TH-SENSOR-H2 Rev A
+# Commissioning (ghép thiết bị vào mạng Matter) — TH-SENSOR-H2 Rev B
 
 **Trạng thái: CHƯA KIỂM THỬ** trên phần cứng thật. Các lệnh và API dưới đây đã có trong firmware và build thành công (ĐÃ XÁC MINH ở mức build), nhưng chưa ghép với controller nào.
 
@@ -7,7 +7,7 @@
 - Một **Thread Border Router** hoạt động (ví dụ OpenThread Border Router trên Raspberry Pi với RCP 802.15.4) và một **Matter controller**.
 - Với bản build phát triển (mục 2): một controller cho phép thiết bị dùng **test VID/PID và test DAC**. Cách chắc chắn nhất để thử lần đầu là `chip-tool` của dự án connectedhomeip cùng một OTBR.
 - **Không giả định** rằng hub/ứng dụng thương mại (Apple Home, Google Home, Amazon Alexa, SmartThings, Home Assistant…) sẽ chấp nhận firmware tự build này. Nhiều hệ sinh thái chỉ nhận thiết bị đã chứng nhận, hoặc yêu cầu bật chế độ nhà phát triển và khai báo VID/PID thử nghiệm. Kết quả với từng hệ sinh thái phải được kiểm và ghi lại (T-20).
-- **Pin mới.** Mô hình năng lượng dự đoán commissioning bị reset khi pin đã dùng khoảng một nửa, hoặc ở ≤ 10 °C (`docs/power_budget.md`, ƯỚC TÍNH). Có thể commission bằng nguồn bench: hàn JP1 và cấp 3.0–3.3 V vào J1 pin 6 (3V3_DBG), **tháo pin ra trước**.
+- **CR2450 mới, ở nhiệt độ phòng.** Mô hình năng lượng dự đoán commissioning bị reset khi pin đã dùng khoảng một nửa, ở 10 °C với profile tải bi quan, và ở ≤ 0 °C với mọi profile (`docs/power_budget.md`, ƯỚC TÍNH). Có thể commission bằng nguồn bench: **tháo pin ra trước**, rồi cấp 3.0 V (giới hạn ~150 mA) vào TP1 (VBAT, cực +) và TP5 (GND). Nguồn bench đi qua đúng P-MOSFET và bộ chuyển đổi như pin. Fabric và Thread dataset nằm trong NVS nên còn nguyên khi tắt nguồn bench và lắp pin vào; thiết bị khởi động lại bằng pin (pin mới thì khởi động được theo mô hình).
 
 ## 2. Bản build phát triển (mặc định)
 
@@ -67,6 +67,7 @@ Thêm lớp phủ `firmware/sdkconfig.defaults.prod` khi build (sau `sdkconfig.d
 |---|---|
 | Điện thoại không thấy thiết bị qua BLE | cửa sổ đã đóng sau 180 s → nhấn 3 lần; thiết bị đã có fabric → chỉ quảng bá DNS-SD, hãy dùng controller đã ghép để chia sẻ |
 | Ghép dừng ở bước Thread | border router, dataset đúng, khoảng cách tới border router |
-| Thiết bị khởi động lại trong lúc ghép | pin yếu/lạnh (xem mục 1); thử pin mới hoặc nguồn bench |
+| Thiết bị khởi động lại trong lúc ghép | pin yếu/lạnh (xem mục 1); thử pin mới ở nhiệt độ phòng hoặc nguồn bench (đã tháo pin) |
+| Thiết bị không lên lại sau khi nhấn RST hay sau một lần reset | theo mô hình, khi pin đã dùng khoảng một nửa thì không khởi động lại được (`docs/power_budget.md` mục 4); thay CR2450 mới |
 | Giá trị nhiệt/ẩm là null | cảm biến lỗi ≥ 3 lần liên tiếp; xem `status` trên console |
 | Sau khi mất border router thiết bị không báo cáo | firmware tự gắn lại Thread với backoff của OpenThread; không tự factory reset và không tự mở BLE |

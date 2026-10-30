@@ -1,13 +1,15 @@
-# TH-SENSOR-H2 — nhiệt ẩm kế Matter over Thread (ESP32-H2, 2 × CR2032)
+# TH-SENSOR-H2 — nhiệt ẩm kế Matter over Thread (ESP32-H2, 1 × CR2450)
 
-Thiết kế firmware và phần cứng (Rev A) cho một nhiệt ẩm kế không màn hình:
+Thiết kế firmware và phần cứng (Rev B) cho một nhiệt ẩm kế không màn hình:
 
 - module **ESP32-H2-MINI-1-H4S** (4 MB flash, anten PCB), **Matter over Thread** (Sleepy End Device, ICD SIT), BLE chỉ dùng khi commissioning;
 - cảm biến **SHT40-AD1B-R3** trên một "lưỡi" PCB tách nhiệt, đo mỗi 60 s;
-- nguồn **2 × CR2032 song song, cách ly theo từng cell**: mỗi cell một P-MOSFET chống ngược cực và một bộ buck-boost TPS63900 (3.4 V), hai đầu ra OR qua Schottky;
+- nguồn **1 × CR2450** (holder SMT): P-MOSFET chống ngược cực, một bộ buck-boost TPS63900 ra 3.3 V, tụ đệm đầu vào 10 µF + 2 × 100 µF + 470 µF;
 - một nút USER, một nút RST, một LED; không màn hình.
 
-Firmware dùng ESP-IDF thuần (ESP-Matter chính thức, FreeRTOS, `i2c_master`, ADC có hiệu chuẩn, NVS, power management). PCB là KiCad 9 gốc, 2 lớp, 72 × 58 mm, sinh hoàn toàn bằng script trong `hardware/scripts/`.
+Firmware dùng ESP-IDF thuần (ESP-Matter chính thức, FreeRTOS, `i2c_master`, ADC có hiệu chuẩn, NVS, power management). PCB là KiCad 9 gốc, 2 lớp, 41.5 × 57.5 mm, sinh hoàn toàn bằng script trong `hardware/scripts/`.
+
+Rev B thay Rev A (2 × CR2032, bo 72 × 58 mm) theo yêu cầu chỉ dùng một pin và bo gọn hơn; Rev A còn trong lịch sử git. Lý do chọn CR2450 thay vì một CR2032: `docs/decisions.md` D20.
 
 ## Trạng thái — đọc trước
 
@@ -31,24 +33,24 @@ Chưa có đơn đặt PCB hay linh kiện nào. Chưa đo dòng, chưa ghép Ma
 
 ## Cảnh báo chính
 
-1. **Thiết kế nguồn CHƯA ĐẠT** (ƯỚC TÍNH): theo mô hình, commissioning bị reset khi pin đã dùng khoảng một nửa (25 °C) hoặc khi lạnh (≤ 0 °C ngay cả với pin mới); khởi động/report thất bại gần cuối đời pin, khi lạnh, hoặc khi chỉ còn một cell. Tuổi thọ ở 65 µA trung bình: **0.35–0.58 năm, không phải 1–2 năm**. Phương án dự phòng (chưa áp dụng): `docs/power_budget.md` mục 7. Thiết kế không tự đổi sang pin khác.
-2. **ESP32-H2-MINI-1-H4S tồn kho JLC = 0** (tra ngày 2026-10-29) — chặn lắp ráp toàn bộ tại JLC; xem `docs/assembly.md`.
+1. **Thiết kế nguồn CHƯA ĐẠT** (ƯỚC TÍNH): theo mô hình, với CR2450 mới ở 25 °C mọi tải đều ổn, nhưng **khởi động và commissioning bị reset khi pin đã dùng khoảng một nửa** hoặc khi ≤ 0 °C (ngay cả pin mới). Từ giữa đời, một lần reset bất kỳ có thể làm thiết bị ngừng hoạt động tới khi thay pin; report hỏng khi pin gần cuối đời. Commission bằng pin mới ở nhiệt độ phòng. Tuổi thọ ở ~64 µA trung bình: **khoảng 0.55–0.77 năm, không phải 1–2 năm**. Điện trở xung của CR2450 là ước tính (không có số liệu công bố) và là rủi ro lớn nhất — đo trước khi làm nhiều bo (T-35). Phương án dự phòng (chưa áp dụng): `docs/power_budget.md` mục 7. Thiết kế không tự đổi sang pin khác.
+2. **ESP32-H2-MINI-1-H4S tồn kho JLC = 0** (tra ngày 2026-10-29 và 2026-10-30) — chặn lắp ráp toàn bộ tại JLC; xem `docs/assembly.md`. Footprint holder CR2450 là footprint tự vẽ theo bản vẽ của nhà sản xuất: so với holder thật trước khi đặt PCB.
 3. **Dữ liệu Matter thử nghiệm**: bản build mặc định dùng VID 0xFFF1 / PID 0x8000, passcode 20202021, discriminator 3840, DAC thử nghiệm — chỉ để phát triển, không bao giờ giao thiết bị như vậy.
 4. **Không giả định** Apple Home, Google Home, Alexa, SmartThings, Home Assistant… sẽ chấp nhận firmware tự build này; thử lần đầu bằng `chip-tool` + OpenThread Border Router (`docs/commissioning.md`).
 5. **Không bao giờ sao chép** toàn bộ flash/NVS, Thread dataset hay thông tin xác thực giữa các thiết bị.
-6. **Chỉ dùng CR2032, không sạc** (in trên silkscreen: "CR2032 ONLY" / "NO CHARGE", cực + cạnh mỗi holder). Rev A không có điện trở bảo vệ nối tiếp theo khuyến nghị Panasonic — xem `docs/limitations.md` mục 3.
+6. **Chỉ dùng CR2450, không sạc** (silkscreen mặt trên: "CR2450 ONLY" / "NO CHARGE" phía trên holder, dấu + và − ở hai đầu holder; mặt dưới: "CR2450 ONLY - NO CHARGE"). **Không bao giờ cấp nguồn bench khi pin đang nằm trong holder** — bo không có diode hay điện trở bảo vệ nối tiếp; xem `docs/limitations.md` mục 3.
 
 ## Sơ đồ khối
 
 ```
-CR2032 #1 ─ R1  0R ─ Q1 AO3401A ─ U1 TPS63900 (3.4 V) ─ D1 B5819W ─┐
-            (đo dòng)  (chống ngược)                               ├─ 3V3_PWR ─ R21 0R ─ +3V3
-CR2032 #2 ─ R11 0R ─ Q2 AO3401A ─ U2 TPS63900 (3.4 V) ─ D2 B5819W ─┘   2 × 100 µF   (đo dòng tải)
+CR2450 ─ R1 0R ─ Q1 AO3401A ─ VIN ─ U1 TPS63900 (3.3 V) ─ VOUT ─ R21 0R ─ +3V3
+ (BT1)  (đo dòng) (chống ngược)  │                         │     (đo dòng tải)
+                       10 µF + 2 × 100 µF + 470 µF     22 µF + 2 × 100 µF
 
 +3V3 ─┬─ U4 ESP32-H2-MINI-1-H4S ── I2C (GPIO10/11) ── U5 SHT40 (trên lưỡi tách nhiệt)
-      ├─ U3 TPS3839K33 (2.93 V) ─ R22 ─ EN ── SW2 RST, TP11
-      └─ LED (GPIO22), SW1 USER/BOOT (GPIO9), J1 debug (UART0, USB D+/D−)
-VBAT1/VBAT2 ─ 470k/470k (2N7002 đóng bằng GPIO12) ─ ADC1_CH4 (GPIO5) / ADC1_CH3 (GPIO4)
+      ├─ U3 TPS3839K33 (2.93 V) ─ R22 ─ EN ── SW2 RST, TP6
+      └─ LED (GPIO22), SW1 USER/BOOT (GPIO9), J1 debug (UART0, USB D+/D−; không có chân nguồn)
+VBAT ─ 470k/470k (2N7002 đóng bằng GPIO12) ─ ADC1_CH4 (GPIO5)
 ```
 
 Chi tiết và lý do chọn kiến trúc: `docs/architecture.md`, `docs/decisions.md`.
@@ -57,12 +59,12 @@ Chi tiết và lý do chọn kiến trúc: `docs/architecture.md`, `docs/decisio
 
 | Linh kiện | Cấu hình | Nguồn |
 |---|---|---|
-| U1, U2 TPS63900 | SEL = EN = VIN ⇒ VO(2) = 3.4 V; RCFG1 0 Ω, RCFG2 10.5 kΩ (giới hạn dòng vào trung bình 100 mA), RCFG3 16.2 kΩ (VO(1) 3.3 V, không dùng); L 2.2 µH Murata DFE201612E; vào 10 µF + 2 × 100 µF, ra 22 µF | TI SLVSET3D, bảng 7-2/7-3 |
-| Q1, Q2 AO3401A | P-MOSFET chống lắp ngược cell: D phía cell, S phía VIN, G nối GND | |
-| D1, D2 B5819W | OR hai đầu ra, rào cản thứ hai chống dòng ngược vào cell; rail 3.07–3.40 V (ƯỚC TÍNH) | |
+| BT1 MYOUNG BS-24-B4AA016 | holder SMT CR2450, tiếp điểm mạ vàng; pad 1 = + (phải); footprint dự án theo bản vẽ MY-CP-0138 | datasheet LCSC C964809 |
+| U1 TPS63900 | SEL = GND ⇒ VO(1) = 3.3 V (RCFG3 16.2 kΩ); RCFG1 0 Ω + RCFG2 10.5 kΩ ⇒ giới hạn dòng vào trung bình 100 mA; EN = VIN; L 2.2 µH Murata DFE201612E; vào 10 µF + 2 × 100 µF + C5 470 µF điện phân, ra 22 µF | TI SLVSET3D, bảng 7-2/7-3 |
+| Q1 AO3401A | P-MOSFET chống lắp ngược cell: D phía cell, S phía VIN, G nối GND | |
 | U3 TPS3839K33 | ngưỡng 2.93 V, trễ 200 ms, đẩy-kéo, qua R22 10 kΩ tới EN; C25 1 µF | TI SBVS193D |
 | U5 SHT40-AD1B-R3 | I2C địa chỉ 0x44, 100 kHz, kéo lên 10 kΩ; lệnh đo độ lặp cao (0xFD), có kiểm CRC; không bật heater khi đo | Sensirion SHT4x v7.3 |
-| Cầu chia pin | mỗi cell 470 kΩ / 470 kΩ + 22 nF, công tắc 2N7002 phía thấp; GPIO12 bật ~30 ms mỗi 6 h | |
+| Cầu chia pin | 470 kΩ / 470 kΩ + 22 nF từ cực + của holder, công tắc 2N7002 phía thấp; GPIO12 bật ~30 ms mỗi 6 h | |
 | Y1 | 32.768 kHz Epson FC-135 (CL 12.5 pF), tụ tải 18 pF — ƯỚC TÍNH, chỉnh ở T-09 | |
 | U4 | pin map đầy đủ (pad module ↔ GPIO ↔ net), chân strap, chân không dùng | `docs/pinmap.md` |
 
@@ -127,7 +129,7 @@ idf.py -B build_$P -D SDKCONFIG=build_$P/sdkconfig \
 | `debug` | bring-up bằng nguồn bench | log INFO, power guard tắt |
 | `prod` (lớp phủ thêm sau `battery`) | sản xuất, cần dữ liệu factory riêng từng máy | build được; chạy CHƯA KIỂM THỬ — `docs/commissioning.md` mục 5 |
 
-Nạp firmware qua USB-Serial/JTAG trên J1 (D+, D−, GND; header 1×7 không lắp sẵn). Bo phải có nguồn: pin, hoặc **tháo pin** rồi hàn JP1 và cấp 3.0–3.3 V vào J1 pin 6 (3V3_DBG). Vào chế độ download bằng tay: giữ USER (SW1, GPIO9) trong khi nhấn và thả RST (SW2). Trên thiết bị đã có dữ liệu factory, **không** chạy `idf.py erase-flash` (xóa luôn phân vùng `fctry` và `esp_secure_cert`).
+Nạp firmware qua USB-Serial/JTAG trên J1 (D+, D−, GND; 1×6 pad không lắp sẵn). J1 không có chân nguồn: bo phải chạy bằng pin, hoặc **tháo pin** rồi cấp 3.0 V (giới hạn ~150 mA) vào TP1 (VBAT, +) và TP5 (GND). Vào chế độ download bằng tay: giữ USER (SW1, GPIO9) trong khi nhấn và thả RST (SW2). Trên thiết bị đã có dữ liệu factory, **không** chạy `idf.py erase-flash` (xóa luôn phân vùng `fctry` và `esp_secure_cert`).
 
 ### Nút và LED
 
@@ -147,7 +149,7 @@ Chi tiết: `docs/architecture.md` mục 4.4.
 ### Ghép Matter (tóm tắt, CHƯA KIỂM THỬ trên thiết bị)
 
 1. Chuẩn bị một OpenThread Border Router và `chip-tool`; lấy active operational dataset (hex) của mạng Thread.
-2. Dùng **pin mới** hoặc nguồn bench (mô hình dự đoán reset khi commissioning với pin đã dùng một nửa hoặc khi lạnh).
+2. Dùng **CR2450 mới ở nhiệt độ phòng**, hoặc nguồn bench vào TP1/TP5 sau khi tháo pin (mô hình dự đoán reset khi commissioning với pin đã dùng một nửa hoặc khi lạnh).
 3. Thiết bị chưa có fabric quảng bá BLE 180 s sau khi khởi động; quá thời gian thì nhấn USER 3 lần.
 4. Với dữ liệu thử nghiệm của bản build mặc định:
    ```sh
@@ -187,16 +189,16 @@ Chạy lại chuỗi trên cho ra schematic và board **giống từng byte**; c
 
 ### Bring-up và đo dòng
 
-Điểm đo trên bo (silkscreen ghi tên net): VBAT1, VBAT2, VIN1/VIN2, VOUT1/VOUT2, 3V3_PWR (điểm OR hai nhánh), 3V3, GND × 2, EN; BOOT ở J1 chân 5. Link đo dòng: R1 (cell 1), R11 (cell 2), R21 (tải 3V3), đều là 0R 0805.
+Điểm đo trên bo (silkscreen ghi tên net): VBAT (cực + của cell), VIN (sau P-MOSFET), VOUT (ra bộ chuyển đổi), 3V3, GND, EN; BOOT ở J1 chân 5. Link đo dòng: R1 (dòng cell), R21 (tải 3V3), đều là 0R 0805. Với một cell, "VBAT1/VBAT2/VBAT_OR" của yêu cầu gốc thu lại thành VBAT (TP1) và VIN (TP2).
 
-1. **Trước khi lắp pin** (T-01…T-08): kiểm ngắn mạch; tháo R21; cấp nguồn bench có giới hạn dòng vào holder; kiểm VOUT1/VOUT2 = 3.40 V, 3V3_PWR 3.07–3.40 V; thử ngược cực và dòng ngược vào cell; kiểm supervisor (nRST, EN).
+1. **Trước khi lắp pin** (T-01…T-08): kiểm ngắn mạch; tháo R21; cấp nguồn bench có giới hạn dòng vào TP1; kiểm VOUT = 3.30 V; thử ngược cực và dòng ngược; kiểm supervisor (nRST, EN); so footprint holder với holder thật và kiểm cực bằng một cell (rồi tháo cell ra).
 2. Hàn lại R21, nạp firmware `debug`, chạy `status`, `measure`, `battery` (T-09…T-17).
 3. Commissioning và kiểm Matter (T-20…T-25).
-4. **Đo dòng** (T-30…T-38): tháo R21 (dòng tải 3V3) hoặc R1/R11 (dòng từng cell), nối máy đo dòng lấy mẫu nhanh (PPK2, Joulescope…) vào hai pad, **rút USB** (USB-Serial/JTAG giữ chip thức). Đo đáy ngủ, điện tích mỗi poll/report, dạng dòng khởi động và commissioning, dòng trung bình 24 h; rồi chạy lại `power_model.py` với số đo và cập nhật `docs/power_budget.md`.
+4. **Đo dòng** (T-30…T-39): tháo R21 (dòng tải 3V3) hoặc R1 (dòng cell), nối máy đo dòng lấy mẫu nhanh (PPK2, Joulescope…) vào hai pad, **rút USB** (USB-Serial/JTAG giữ chip thức). Đo đáy ngủ, điện tích mỗi poll/report, dạng dòng khởi động và commissioning, điện trở xung của CR2450 (T-35, nên làm sớm nhất), dòng rò tụ điện phân, dòng trung bình 24 h; rồi chạy lại `power_model.py` với số đo và cập nhật `docs/power_budget.md`.
 
 Tiêu chí đạt và thứ tự đầy đủ: `docs/test_plan.md`.
 
-Mô hình năng lượng: `python3 hardware/analysis/power_model.py --plots` (~5 phút). Tra lại tồn kho JLC trước khi đặt: `python3 tools/jlc_lookup.py --json <mã LCSC…>` (endpoint không chính thức của trang jlcpcb.com/parts).
+Mô hình năng lượng: `python3 hardware/analysis/power_model.py --plots` (~6 phút). Tra lại tồn kho JLC trước khi đặt: `python3 tools/jlc_lookup.py --json <mã LCSC…>` (endpoint không chính thức của trang jlcpcb.com/parts).
 
 ## Tài liệu
 
@@ -205,7 +207,7 @@ Mô hình năng lượng: `python3 hardware/analysis/power_model.py --plots` (~5
 | `docs/architecture.md` | sơ đồ khối, đường nguồn, firmware, data model Matter, ICD, nút/LED |
 | `docs/pinmap.md` | bảng chân module ↔ net ↔ GPIO (sinh bằng `check_pinmap.py --markdown`), J1 |
 | `docs/power_budget.md` | ngân sách dòng, tuổi thọ 25/50/100/200 µA, mô phỏng xung, tụ đệm, chế độ hỏng, phương án dự phòng |
-| `docs/decisions.md` | các quyết định thiết kế và lý do (D1–D19) |
+| `docs/decisions.md` | các quyết định thiết kế và lý do (D1–D20; D20 = Rev B, một CR2450) |
 | `docs/commissioning.md` | ghép Matter, cửa sổ commissioning, factory reset, dữ liệu sản xuất |
 | `docs/assembly.md` | file sản xuất, kiểm tra preview JLC, lắp tay, link đo dòng |
 | `docs/test_plan.md` | kế hoạch bring-up và kiểm thử T-01…T-42 |

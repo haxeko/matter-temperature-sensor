@@ -29,7 +29,7 @@ button: medium press / glitch                    ok
 button: click then long press                    ok
 button: ms counter wrap-around                   ok
 battery: percent table monotonic                 ok
-battery: pack aggregate / missing cell           ok
+battery: one-cell pack / missing reading         ok
 battery: pack charge level hysteresis            ok
 battery: percent jitter filter                   ok
 backoff: doubling and saturation                 ok
