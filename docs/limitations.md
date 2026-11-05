@@ -60,8 +60,8 @@ Panasonic khuyến nghị diode chặn ngược **và** điện trở bảo vệ
 
 ## 8. PCB
 
-- Layout được sinh bằng script và router tự viết. Kết quả đạt DRC nhưng có vài đường chéo dài; một số đoạn đi trên B.Cu cắt mặt GND (+3V3, EN, VOUT, I2C_SDA và đường đo VBAT dài 32 mm qua 4 via); 10 kết nối dùng via (`hardware/reports/routing_log.txt`).
-- 20 ký hiệu linh kiện chỉ có trên lớp Fab (bản vẽ `assembly_top.pdf`): 19 vì không đủ chỗ trên silkscreen, BT1 do chọn (holder đã có dấu +/− và dòng "CR2450 ONLY / NO CHARGE"). Test pad được ghi tên net thay cho số TP.
+- Layout được sinh bằng script và router tự viết. Kết quả đạt DRC nhưng có vài đường chéo dài; một số đoạn đi trên B.Cu cắt mặt GND (+3V3, EN, VOUT, I2C_SDA và đường đo VBAT dài 32 mm qua 4 via); 9 kết nối dùng via (`hardware/reports/routing_log.txt`).
+- 18 ký hiệu linh kiện chỉ có trên lớp Fab (bản vẽ `assembly_top.pdf`): 17 vì không đủ chỗ trên silkscreen, BT1 do chọn (holder đã có dấu +/− và dòng "CR2450 ONLY / NO CHARGE"). Test pad được ghi tên net thay cho số TP.
 - Yêu cầu gốc nêu điểm "VBAT1/VBAT2/VBAT_OR" cho hai cell; Rev B một cell có VBAT (TP1) và VIN (TP2), không có nút OR.
 - Render 3D chỉ có mô hình 3D của module; các linh kiện khác (kể cả holder) hiện là footprint trần vì gói mô hình 3D của KiCad không có trong môi trường sinh file.
 - Hiệu năng anten khi lắp trong vỏ và gần cell chưa được đo; HDG khuyến nghị ≥ 15 mm khoảng trống quanh anten bên trong vỏ.

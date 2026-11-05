@@ -60,8 +60,8 @@
 /* ---- Debug interfaces (J1, 1x6 pads under the antenna notch, not fitted) - */
 #define BOARD_GPIO_UART0_RX         23  /* module pad 30, net U0RXD (RXD0) */
 #define BOARD_GPIO_UART0_TX         24  /* module pad 31, net U0TXD (TXD0) */
-#define BOARD_GPIO_USB_DM           26  /* module pad 26, net USB_DM (22R series) */
-#define BOARD_GPIO_USB_DP           27  /* module pad 27, net USB_DP (22R series) */
+#define BOARD_GPIO_USB_DM           26  /* module pad 26, net USB_DM (straight to J1) */
+#define BOARD_GPIO_USB_DP           27  /* module pad 27, net USB_DP (straight to J1) */
 
 /* ---- Pins with no connection on Rev B -------------------------------------
  * Configured by board_init() as input-disabled with pull-down so that they

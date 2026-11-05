@@ -67,8 +67,6 @@ at("U4", MOD_X, MOD_Y, 0)
 at("C24", 1.0, 7.6, 90)            # 100 nF beside pad 3 (3V3), in the 2 mm strip left of the module
 # debug header (not fitted) under the antenna notch: order follows the module pins
 at("J1", 17.3, 7.9, 90)            # 1 TXD 2 RXD 3 D+ 4 D- 5 BOOT 6 GND, pitch 2.54 along +x
-at("R29", 18.0, 12.4, 0)           # USB D+ 22R
-at("R28", 18.0, 14.2, 0)           # USB D- 22R
 at("R25", 16.2, 17.4, 90)          # LED, beside the module corner (LED pad at the bottom)
 at("D3", 17.9, 17.4, 90)           # anode at the top, next to R25
 # user/boot button and strap pull-ups under J1
@@ -527,8 +525,6 @@ ROUTE_PLAN = [
     ("XTAL_32K_N", SIGNAL_W, (1.0, 50.0)),
     ("USB_DP", SIGNAL_W, (1.0, 6.0)),
     ("USB_DM", SIGNAL_W, (1.0, 6.0)),
-    ("USB_DP_J", SIGNAL_W, (1.0, 6.0)),
-    ("USB_DM_J", SIGNAL_W, (1.0, 6.0)),
     ("U0TXD", SIGNAL_W, (1.0, 3.0)),
     ("U0RXD", SIGNAL_W, (1.0, 3.0)),
     # bottom-row pads that head east: rightmost pad first, so each takes the next lane out

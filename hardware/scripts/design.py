@@ -71,7 +71,6 @@ SRC = {
     "470k": ("C23178", "UNI-ROYAL", "0603WAF4703T5E"),
     "10.5k": ("C22855", "UNI-ROYAL", "0603WAF1052T5E"),
     "16.2k": ("C22885", "UNI-ROYAL", "0603WAF1622T5E"),
-    "22R": ("C23345", "UNI-ROYAL", "0603WAF220JT5E"),
     "100n": ("C14663", "YAGEO", "CC0603KRX7R9BB104"),
     "1u": ("C15849", "Samsung", "CL10A105KB8NNNC"),
     "10u": ("C19702", "Samsung", "CL10A106KP8NNNC"),
@@ -184,10 +183,8 @@ part("R24", "Device:R", "10k", FP_R0603, {"1": "+3V3", "2": "STRAP_GPIO8"}, src=
 part("R25", "Device:R", "1k", FP_R0603, {"1": "LED", "2": "LED_A"}, src="1k", desc="LED ~1.5 mA")
 part("D3", "Device:LED", "red", "LED_SMD:LED_0603_1608Metric", {"1": "GND", "2": "LED_A"}, src="KT0603R",
      desc="Status LED")
-part("R28", "Device:R", "22R", FP_R0603, {"1": "USB_DM", "2": "USB_DM_J"}, src="22R", desc="USB D- series")
-part("R29", "Device:R", "22R", FP_R0603, {"1": "USB_DP", "2": "USB_DP_J"}, src="22R", desc="USB D+ series")
 part("J1", "Connector_Generic:Conn_01x06", "DEBUG", "Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical",
-     {"1": "U0TXD", "2": "U0RXD", "3": "USB_DP_J", "4": "USB_DM_J", "5": "BTN_USER", "6": "GND"}, dnp=True,
+     {"1": "U0TXD", "2": "U0RXD", "3": "USB_DP", "4": "USB_DM", "5": "BTN_USER", "6": "GND"}, dnp=True,
      desc="Debug/programming pads (not fitted): 1 TX 2 RX 3 D+ 4 D- 5 BOOT 6 GND; board powered by the cell")
 
 # ------------------------------------------------------------------ sensor

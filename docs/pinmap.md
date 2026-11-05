@@ -51,7 +51,7 @@ Kết quả lần chạy cuối: `pin map OK: 13 defines, 6 unused GPIOs checked
 - Chân không dùng (GPIO0, 1, 2, 3, 4, 25): firmware cấu hình tắt input, bật pull-down (GPIO25 không có pull nội, chỉ tắt input). GPIO4 (ADC1_CH3) là chân đo cell thứ hai ở Rev A.
 - Rev A đổi ba chân so với bản trước để dải 2 mm cạnh trái module (yêu cầu vị trí anten của Espressif) chỉ còn 3V3 và EN: VBAT_MEAS_EN GPIO0 → GPIO12, VBAT1_SENSE GPIO1/ADC1_CH0 → GPIO5/ADC1_CH4, LED GPIO12 → GPIO22 (`docs/decisions.md` D13). Rev B giữ GPIO5/ADC1_CH4 cho cell duy nhất (net VBAT_SENSE).
 - I2C: SDA GPIO10, SCL GPIO11, 100 kHz, kéo lên 10 kΩ (R26/R27) đặt ở phía bo chính của cầu nối sang lưỡi cảm biến; SHT40 địa chỉ 0x44.
-- USB D−/D+ (GPIO26/27) qua 22 Ω (R28/R29) tới J1 pin 4/3. UART0 TX/RX (GPIO24/23) tới J1 pin 1/2.
+- USB D−/D+ (GPIO26/27) nối thẳng tới J1 pin 4/3, không có điện trở nối tiếp (R28/R29 22 Ω đã bỏ ngày 2026-11-05, `docs/decisions.md` D14). UART0 TX/RX (GPIO24/23) tới J1 pin 1/2.
 
 ## J1 (debug, không lắp, 1×6 pad 2.54 mm)
 
@@ -59,8 +59,8 @@ Kết quả lần chạy cuối: `pin map OK: 13 defines, 6 unused GPIOs checked
 |---|---|
 | 1 | U0TXD (GPIO24) |
 | 2 | U0RXD (GPIO23) |
-| 3 | USB D+ (sau 22 Ω) |
-| 4 | USB D− (sau 22 Ω) |
+| 3 | USB D+ (GPIO27) |
+| 4 | USB D− (GPIO26) |
 | 5 | BOOT = BTN_USER (GPIO9) |
 | 6 | GND |
 

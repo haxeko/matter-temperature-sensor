@@ -470,11 +470,7 @@ def module_block():
     S.wire(S.pin("R25", "2"), S.pin("D3", "2"))
     S.label("LED_A", (375.92, 165.1), 0)
     S.stub("D3", "1")
-    # USB series resistors and debug pads
-    S.place("R28", 373.38, 142.24, 90, ref_off=(-1.27, -2.54), val_off=(-1.27, 3.81))
-    S.place("R29", 373.38, 154.94, 90, ref_off=(-1.27, -2.54), val_off=(-1.27, 3.81))
-    S.stubs("R28")
-    S.stubs("R29")
+    # debug pads (USB D+/D- straight from the module, no series resistors)
     S.place("J1", 396.24, 113.03, 0, ref_off=(-2.54, -11.43), val_off=(-2.54, -8.89))
     S.stubs("J1", [str(i) for i in range(1, 6)], length=5.08)
     g = S.pin("J1", "6")

@@ -86,6 +86,8 @@ Hệ quả: dải 2 mm bên trái module chỉ đủ cho 3V3 và EN, nên ba tí
 
 J1 nằm dưới rãnh anten, thứ tự chân theo thứ tự chân module: TX, RX, D+, D−, BOOT, GND. EN không có trên J1: nạp firmware qua USB-Serial/JTAG tự reset được, hoặc dùng nút RST + BOOT; EN có test pad riêng TP6 (in "EN") để đo thời điểm reset. Rev A còn chân 3V3_DBG nối vào rail qua cầu hàn JP1; Rev B bỏ cả hai cho gọn bo: bo chạy bằng pin, hoặc bằng nguồn bench vào TP1 (VBAT) sau khi tháo pin — đường nguồn bench khi đó đi qua đúng P-MOSFET và bộ chuyển đổi như khi dùng pin.
 
+Cập nhật 2026-11-05 (vẫn Rev B, bo chưa sản xuất): theo yêu cầu của người dùng, bỏ hai điện trở 22 Ω nối tiếp trên USB D+/D− (R28/R29); D+/D− đi thẳng từ module tới J1 (8–11 mm, không via). Cổng USB chỉ dùng để nạp firmware và console khi bring-up, J1 không lắp sẵn. Firmware không đổi (chỉ chú thích trong `board_pins.h`). Bo còn 41 linh kiện lắp, BOM 28 dòng. Cùng lúc đã xét bỏ một trong hai tụ rail C21/C22: mô hình cho thấy commissioning bằng pin mới ở 10 °C chuyển từ ổn (sát ngưỡng) sang reset, nên người dùng chọn giữ cả hai tụ.
+
 ## D15. Không có OTA (Rev A và Rev B)
 
 Bảng phân vùng có hai slot A/B (giống `icd_app`), nhưng OTA Requestor tắt vì chưa được kiểm với một OTA Provider thật. Không tuyên bố hỗ trợ OTA.
@@ -97,7 +99,7 @@ Bảng phân vùng có hai slot A/B (giống `icd_app`), nhưng OTA Requestor t�
 ## D17. PCB 2 lớp, đi dây bằng script
 
 - KiCad 9 không chạy được FreeRouting trong môi trường này (không được tải/thực thi phần mềm bên ngoài), nên dùng router lưới tự viết (`router.py`): A* trên lưới 0.1 mm, bản đồ chiếm chỗ đã nới theo clearance, phạt rẽ, via, kiểm khoảng cách lỗ khoan. Khối nguồn và lưỡi cảm biến đi dây tay trong script.
-- Kết quả có vài đoạn chéo dài và 20 ký hiệu linh kiện chỉ nằm trên lớp Fab (19 không đủ chỗ trên silkscreen, BT1 do chọn) — xem `docs/limitations.md`.
+- Kết quả có vài đoạn chéo dài và 18 ký hiệu linh kiện chỉ nằm trên lớp Fab (17 không đủ chỗ trên silkscreen, BT1 do chọn) — xem `docs/limitations.md`.
 - Bộ đặt chữ silkscreen tránh pad, courtyard và nét in của linh kiện khác; cung tròn được xét theo đường cong (không theo hình chữ nhật bao). Nhãn bắt buộc (cảnh báo pin, tên bo/revision, tên net của test pad, R1/R21, RST, USER/BOOT, SHT40) phải đặt được, nếu không script dừng với lỗi.
 
 ## D18. Điểm đo và link đo dòng
