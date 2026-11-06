@@ -120,3 +120,17 @@ Hai endpoint riêng (Temperature Sensor, Humidity Sensor) thay vì gộp, vì đ
 - **Bo**: 72 × 58 mm → 41.5 × 57.5 mm (−43 % diện tích). J1 1×6 không có chân nguồn (D14), TP1–TP6 (D18), cầu đo pin còn một (D8), khối nguồn xoay 180°.
 - **Firmware**: một kênh ADC (GPIO5/ADC1_CH4), `BAT_CELL_COUNT` = 1, Power Source báo 1 × CR2450 (620 mAh). Logic pin vẫn viết theo mảng `BAT_CELL_COUNT` nên chỉ đổi hằng số; unit test pin được viết lại cho một cell (số đo dưới ngưỡng "có pin" khi đang chạy = lỗi mạch đo ⇒ Critical).
 
+## D21. Biến thể chip rời TH-SENSOR-H2C Rev A (2026-11-06)
+
+- **Yêu cầu**: người dùng yêu cầu một bản dùng chip ESP32-H2 rời thay cho module. Người dùng chọn: ăng-ten in trên PCB, PCB 4 lớp, linh kiện phối hợp RF cỡ 0201, và làm tiếp dù không có VNA. Rev B giữ nguyên.
+- **Một nguồn sự thật cho hai bo**: `design.py` chọn biến thể bằng `TH_VARIANT` (`module` mặc định, `chip`); chỉ phần radio và J1 khác. Script schematic/project/báo cáo/sản xuất dùng chung; layout bản chip ở `gen_pcb_chip.py` (dùng lại helper, khối nguồn và lưỡi cảm biến của `gen_pcb.py`). Đầu ra Rev B được kiểm lại là không đổi từng byte.
+- **Chip**: ESP32-H2FH4S (4 MB flash trong vỏ, đúng dung lượng của module -H4S) — tồn kho JLC 0; mã ESP32-H2FH4 có hàng nhưng là mã đặt hàng cũ hơn, chưa đối chiếu revision nên không thay.
+- **Firmware dùng chung**: mọi GPIO giữ chức năng; `check_pinmap.py --variant chip` kiểm cùng `board_pins.h` với chân QFN.
+- **Ăng-ten**: IFA của TI (SWRU120D/DN007) vì có kích thước công bố đầy đủ và cỡ (25.7 × 7.5 mm) vừa chiều rộng bo; vẽ **đối xứng gương** để đầu hở nằm ở mép bo, đoạn ngắn mạch phía chip. Không chép ăng-ten của module Espressif (không có bản vẽ công bố). Vùng ăng-ten trống đồng trên cả 4 lớp; mép mặt đất có hàng via GND.
+- **Hướng chip**: xoay 270° để chân ANT ở góc gần ăng-ten và các chân phía ăng-ten chỉ là nguồn + chân bỏ trống + VBAT_SENSE; thạch anh, USB, UART quay ra xa ăng-ten.
+- **RF**: đường 0.35 mm trên L1 tham chiếu L2 (≈ 50 Ω theo công thức), không via, góc 135°; mạng CLCCL 0201 xếp zigzag với giá trị khởi đầu giữa khoảng HDG; stub 15 mil / 100 Ω trên pad GND của tụ đầu tiên với L2 bị khoét như HDG yêu cầu; vị trí phía ăng-ten (R41 0 Ω, L5 không lắp) đồng thời là mạng pi TI khuyên.
+- **Stack-up**: JLC04161H-7628 vì prepreg 0.21 mm cho đường 50 Ω rộng 0.35 mm (dễ làm hơn 0.17 mm của bản 3313) và stub 100 Ω qua L3 rộng 0.5 mm. L3 là GND + một đảo +3V3 dưới chip nối các nhóm tụ (HDG: nguồn đi ở lớp 3, giữ GND dưới RF và thạch anh).
+- **J1**: 2 × 3 (gọn hơn 1 × 6), đặt dưới chip, xa ăng-ten nhất có thể ngoài vùng holder; thứ tự chân giữ như Rev B.
+- **Router**: thêm cho bản chip — coi vùng đồng đã đổ của một net là đã nối (đảo +3V3 ở L3), cấm via trong pad SMD, kích thước via theo net; mặc định giữ hành vi cũ nên Rev B không đổi.
+- **Lệch so với HDG (ghi nhận, không sửa)**: nguồn < 350 mA (như Rev B); C46 không đứng riêng ở chân 20 (pad C47 nhận chân 18–20); L3 cách chân 4–6 mm; đường nguồn 0.4 mm thay vì 0.5 mm, lỗ via nguồn nhỏ hơn bề rộng đường; không chừa R/C nối tiếp trên USB; tụ ADC 22 nF thay vì 0.1 µF; ăng-ten chưa mô phỏng/đo. Chi tiết: `docs/chip_variant.md` mục 4.
+

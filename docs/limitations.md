@@ -70,3 +70,18 @@ Panasonic khuyến nghị diode chặn ngược **và** điện trở bảo vệ
 
 - Vùng đổ đồng được KiCad tính lại trong `gen_pcb.py` sau khi ghi file project cuối cùng, nên DRC kiểm đúng vùng đồng nằm trong file; kicad-cli 9.0.9 trong môi trường này không có tùy chọn `--refill-zones`.
 - Tái tạo phần cứng cần KiCad 9 (pcbnew Python) với thư viện chuẩn; thư viện Espressif chỉ cần khi muốn làm mới bản sao trong `hardware/kicad/lib`.
+
+## 10. Biến thể chip rời (H2C Rev A)
+
+Các mục 1–9 áp dụng cho cả H2C (cùng nguồn, cảm biến, firmware). Thêm:
+
+- **RF chưa có gì được đo hay mô phỏng.** Ăng-ten PCB (TI SWRU120D/DN007) được TI chỉnh trên FR-4 1 mm; bo này 1.6 mm, khác mặt đất, có nút và pin gần — dự đoán lệch tần, phải chỉnh bằng VNA (mạng pi C52/R41/L5 hoặc cắt nhánh ăng-ten). Giá trị C51/L4/C52 chỉ là điểm khởi đầu trong khoảng HDG. Không có VNA thì chỉ so được RSSI/LQI với bo module.
+- **Không thừa hưởng chứng nhận RF của module**: datasheet ESP32-H2-MINI-1 ghi "RF certification: See certificates" cho module; một thiết kế chip rời phải tự làm toàn bộ thủ tục vô tuyến (ngoài phạm vi, không tuyên bố).
+- ESP32-H2FH4S tồn kho JLC 0 (2026-11-06); mã thay thế ESP32-H2FH4 chưa được đối chiếu revision.
+- 9 via trong pad đáy chip nằm trong ô kem hàn: có thể hút thiếc; QFN 0.4 mm và 0201 không hàn tay bằng mỏ được.
+- Trở kháng đường RF (≈ 50 Ω), stub (≈ 100 Ω) và cặp USB (≈ 90 Ω) là kết quả công thức gần đúng, chưa qua máy tính trở kháng của JLC; đặt JLC kiểm soát trở kháng.
+- Thạch anh 32 MHz: tụ tải 12 pF là ước tính (CL 9 pF theo mô tả LCSC, ký sinh ~3 pF), L3 cách chân 4–6 mm; lệch tần và biên độ chưa đo (C-01).
+- Các lệch có chủ đích so với HDG v1.6: `docs/chip_variant.md` mục 4 (C46/C47 chung pad, đường nguồn 0.4 mm, USB không chừa R/C, tụ ADC 22 nF, nguồn < 350 mA).
+- Đường VBAT từ cầu chia tới TP1 dài ~60 mm (chủ yếu trên L4) vì router không đi dưới đường RF; dòng qua nó chỉ là dòng cầu chia.
+- 28 ký hiệu linh kiện chỉ có trên lớp Fab; render 3D không có mô hình chip.
+

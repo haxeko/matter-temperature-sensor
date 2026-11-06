@@ -10,7 +10,7 @@ import design as D
 from kicad_sexpr import new_uuid
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.normpath(os.path.join(HERE, "..", "kicad", D.PROJECT + ".kicad_pro"))
+OUT = os.path.join(D.HW_DIR, "kicad", D.PROJECT + ".kicad_pro")
 
 POWER_NETS = ["VBAT", "VBAT_L", "VIN", "VOUT", "+3V3", "GND", "LX1", "LX2"]
 
@@ -68,6 +68,20 @@ pro = {
     "sheets": [[new_uuid("root-sheet"), "Root"]],
     "text_variables": {"REV": D.REV, "DATE": D.DATE},
 }
+
+if D.VARIANT == "chip":
+    # 4-layer board (docs/chip_variant.md): 0.1 mm track/space for the HDG stub at the first RF capacitor and the
+    # 0.4 mm QFN escapes; the RF nets get a 50-ohm class (0.35 mm on L1 over the L2 ground, JLC04161H-7628).
+    # 0.45 mm / 0.2 mm vias near the chip (JLC multilayer: 0.15 mm hole / 0.25 mm pad minimum, no surcharge from
+    # 0.45 mm pad with a 0.2 mm hole); power and ground keep 0.15 mm clearance here, which the 0201 RF parts
+    # (0.18 mm between pads) and the 0.4 mm QFN pitch (0.2 mm between pads) need
+    pro["board"]["design_settings"]["rules"].update(min_clearance=0.1, min_connection=0.1, min_track_width=0.1,
+                                                    min_via_diameter=0.45, min_through_hole_diameter=0.2,
+                                                    min_via_annular_width=0.125, min_hole_clearance=0.2)
+    pro["board"]["design_settings"]["via_dimensions"].append({"diameter": 0.45, "drill": 0.2})
+    pro["net_settings"]["classes"][1] = netclass("Power", 0.4, 0.15, priority=1)
+    pro["net_settings"]["classes"].append(netclass("RF", 0.35, 0.15, priority=2))
+    pro["net_settings"]["netclass_patterns"] += [{"netclass": "RF", "pattern": n} for n in ("LNA_IN", "RF_M", "RF_ANT")]
 
 with open(OUT, "w") as f:
     json.dump(pro, f, indent=2)

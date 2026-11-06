@@ -11,6 +11,8 @@ Firmware dùng ESP-IDF thuần (ESP-Matter chính thức, FreeRTOS, `i2c_master`
 
 Rev B thay Rev A (2 × CR2032, bo 72 × 58 mm) theo yêu cầu chỉ dùng một pin và bo gọn hơn; Rev A còn trong lịch sử git. Lý do chọn CR2450 thay vì một CR2032: `docs/decisions.md` D20.
 
+Biến thể **TH-SENSOR-H2C Rev A** dùng **chip ESP32-H2FH4S rời** (QFN32) thay cho module: thạch anh 32 MHz, mạng phối hợp RF 0201, **ăng-ten in trên PCB** (inverted-F theo TI DN007), **PCB 4 lớp**, cùng kích thước bo, cùng đường nguồn và cùng firmware. File ở `hardware/chip/`, mô tả và giới hạn ở `docs/chip_variant.md`. Phần RF của biến thể này chưa đo và chưa chỉnh.
+
 ## Trạng thái — đọc trước
 
 Nhãn dùng trong toàn bộ repo: **ĐÃ XÁC MINH** (kiểm bằng công cụ hoặc đọc từ tài liệu gốc), **ƯỚC TÍNH** (tính toán/mô phỏng), **CHƯA KIỂM THỬ** (chưa có phần cứng).
@@ -28,6 +30,8 @@ Nhãn dùng trong toàn bộ repo: **ĐÃ XÁC MINH** (kiểm bằng công cụ 
 | Điện, RF, cảm biến, Matter, dòng ngủ trên bo thật | **CHƯA KIỂM THỬ** (chưa có bo nào được làm) | `docs/test_plan.md` |
 | OTA | **không triển khai** (`CONFIG_ENABLE_OTA_REQUESTOR=n`) | |
 | Chứng nhận (Matter, FCC/CE, an toàn pin) | **không tuyên bố** | |
+| Biến thể chip rời H2C: ERC, DRC + parity, pin map | ĐÃ XÁC MINH: 0 lỗi, 0 cảnh báo; 0 vi phạm, 0 pad chưa nối, 0 lỗi parity | `hardware/chip/reports/`, `tools/check_pinmap.py --variant chip` |
+| Biến thể chip rời H2C: ăng-ten, phối hợp RF, thạch anh | **CHƯA KIỂM THỬ** — giá trị RF chỉ là giá trị khởi đầu, cần VNA để chỉnh | `docs/chip_variant.md` |
 
 Chưa có đơn đặt PCB hay linh kiện nào. Chưa đo dòng, chưa ghép Matter với controller nào.
 
@@ -38,7 +42,8 @@ Chưa có đơn đặt PCB hay linh kiện nào. Chưa đo dòng, chưa ghép Ma
 3. **Dữ liệu Matter thử nghiệm**: bản build mặc định dùng VID 0xFFF1 / PID 0x8000, passcode 20202021, discriminator 3840, DAC thử nghiệm — chỉ để phát triển, không bao giờ giao thiết bị như vậy.
 4. **Không giả định** Apple Home, Google Home, Alexa, SmartThings, Home Assistant… sẽ chấp nhận firmware tự build này; thử lần đầu bằng `chip-tool` + OpenThread Border Router (`docs/commissioning.md`).
 5. **Không bao giờ sao chép** toàn bộ flash/NVS, Thread dataset hay thông tin xác thực giữa các thiết bị.
-6. **Chỉ dùng CR2450, không sạc** (silkscreen mặt trên: "CR2450 ONLY" / "NO CHARGE" phía trên holder, dấu + và − ở hai đầu holder; mặt dưới: "CR2450 ONLY - NO CHARGE"). **Không bao giờ cấp nguồn bench khi pin đang nằm trong holder** — bo không có diode hay điện trở bảo vệ nối tiếp; xem `docs/limitations.md` mục 3.
+6. **Biến thể chip rời (H2C)**: ESP32-H2FH4S tồn kho JLC = 0 (tra 2026-11-06); ăng-ten PCB và mạng phối hợp chưa mô phỏng, chưa đo — phải chỉnh bằng VNA trên bo thật; bo này không còn chứng nhận RF sẵn có của module. Xem `docs/chip_variant.md`.
+7. **Chỉ dùng CR2450, không sạc** (silkscreen mặt trên: "CR2450 ONLY" / "NO CHARGE" phía trên holder, dấu + và − ở hai đầu holder; mặt dưới: "CR2450 ONLY - NO CHARGE"). **Không bao giờ cấp nguồn bench khi pin đang nằm trong holder** — bo không có diode hay điện trở bảo vệ nối tiếp; xem `docs/limitations.md` mục 3.
 
 ## Sơ đồ khối
 
@@ -78,13 +83,14 @@ firmware/                    dự án ESP-IDF (target esp32h2)
   test/host/                 unit test chạy trên máy host
   sdkconfig.defaults(.battery|.debug|.prod), partitions.csv, dependencies.lock
 hardware/
-  scripts/                   design.py (BOM + netlist nguồn), gen_schematic.py, gen_pcb.py,
+  scripts/                   design.py (BOM + netlist nguồn), gen_schematic.py, gen_pcb.py, gen_pcb_chip.py,
                              router.py, gen_project.py, gen_reports.py, gen_production.py
   kicad/                     th_sensor_h2.kicad_sch / .kicad_pcb / .kicad_pro, thư viện riêng (lib/)
   production/                Gerber + drill (zip), BOM/CPL JLC, bản vẽ lắp ráp, trở ngại sản xuất
   reports/                   ERC, DRC, routing log, tóm tắt
   renders/                   schematic.pdf, ảnh PCB (SVG, 3D PNG)
   analysis/                  power_model.py và kết quả mô phỏng
+  chip/                      biến thể chip rời H2C: kicad/, production/, reports/, renders/
 tools/                       check_pinmap.py, jlc_lookup.py
 docs/                        tài liệu thiết kế (danh sách bên dưới), docs/reports/
 ```
@@ -187,6 +193,8 @@ python3 tools/check_pinmap.py                # board_pins.h ↔ netlist
 
 Chạy lại chuỗi trên cho ra schematic và board **giống từng byte**; chỉ dấu thời gian trong Gerber/drill/báo cáo/PDF/ZIP và ảnh render 3D thay đổi.
 
+Biến thể chip rời: cùng chuỗi với biến môi trường `TH_VARIANT=chip` và `gen_pcb_chip.py` thay cho `gen_pcb.py`; kết quả ghi vào `hardware/chip/` (`docs/chip_variant.md` mục 11). Không đặt biến thì mọi script sinh Rev B như trước.
+
 ### Bring-up và đo dòng
 
 Điểm đo trên bo (silkscreen ghi tên net): VBAT (cực + của cell), VIN (sau P-MOSFET), VOUT (ra bộ chuyển đổi), 3V3, GND, EN; BOOT ở J1 chân 5. Link đo dòng: R1 (dòng cell), R21 (tải 3V3), đều là 0R 0805. Với một cell, "VBAT1/VBAT2/VBAT_OR" của yêu cầu gốc thu lại thành VBAT (TP1) và VIN (TP2).
@@ -207,7 +215,8 @@ Mô hình năng lượng: `python3 hardware/analysis/power_model.py --plots` (~6
 | `docs/architecture.md` | sơ đồ khối, đường nguồn, firmware, data model Matter, ICD, nút/LED |
 | `docs/pinmap.md` | bảng chân module ↔ net ↔ GPIO (sinh bằng `check_pinmap.py --markdown`), J1 |
 | `docs/power_budget.md` | ngân sách dòng, tuổi thọ 25/50/100/200 µA, mô phỏng xung, tụ đệm, chế độ hỏng, phương án dự phòng |
-| `docs/decisions.md` | các quyết định thiết kế và lý do (D1–D20; D20 = Rev B, một CR2450) |
+| `docs/decisions.md` | các quyết định thiết kế và lý do (D1–D21; D20 = Rev B, một CR2450; D21 = biến thể chip rời) |
+| `docs/chip_variant.md` | biến thể chip rời H2C: khác biệt, đối chiếu HDG, ăng-ten, phối hợp RF, stack-up 4 lớp, kiểm thử C-01…C-08 |
 | `docs/commissioning.md` | ghép Matter, cửa sổ commissioning, factory reset, dữ liệu sản xuất |
 | `docs/assembly.md` | file sản xuất, kiểm tra preview JLC, lắp tay, link đo dòng |
 | `docs/test_plan.md` | kế hoạch bring-up và kiểm thử T-01…T-42 |
@@ -218,4 +227,4 @@ Mô hình năng lượng: `python3 hardware/analysis/power_model.py --plots` (~6
 
 ## Giấy phép
 
-Chưa chọn giấy phép cho dự án (quyết định của chủ repo). Symbol, footprint và mô hình 3D ESP32-H2-MINI-1 trong `hardware/kicad/lib/` lấy từ thư viện KiCad của Espressif và theo giấy phép của thư viện đó: `hardware/kicad/lib/LICENSE-espressif-kicad-libraries.md`.
+Chưa chọn giấy phép cho dự án (quyết định của chủ repo). Symbol, footprint và mô hình 3D ESP32-H2-MINI-1 trong `hardware/kicad/lib/`, cùng symbol ESP32-H2 và footprint QFN32 trong `hardware/chip/kicad/lib/`, lấy từ thư viện KiCad của Espressif và theo giấy phép của thư viện đó (`LICENSE-espressif-kicad-libraries.md` trong từng thư mục).

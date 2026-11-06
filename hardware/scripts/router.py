@@ -340,6 +340,18 @@ class Router:
                 j = idx.get(other.m_Uuid.AsString())
                 if j is not None:
                     union(i, j)
+        # a zone of this net that is already filled (an inner-layer power island) joins every via and
+        # through-hole pad its fill touches
+        for z in self.board.Zones():
+            if z.GetIsRuleArea() or z.GetNetCode() != code or not z.IsFilled():
+                continue
+            zi = len(parent)
+            parent.append(zi)
+            for L in z.GetLayerSet().Seq():
+                for i, it in enumerate(items):
+                    if (it.GetClass() == "PCB_VIA" or (i < len(pads) and it.HasHole())) and it.IsOnLayer(L) \
+                            and z.HitTestFilledArea(L, it.GetPosition()):
+                        union(i, zi)
         groups = {}
         for i, it in enumerate(items):
             groups.setdefault(find(i), {"pads": [], "tracks": []})
@@ -539,7 +551,7 @@ class Router:
         return Pb, V
 
     def route_net(self, netname, width=0.25, layer_cost=(1.0, 2.5), via_cost=12.0, allow_vias=True,
-                  turn_cost=(0.4, 1.2), max_exp=600000, pads_filter=None):
+                  turn_cost=(0.4, 1.2), max_exp=600000, pads_filter=None, via_dia=0.6, via_drill=0.3):
         code = self.netcode[netname]
         cls = self._class_for(width)
         cl = self.clusters(netname)
@@ -587,7 +599,7 @@ class Router:
                 ok = False
                 continue
             runs = self.path_to_runs(path)
-            new = self.emit(netname, runs, width)
+            new = self.emit(netname, runs, width, via_dia, via_drill)
             nvias = len(runs) - 1
             length = sum(math.hypot(b[0] - a[0], b[1] - a[1]) for _, pts in runs for a, b in zip(pts[:-1], pts[1:]))
             self.log.append("ok %-40s len %6.1f mm  vias %d" % (label, length, nvias))
@@ -597,7 +609,7 @@ class Router:
         return ok
 
     # ------------------------------------------------------------ ground
-    def gnd_fanout(self, pads, width=0.3, via_dia=0.6, max_exp=200000, min_gap=0.25):
+    def gnd_fanout(self, pads, width=0.3, via_dia=0.6, max_exp=200000, min_gap=0.25, via_drill=0.3):
         """Short stub from each pad to the nearest legal via site."""
         code = self.netcode["GND"]
         cls = self._class_for(width)
@@ -636,10 +648,10 @@ class Router:
             v = pcbnew.PCB_VIA(self.board)
             v.SetPosition(pcbnew.VECTOR2I(pcbnew.FromMM(self.ox + end[0]), pcbnew.FromMM(self.oy + end[1])))
             v.SetWidth(pcbnew.FromMM(via_dia))
-            v.SetDrill(pcbnew.FromMM(0.3))
+            v.SetDrill(pcbnew.FromMM(via_drill))
             v.SetNet(self.board.FindNet("GND"))
             self.board.Add(v)
-            self.add_via(code, end, via_dia)
+            self.add_via(code, end, via_dia, via_drill)
             # no other via site directly next to this one
             done += 1
         self.log.append("GND fanout: %d vias" % done)
@@ -651,7 +663,7 @@ class Router:
         v.SetDrill(pcbnew.FromMM(via_drill))
         v.SetNet(self.board.FindNet(netname))
         self.board.Add(v)
-        self.add_via(self.netcode[netname], p, via_dia)
+        self.add_via(self.netcode[netname], p, via_dia, via_drill)
         return v
 
     def via_site_ok(self, code, p, gnd=True):
@@ -686,16 +698,36 @@ class Router:
                         m[win[0]][d <= r] = True
         return m
 
-    def stitch(self, sites, extra_gap=0.0):
+    def block_vias_in_smd_pads(self, via_dia, gap=0.1):
+        """No via of any net on or next to an SMD pad (solder would wick into it); through-hole pads are
+        vias already. Optional: gen_pcb.py (Rev B) does not call it."""
+        r = via_dia / 2 + gap
+        for fp in self.board.GetFootprints():
+            for p in fp.Pads():
+                if p.HasHole():
+                    continue
+                for L in LAYERS:
+                    if not p.IsOnLayer(L):
+                        continue
+                    for pts in self.shape_points(p.GetEffectivePolygon(L, pcbnew.ERROR_INSIDE)):
+                        xs = [a[0] for a in pts]
+                        ys = [a[1] for a in pts]
+                        win = self._win(min(xs) - r, min(ys) - r, max(xs) + r, max(ys) + r)
+                        if win is None:
+                            continue
+                        d = self._poly_dist(win[1], win[2], pts)
+                        self.via_block[win[0]][d <= r] = True
+
+    def stitch(self, sites, extra_gap=0.0, via_dia=0.6, via_drill=0.3):
         """GND stitching vias at the given candidate sites (mm), where legal and clear of pads."""
         code = self.netcode["GND"]
-        keepoff = self.pad_keepoff()
+        keepoff = self.pad_keepoff(via_dia=via_dia)
         placed = []
         for p in sites:
             q = (round(p[0] / self.g) * self.g, round(p[1] / self.g) * self.g)
             i, j = int(round(q[0] / self.g)), int(round(q[1] / self.g))
             if 0 <= i < self.nx and 0 <= j < self.ny and not keepoff[j, i] and self.via_site_ok(code, q):
-                placed.append(self.place_via("GND", q))
+                placed.append(self.place_via("GND", q, via_dia, via_drill))
         return placed
 
 

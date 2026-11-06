@@ -14,17 +14,39 @@ nets from the KiCad netlist.
 Sourcing fields were looked up on the JLCPCB parts API on 2026-10-29 / 2026-10-30
 (tools/jlc_lookup.py); stock and Basic/Extended status change daily and must be
 re-checked before ordering (docs/assembly.md).
-"""
 
-PROJECT = "th_sensor_h2"
-TITLE = "TH-SENSOR-H2 thermo-hygrometer"
-REV = "B"
-DATE = "2026-10-30"
+Two board variants share everything except the radio part (environment variable
+TH_VARIANT, default "module"):
+  module  TH-SENSOR-H2 Rev B: ESP32-H2-MINI-1-H4S module -> hardware/kicad, production, ...
+  chip    TH-SENSOR-H2C Rev A: bare ESP32-H2FH4S chip (QFN32, 4 MB in-package flash), 32 MHz
+          crystal, RF matching network and a TI DN007 PCB antenna on a 4-layer board
+          -> hardware/chip/kicad, hardware/chip/production, ... (docs/chip_variant.md)
+The firmware is the same for both: every GPIO keeps its function.
+"""
+import os as _os
+
+VARIANT = _os.environ.get("TH_VARIANT", "module")
+if VARIANT not in ("module", "chip"):
+    raise SystemExit("TH_VARIANT must be 'module' or 'chip', not %r" % VARIANT)
+_HW = _os.path.normpath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+if VARIANT == "module":
+    PROJECT = "th_sensor_h2"
+    TITLE = "TH-SENSOR-H2 thermo-hygrometer"
+    REV = "B"
+    DATE = "2026-10-30"
+    HW_DIR = _HW                                    # hardware/kicad, hardware/production, ...
+    BOARD_NAME = "TH-SENSOR-H2"
+else:
+    PROJECT = "th_sensor_h2c"
+    TITLE = "TH-SENSOR-H2C thermo-hygrometer (bare ESP32-H2 chip)"
+    REV = "A"
+    DATE = "2026-11-06"
+    HW_DIR = _os.path.join(_HW, "chip")             # hardware/chip/kicad, hardware/chip/production, ...
+    BOARD_NAME = "TH-SENSOR-H2C"
 
 KSYM = "/usr/share/kicad/symbols/"
 # Espressif KiCad libraries (github.com/espressif/kicad-libraries, git dd76561812ab300351234ba6e0ec1295641796f0).
 # Only needed to refresh the vendored copies in hardware/kicad/lib; without it the generators use those copies.
-import os as _os
 ESPRESSIF_LIB = _os.environ.get("ESPRESSIF_KICAD_LIB", "/tmp/claude-0/ext/espressif-kicad-libraries")
 
 # symbol sources: lib_id -> (library file, symbol name in that file, nick)
@@ -50,9 +72,16 @@ SYMBOLS = {
     "power:PWR_FLAG": (KSYM + "power.kicad_sym", "PWR_FLAG"),
     # project library (hardware/kicad/lib/th_sensor.kicad_sym), written by gen_schematic.py
     "th_sensor:ESP32-H2-MINI-1": (ESPRESSIF_LIB + "/symbols/Espressif.kicad_sym", "ESP32-H2-MINI-1"),
+    "th_sensor:ESP32-H2": (ESPRESSIF_LIB + "/symbols/Espressif.kicad_sym", "ESP32-H2"),
+    "Device:Crystal_GND24": (KSYM + "Device.kicad_sym", "Crystal_GND24"),
+    "Device:Antenna_Shield": (KSYM + "Device.kicad_sym", "Antenna_Shield"),
+    "Connector_Generic:Conn_02x03_Odd_Even": (KSYM + "Connector_Generic.kicad_sym", "Conn_02x03_Odd_Even"),
     "th_sensor:AO3401A": (KSYM + "Transistor_FET.kicad_sym", "AO3401A"),
     "th_sensor:2N7002": (KSYM + "Transistor_FET.kicad_sym", "2N7002"),
 }
+for _k in (("th_sensor:ESP32-H2", "Device:Crystal_GND24", "Device:Antenna_Shield", "Connector_Generic:Conn_02x03_Odd_Even")
+           if VARIANT == "module" else ("th_sensor:ESP32-H2-MINI-1", "Connector_Generic:Conn_01x06")):
+    del SYMBOLS[_k]
 
 FP_R0603 = "Resistor_SMD:R_0603_1608Metric"
 FP_R0805 = "Resistor_SMD:R_0805_2012Metric"
@@ -90,6 +119,16 @@ SRC = {
     "FC135": ("C32346", "Seiko Epson", "Q13FC13500004"),
     "TS1187A": ("C318884", "XKB", "TS-1187A-B-A-B"),
     "KT0603R": ("C2286", "KENTO", "KT-0603R"),
+    # chip variant (JLC parts search 2026-11-06)
+    "H2FH4S": ("C50392664", "Espressif", "ESP32-H2FH4S"),
+    "XTAL32M": ("C5210649", "YXC", "X322532MLB4SI"),
+    "24nH_0603": ("C162644", "Murata", "LQW18AN24NG00D"),
+    "12p": ("C38523", "Samsung", "CL10C120JB8NNNC"),
+    "10n": ("C57112", "FH", "0603B103K500NT"),
+    "499R": ("C23065", "UNI-ROYAL", "0603WAF4990T5E"),
+    "1p5_0201": ("C161414", "Murata", "GRM0335C1H1R5BA01D"),
+    "2n4_0201": ("C98042", "Murata", "LQP03TN2N4B02D"),
+    "0R_0201": ("C473473", "UNI-ROYAL", "0201WMF0000TEE"),
 }
 
 PARTS = []
@@ -156,18 +195,74 @@ part("C25", "Device:C", "1uF", FP_C0603, {"1": "EN", "2": "GND"}, src="1u", desc
 part("SW2", "Switch:SW_Push", "RST", "Button_Switch_SMD:SW_Push_1P1T_XKB_TS-1187A", {"1": "EN", "2": "GND"},
      src="TS1187A", desc="Reset")
 
-# ------------------------------------------------------------------ module
-part("U4", "th_sensor:ESP32-H2-MINI-1", "ESP32-H2-MINI-1-H4S", "th_sensor:ESP32-H2-MINI-1",
-     {"3": "+3V3", "15": "+3V3", "8": "EN",
-      "16": "VBAT_MEAS_EN", "19": "VBAT_SENSE", "18": None,
-      "12": "XTAL_32K_P", "13": "XTAL_32K_N",
-      "20": "I2C_SDA", "21": "I2C_SCL", "24": "LED", "22": "STRAP_GPIO8", "23": "BTN_USER",
-      "26": "USB_DM", "27": "USB_DP", "30": "U0RXD", "31": "U0TXD",
-      "5": None, "6": None, "9": None, "10": None, "25": None,
-      **{str(p): "GND" for p in [1, 2, 11, 14] + list(range(36, 54))}},
-     src="H2MINI", desc="4 MB flash, PCB antenna; JLC stock 0 on 2026-10-29")
-part("C23", "Device:C", "10uF", FP_C0603, {"1": "+3V3", "2": "GND"}, src="10u", spec="10V X5R 0603", desc="Module decoupling")
-part("C24", "Device:C", "100nF", FP_C0603, {"1": "+3V3", "2": "GND"}, src="100n", desc="Module decoupling")
+# ------------------------------------------------------------------ radio: module or bare chip
+if VARIANT == "module":
+    part("U4", "th_sensor:ESP32-H2-MINI-1", "ESP32-H2-MINI-1-H4S", "th_sensor:ESP32-H2-MINI-1",
+         {"3": "+3V3", "15": "+3V3", "8": "EN",
+          "16": "VBAT_MEAS_EN", "19": "VBAT_SENSE", "18": None,
+          "12": "XTAL_32K_P", "13": "XTAL_32K_N",
+          "20": "I2C_SDA", "21": "I2C_SCL", "24": "LED", "22": "STRAP_GPIO8", "23": "BTN_USER",
+          "26": "USB_DM", "27": "USB_DP", "30": "U0RXD", "31": "U0TXD",
+          "5": None, "6": None, "9": None, "10": None, "25": None,
+          **{str(p): "GND" for p in [1, 2, 11, 14] + list(range(36, 54))}},
+         src="H2MINI", desc="4 MB flash, PCB antenna; JLC stock 0 on 2026-10-29")
+    part("C23", "Device:C", "10uF", FP_C0603, {"1": "+3V3", "2": "GND"}, src="10u", spec="10V X5R 0603", desc="Module decoupling")
+    part("C24", "Device:C", "100nF", FP_C0603, {"1": "+3V3", "2": "GND"}, src="100n", desc="Module decoupling")
+else:
+    # Pin numbers: ESP32-H2 QFN32 (datasheet v1.3 / Espressif KiCad symbol "ESP32-H2"). Supply pins and
+    # their capacitors follow the ESP32-H2 Hardware Design Guidelines v1.6 reference schematic
+    # (esp32h2-sche-core.png): VDD3P3 pins 1/2: 10 uF + 1 uF + 0.1 uF; pins 30/31: 10 nF; pin 27: 0.1 uF +
+    # 1 uF; VDDPST2 (20), VDDA_PMU (19) and VDDPST1 (9): 0.1 uF each; VBAT (18) tied to 3V3 (R2 = 0 there).
+    part("U4", "th_sensor:ESP32-H2", "ESP32-H2FH4S", "th_sensor:QFN-32-1EP_4x4mm_P0.4mm_EP2.9x2.9mm",
+         {"1": "+3V3", "2": "+3V3", "3": None, "4": None, "5": None, "6": None, "7": None, "8": "VBAT_SENSE",
+          "9": "+3V3", "10": "STRAP_GPIO8", "11": "BTN_USER", "12": "I2C_SDA", "13": "I2C_SCL", "14": "VBAT_MEAS_EN",
+          "15": "XTAL_32K_P", "16": "XTAL_32K_N", "17": "EN", "18": "+3V3", "19": "+3V3", "20": "+3V3",
+          "21": "LED", "22": "U0RXD", "23": "U0TXD", "24": None, "25": "USB_DM", "26": "USB_DP", "27": "+3V3",
+          "28": "XTAL_N", "29": "XTAL_P_IC", "30": "+3V3", "31": "+3V3", "32": "LNA_IN", "33": "GND"},
+         src="H2FH4S", desc="ESP32-H2 QFN32 4x4, 4 MB in-package flash; JLC stock 0 on 2026-11-06 (ESP32-H2FH4, "
+                            "C22470214, in stock: older ordering code, check the chip revision before using it)")
+    part("C40", "Device:C", "10uF", FP_C0603, {"1": "+3V3", "2": "GND"}, src="10u", spec="10V X5R 0603",
+         desc="VDD3P3 pins 1/2 (HDG: 10 uF)")
+    part("C41", "Device:C", "1uF", FP_C0603, {"1": "+3V3", "2": "GND"}, src="1u", desc="VDD3P3 pins 1/2 (HDG: 1 uF)")
+    part("C42", "Device:C", "100nF", FP_C0603, {"1": "+3V3", "2": "GND"}, src="100n", desc="VDD3P3 pins 1/2 (HDG: 0.1 uF)")
+    part("C43", "Device:C", "10nF", FP_C0603, {"1": "+3V3", "2": "GND"}, src="10n", desc="VDD3P3 pins 30/31 (HDG: 10 nF)")
+    part("C44", "Device:C", "100nF", FP_C0603, {"1": "+3V3", "2": "GND"}, src="100n", desc="VDD3P3 pin 27 (HDG: 0.1 uF)")
+    part("C45", "Device:C", "1uF", FP_C0603, {"1": "+3V3", "2": "GND"}, src="1u", desc="VDD3P3 pin 27 (HDG: 1 uF)")
+    part("C46", "Device:C", "100nF", FP_C0603, {"1": "+3V3", "2": "GND"}, src="100n", desc="VDDPST2 pin 20 (HDG: 0.1 uF)")
+    part("C47", "Device:C", "100nF", FP_C0603, {"1": "+3V3", "2": "GND"}, src="100n",
+         desc="VDDA_PMU pin 19 / VBAT pin 18 (HDG: 0.1 uF)")
+    part("C48", "Device:C", "100nF", FP_C0603, {"1": "+3V3", "2": "GND"}, src="100n", desc="VDDPST1 pin 9 (HDG: 0.1 uF)")
+    # 32 MHz main crystal: HDG requires +-10 ppm; 9 pF load like the crystal in Espressif's MINI-1 BOM.
+    # C49/C50 from C_L = C49*C50/(C49+C50) + C_stray with ~3 pF stray (ESTIMATE): tune at bring-up.
+    part("Y2", "Device:Crystal_GND24", "32MHz", "Crystal:Crystal_SMD_3225-4Pin_3.2x2.5mm",
+         {"1": "XTAL_P", "2": "GND", "3": "XTAL_N", "4": "GND"}, src="XTAL32M",
+         spec="CL 9pF, +-10ppm, 40 ohm", desc="Main crystal, 32 MHz +-10 ppm (HDG requirement)")
+    part("C49", "Device:C", "12pF", FP_C0603, {"1": "XTAL_P", "2": "GND"}, src="12p", spec="50V C0G 0603",
+         desc="Crystal load cap (start value, tune for +-10 ppm)")
+    part("C50", "Device:C", "12pF", FP_C0603, {"1": "XTAL_N", "2": "GND"}, src="12p", spec="50V C0G 0603",
+         desc="Crystal load cap (start value, tune for +-10 ppm)")
+    part("L3", "Device:L", "24nH", "Inductor_SMD:L_0603_1608Metric", {"1": "XTAL_P_IC", "2": "XTAL_P"},
+         src="24nH_0603", spec="2% 0603", desc="Series element on XTAL_P (HDG: 24 nH start value)")
+    part("R40", "Device:R", "499R", FP_R0603, {"1": "U0TXD", "2": "U0TXD_J"}, src="499R",
+         desc="U0TXD series resistor (HDG recommendation)")
+    # RF: ANT -> C51 (shunt) -> L4 (series) -> C52 (shunt) -> R41 (series) -> L5 (shunt, not fitted) -> antenna.
+    # HDG "CLCCL" network; positions C12/L2/C11/C3/L1 in the HDG figure. Start values from the HDG
+    # recommended ranges (C 1.2-1.8 pF, L 2.0-3.0 nH), 0201 as the HDG asks; they must be tuned with a
+    # network analyser (docs/chip_variant.md). R41 0R: Espressif's MINI-1 feeds its PCB antenna without a
+    # DC block, so the antenna-side series position starts as a link.
+    part("C51", "Device:C", "1.5pF", "Capacitor_SMD:C_0201_0603Metric", {"1": "LNA_IN", "2": "GND"}, src="1p5_0201",
+         spec="50V C0G 0201 +-0.1pF", desc="RF match, shunt at the chip (HDG C12), start value: TUNE")
+    part("L4", "Device:L", "2.4nH", "Inductor_SMD:L_0201_0603Metric", {"1": "LNA_IN", "2": "RF_M"}, src="2n4_0201",
+         spec="0201 +-0.1nH", desc="RF match, series (HDG L2), start value: TUNE")
+    part("C52", "Device:C", "1.5pF", "Capacitor_SMD:C_0201_0603Metric", {"1": "RF_M", "2": "GND"}, src="1p5_0201",
+         spec="50V C0G 0201 +-0.1pF", desc="RF match, shunt (HDG C11), start value: TUNE")
+    part("R41", "Device:R", "0R", "Resistor_SMD:R_0201_0603Metric", {"1": "RF_M", "2": "RF_ANT"}, src="0R_0201",
+         spec="0201", desc="Antenna match, series position (HDG C3): link until tuned")
+    part("L5", "Device:L", "DNP", "Inductor_SMD:L_0201_0603Metric", {"1": "RF_ANT", "2": "GND"}, dnp=True,
+         desc="Antenna match, shunt position (HDG L1): not fitted until tuned")
+    part("AE1", "Device:Antenna_Shield", "PCB IFA", "th_sensor:Antenna_TI_DN007_IFA_2.4GHz_Mirrored",
+         {"1": "RF_ANT", "2": "GND"}, in_bom=False,
+         desc="2.4 GHz inverted-F PCB antenna, TI DN007 (SWRU120D) geometry as its mirror image, copper only")
 part("Y1", "Device:Crystal", "32.768kHz", "Crystal:Crystal_SMD_3215-2Pin_3.2x1.5mm",
      {"1": "XTAL_32K_P", "2": "XTAL_32K_N"}, src="FC135", spec="CL 12.5pF, ESR<=70k, 20ppm", desc="Epson FC-135, ESR <= 70 kOhm")
 part("C27", "Device:C", "18pF", FP_C0603, {"1": "XTAL_32K_P", "2": "GND"}, src="18p",
@@ -183,9 +278,15 @@ part("R24", "Device:R", "10k", FP_R0603, {"1": "+3V3", "2": "STRAP_GPIO8"}, src=
 part("R25", "Device:R", "1k", FP_R0603, {"1": "LED", "2": "LED_A"}, src="1k", desc="LED ~1.5 mA")
 part("D3", "Device:LED", "red", "LED_SMD:LED_0603_1608Metric", {"1": "GND", "2": "LED_A"}, src="KT0603R",
      desc="Status LED")
-part("J1", "Connector_Generic:Conn_01x06", "DEBUG", "Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical",
-     {"1": "U0TXD", "2": "U0RXD", "3": "USB_DP", "4": "USB_DM", "5": "BTN_USER", "6": "GND"}, dnp=True,
-     desc="Debug/programming pads (not fitted): 1 TX 2 RX 3 D+ 4 D- 5 BOOT 6 GND; board powered by the cell")
+if VARIANT == "module":
+    part("J1", "Connector_Generic:Conn_01x06", "DEBUG", "Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical",
+         {"1": "U0TXD", "2": "U0RXD", "3": "USB_DP", "4": "USB_DM", "5": "BTN_USER", "6": "GND"}, dnp=True,
+         desc="Debug/programming pads (not fitted): 1 TX 2 RX 3 D+ 4 D- 5 BOOT 6 GND; board powered by the cell")
+else:
+    part("J1", "Connector_Generic:Conn_02x03_Odd_Even", "DEBUG",
+         "Connector_PinHeader_2.54mm:PinHeader_2x03_P2.54mm_Vertical",
+         {"1": "U0TXD_J", "2": "U0RXD", "3": "USB_DP", "4": "USB_DM", "5": "BTN_USER", "6": "GND"}, dnp=True,
+         desc="Debug/programming pads (not fitted), 2x3: 1 TX 2 RX 3 D+ 4 D- 5 BOOT 6 GND; board powered by the cell")
 
 # ------------------------------------------------------------------ sensor
 part("U5", "Sensor_Humidity:SHT4x", "SHT40-AD1B-R3",

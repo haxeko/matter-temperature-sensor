@@ -73,4 +73,8 @@ Sau T-30…T-39: chạy lại `hardware/analysis/power_model.py` với số đo,
 | T-41 | Chu kỳ nhiệt 0…40 °C, độ ẩm 20…80 %RH | so với tham chiếu; holder ghi −25…+85 °C |
 | T-42 | ESD tiếp xúc trên nút và holder | theo yêu cầu của vỏ hoàn chỉnh |
 
+## F. Biến thể chip rời (H2C)
+
+Các mục A–E áp dụng nguyên cho H2C (cùng tên net và điểm đo; T-10 nạp qua J1 2 × 3 cùng thứ tự chân). Thêm C-01…C-08 (thạch anh 32 MHz, phối hợp RF và ăng-ten bằng VNA, công suất và hài, tầm phủ so với module, mối hàn QFN, USB/UART, dòng ngủ): bảng ở `docs/chip_variant.md` mục 10. Nên làm C-01…C-03 trước khi làm nhiều bo H2C.
+
 Chứng nhận (Matter, FCC/CE, an toàn pin) **không nằm trong phạm vi** và không được tuyên bố.

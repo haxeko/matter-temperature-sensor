@@ -23,7 +23,7 @@ import design as D
 from kicad_sexpr import SymbolSource, fmt, new_uuid, outward_dir, transform
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.normpath(os.path.join(HERE, "..", "kicad"))
+OUT = os.path.join(D.HW_DIR, "kicad")
 LIB = os.path.join(OUT, "lib")
 SCH = os.path.join(OUT, D.PROJECT + ".kicad_sch")
 GRID = 1.27
@@ -43,6 +43,10 @@ def load_symbols():
             overrides = {"Footprint": "th_sensor:ESP32-H2-MINI-1",
                          "Description": "ESP32-H2-MINI-1 module (Espressif KiCad library, CC-BY-SA 4.0 with "
                                         "design exception), 4 MB flash variant -H4S"}
+        elif lib_id == "th_sensor:ESP32-H2":
+            overrides = {"Footprint": "th_sensor:QFN-32-1EP_4x4mm_P0.4mm_EP2.9x2.9mm",
+                         "Description": "ESP32-H2 SoC, QFN32 4x4 mm (Espressif KiCad library, CC-BY-SA 4.0 with "
+                                        "design exception)"}
         SYM[lib_id] = SymbolSource(path, name, nick, new_name=new_name, overrides=overrides)
 
 
@@ -55,25 +59,116 @@ def write_project_libs():
         for e in entries:
             f.write("\t" + e + "\n")
         f.write(")\n")
-    # module footprint + 3D model from the Espressif library (kept as vendored copies when it is absent)
+    # module / chip footprint (+ module 3D model) from the Espressif library (kept as vendored copies when it is
+    # absent)
     if os.path.isdir(D.ESPRESSIF_LIB):
-        src_fp = os.path.join(D.ESPRESSIF_LIB, "footprints", "Espressif.pretty", "ESP32-H2-MINI-1.kicad_mod")
-        fp = open(src_fp).read()
-        fp = re.sub(r'\(model "[^"]*"', '(model "${KIPRJMOD}/lib/3dmodels/ESP32-H2-MINI-1.STEP"', fp)
-        open(os.path.join(LIB, "th_sensor.pretty", "ESP32-H2-MINI-1.kicad_mod"), "w").write(fp)
-        shutil.copyfile(os.path.join(D.ESPRESSIF_LIB, "3dmodels", "espressif.3dshapes", "ESP32-H2-MINI-1.STEP"),
-                        os.path.join(LIB, "3dmodels", "ESP32-H2-MINI-1.STEP"))
+        if D.VARIANT == "module":
+            src_fp = os.path.join(D.ESPRESSIF_LIB, "footprints", "Espressif.pretty", "ESP32-H2-MINI-1.kicad_mod")
+            fp = open(src_fp).read()
+            fp = re.sub(r'\(model "[^"]*"', '(model "${KIPRJMOD}/lib/3dmodels/ESP32-H2-MINI-1.STEP"', fp)
+            open(os.path.join(LIB, "th_sensor.pretty", "ESP32-H2-MINI-1.kicad_mod"), "w").write(fp)
+            shutil.copyfile(os.path.join(D.ESPRESSIF_LIB, "3dmodels", "espressif.3dshapes", "ESP32-H2-MINI-1.STEP"),
+                            os.path.join(LIB, "3dmodels", "ESP32-H2-MINI-1.STEP"))
+        else:
+            name = "QFN-32-1EP_4x4mm_P0.4mm_EP2.9x2.9mm.kicad_mod"
+            shutil.copyfile(os.path.join(D.ESPRESSIF_LIB, "footprints", "Espressif.pretty", name),
+                            os.path.join(LIB, "th_sensor.pretty", name))
         shutil.copyfile(os.path.join(D.ESPRESSIF_LIB, "LICENSE.md"),
                         os.path.join(LIB, "LICENSE-espressif-kicad-libraries.md"))
+    if D.VARIANT == "chip":
+        open(os.path.join(LIB, "th_sensor.pretty", ANT_FP + ".kicad_mod"), "w").write(ti_dn007_ifa())
     open(os.path.join(LIB, "th_sensor.pretty", "L_Murata_DFE201612E.kicad_mod"), "w").write(murata_dfe201612e())
     open(os.path.join(LIB, "th_sensor.pretty", "BatteryHolder_MYOUNG_BS-24-B4AA016_1x2450.kicad_mod"), "w").write(
         myoung_bs24_b4aa016())
     with open(os.path.join(OUT, "sym-lib-table"), "w") as f:
         f.write('(sym_lib_table\n\t(version 7)\n\t(lib (name "th_sensor")(type "KiCad")(uri "${KIPRJMOD}/lib/th_sensor.kicad_sym")'
-                '(options "")(descr "TH-SENSOR-H2 project symbols"))\n)\n')
+                '(options "")(descr "%s project symbols"))\n)\n' % D.BOARD_NAME)
     with open(os.path.join(OUT, "fp-lib-table"), "w") as f:
         f.write('(fp_lib_table\n\t(version 7)\n\t(lib (name "th_sensor")(type "KiCad")(uri "${KIPRJMOD}/lib/th_sensor.pretty")'
-                '(options "")(descr "TH-SENSOR-H2 project footprints"))\n)\n')
+                '(options "")(descr "%s project footprints"))\n)\n' % D.BOARD_NAME)
+
+
+# TI DN007 (SWRU120D, 2019) "2.4-GHz Inverted F Antenna", Table 1-1 (mm). The two ground tabs and the 45-degree
+# feed section are drawn in Figure 1-1 but not dimensioned: measured from the figure (+-0.1 mm).
+DN007 = dict(H1=5.70, H2=0.74, H3=1.29, H4=2.21, H5=0.66, H6=1.21, H7=0.80, H8=1.80, H9=0.61, W1=1.21, W2=0.46,
+             L1=25.58, L2=16.40, L3=2.18, L4=4.80, L5=1.00, L6=1.00, L7=3.20, L8=0.45)
+DN007_TABS = ((6.85, 8.18), (9.00, 10.18))            # x ranges of the two legs to the ground plane (figure)
+
+
+def dn007_geometry():
+    """Copper of the antenna as polygons in TI's frame: x from the left end, y up from the ground-plane edge."""
+    d = DN007
+    top = d["H1"] + d["W1"]                    # 6.91 top edge of the radiating arm
+    bar_bot, bar_top = d["H2"], d["H2"] + d["H3"]
+    cut_top = top - d["H4"]                    # 4.70 bottom of the upper-left block
+    blk_bot = bar_top + d["H5"]                # 2.69 feed block
+    blk_top = blk_bot + d["H6"]                # 3.90 (= cut_top - H7)
+    x_blk = d["L3"] + d["L4"]                  # 6.98
+    x_blk_r = x_blk + d["L7"]                  # 10.18 (also the right end of the lower bar)
+    x_stub = x_blk + d["L5"]                   # 7.98
+    x_stub_r = x_blk_r - d["L6"]               # 9.18 (arm length to the right of it: L2)
+    x_feed = x_blk_r + d["L8"]                 # 10.63
+    rect = lambda x1, y1, x2, y2: [(x1, y1), (x2, y1), (x2, y2), (x1, y2)]
+    polys = [rect(0, d["H1"], d["L1"], top),                  # radiating arm (L1 x W1)
+             rect(0, cut_top, x_stub, top),                   # upper-left block (H4)
+             rect(0, bar_bot, d["L3"], top),                  # shorted leg (L3)
+             rect(0, bar_bot, x_blk_r, bar_top),              # lower bar (H3)
+             rect(x_stub, blk_top, x_stub_r, d["H1"]),        # tap to the arm (H8)
+             rect(x_blk, blk_bot, x_blk_r, blk_top)]          # feed block (L7 x H6)
+    polys += [rect(a, 0, b, bar_bot) for a, b in DN007_TABS]  # legs to ground (H2)
+    w = d["W2"]
+    y_l = 2.00                                  # feed line turns 45 degrees towards the block
+    y_r = y_l + (w * 2 ** 0.5 - w)             # keeps the slanted part W2 wide
+    polys.append([(x_feed, 0), (x_feed + w, 0), (x_feed + w, y_r), (x_blk_r, y_r + x_feed + w - x_blk_r),
+                  (x_blk_r, y_l + x_feed - x_blk_r), (x_feed, y_l)])
+    return polys, x_feed + w / 2, top + d["H9"]
+
+
+ANT_FP = "Antenna_TI_DN007_IFA_2.4GHz_Mirrored"
+
+
+def ti_dn007_ifa():
+    """Footprint: mirror image of TI's drawing (open end of the radiating arm on the left, shorted section on the
+    right of the feed), origin at the feed point on the ground-plane edge, antenna towards -Y. A mirror image has
+    the same electrical behaviour; it puts the open end at the board edge, away from the parts on this board.
+    Pads 1 (feed) and 2 (ground legs) are a net tie: the antenna shorts them at DC, as an inverted-F does."""
+    u = lambda s_: new_uuid("fp-dn007m-" + s_)
+    polys, xf, height = dn007_geometry()
+    tx = lambda x: round(xf - x, 4)            # mirrored: TI's x grows to the left
+    ty = lambda y: round(-y, 4)
+    out = []
+    for k, poly in enumerate(polys):
+        pts = " ".join("(xy %s %s)" % (fmt(tx(x)), fmt(ty(y))) for x, y in poly)
+        out.append(f'\t(fp_poly (pts {pts}) (stroke (width 0) (type solid)) (fill yes) (layer "F.Cu") '
+                   f'(uuid "{u("cu%d" % k)}"))')
+    x1, x2 = sorted((tx(DN007_TABS[0][0]), tx(DN007_TABS[1][1])))
+    l1 = DN007["L1"]
+    xl, xr = tx(l1), tx(0)                     # left (open) end, right (shorted) end
+    # courtyard: the antenna area plus the two pads below the ground-plane edge, nothing else, so that the RF
+    # parts can sit right under the feed
+    w2 = DN007["W2"] / 2
+    crt = [(xl - 0.25, ty(height)), (xr + 0.25, ty(height)), (xr + 0.25, 0), (round(x2 + 0.25, 4), 0),
+           (round(x2 + 0.25, 4), 0.85), (round(x1 - 0.25, 4), 0.85), (round(x1 - 0.25, 4), 0.65), (-w2 - 0.25, 0.65),
+           (-w2 - 0.25, 0), (xl - 0.25, 0)]
+    crt_pts = " ".join("(xy %s %s)" % (fmt(round(x, 4)), fmt(round(y, 4))) for x, y in crt)
+    return f"""(footprint "{ANT_FP}"
+	(version 20241229)
+	(generator "th_sensor_gen")
+	(layer "F.Cu")
+	(descr "2.4 GHz inverted-F PCB antenna, TI DN007 / SWRU120D (Rev. D) Figure 1-1 and Table 1-1, 25.7 x 7.5 mm, drawn as its mirror image (open end on the left); TI tuned it on 1 mm FR-4. Origin = feed point on the ground-plane edge. No copper on any layer in the antenna area (board-level rule area). Ground tabs and 45-degree feed measured from the figure.")
+	(tags "antenna 2.4GHz IFA PCB TI DN007 SWRU120")
+	(property "Reference" "REF**" (at {fmt(round(xl + 2.0, 4))} {fmt(ty(DN007["H1"]) + 1.0)} 0) (layer "F.Fab") (uuid "{u('ref')}") (effects (font (size 0.8 0.8) (thickness 0.12))))
+	(property "Value" "{ANT_FP}" (at {fmt(round((xl + xr) / 2, 4))} {fmt(ty(DN007["H1"]) + 2.2)} 0) (layer "F.Fab") (uuid "{u('val')}") (effects (font (size 0.8 0.8) (thickness 0.12))))
+	(attr smd exclude_from_pos_files exclude_from_bom)
+	(net_tie_pad_groups "1,2")
+{chr(10).join(out)}
+	(fp_rect (start {fmt(xl)} {fmt(ty(height))}) (end {fmt(xr)} 0) (stroke (width 0.1) (type solid)) (fill no) (layer "F.Fab") (uuid "{u('fab')}"))
+	(fp_poly (pts {crt_pts}) (stroke (width 0.05) (type solid)) (fill no) (layer "F.CrtYd") (uuid "{u('crt')}"))
+	(pad "1" smd rect (at 0 0.2) (size {fmt(DN007["W2"])} 0.4) (layers "F.Cu") (uuid "{u('p1')}"))
+	(pad "2" smd rect (at {fmt(round((x1 + x2) / 2, 4))} 0.3) (size {fmt(round(x2 - x1, 4))} 0.6) (layers "F.Cu") (zone_connect 2) (uuid "{u('p2')}"))
+	(embedded_fonts no)
+)
+"""
 
 
 def murata_dfe201612e():
@@ -484,6 +579,116 @@ def module_block():
            (x1 + 1.27, 195.58))
 
 
+def chip_block():
+    """Chip variant: ESP32-H2 QFN32 with the HDG v1.6 reference circuit (decoupling, 32 MHz crystal with the
+    24 nH series element, RF matching network, PCB antenna), plus the parts shared with the module variant."""
+    x1, y1, x2, y2 = 213.36, 91.44, 406.4, 213.36
+    S.frame(x1, y1, x2, y2, "ESP32-H2FH4S CHIP, 32 MHz AND 32.768 kHz CRYSTALS, RF MATCH + PCB ANTENNA, BUTTON, LED, DEBUG")
+    ux, uy = 299.72, 157.48
+    S.place("U4", ux, uy, 0, ref_off=(-27.94, -34.29), val_off=(10.16, 31.75))
+    # signal pins; the VDD3P3 pins 1, 2, 27, 30, 31 are stacked on one point of the symbol
+    for num in ["3", "4", "5", "6", "7", "8", "10", "11", "12", "13", "14", "15", "16", "17", "21", "22", "23",
+                "24", "25", "26", "28", "29", "32"]:
+        S.stub("U4", num, length=5.08)
+    S.stub("U4", "33")
+    S.stub("U4", "1")
+    top = S.pin("U4", "1")[1] - 2.54
+    xs = [S.pin("U4", n)[0] for n in ("1", "18", "19", "9", "20")]
+    for n in ("18", "19", "9", "20"):
+        p_ = S.pin("U4", n)
+        S.wire(p_, (p_[0], top))
+    for a, b in zip(xs, xs[1:]):
+        S.wire((a, top), (b, top))
+    for x in xs[:-1]:
+        S.junction((x, top))
+    # decoupling (HDG reference values), one capacitor per supply pin group
+    for k, ref in enumerate(["C40", "C41", "C42", "C43", "C44", "C45", "C46", "C47", "C48"]):
+        S.place(ref, 228.6 + 7.62 * k, 106.68, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
+        S.stubs(ref)
+    S.text("C40-C42: VDD3P3 pins 1/2. C43: pins 30/31. C44, C45: pin 27. C46: VDDPST2 (20). C47: VDDA_PMU (19) and "
+           "VBAT (18). C48: VDDPST1 (9).\nPlace each at its pin (HDG v1.6 schematic checklist).", (x1 + 1.27, 115.57),
+           size=1.0)
+    # 32 MHz crystal, load caps, series element on XTAL_P
+    S.place("Y2", 236.22, 129.54, 0, ref_off=(-2.54, -3.81), val_off=(1.27, -3.81))
+    S.stubs("Y2", ["1", "3"])
+    S.stub("Y2", "2")
+    S.place("C49", 220.98, 133.35, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
+    S.place("C50", 251.46, 133.35, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
+    S.stubs("C49")
+    S.stubs("C50")
+    S.place("L3", 226.06, 147.32, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
+    S.stubs("L3")
+    # UART TX series resistor (HDG)
+    S.place("R40", 360.68, 132.08, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
+    S.stubs("R40")
+    # RF: ANT -> C51 (shunt) -> L4 (series) -> C52 (shunt) -> R41 (series) -> L5 (shunt, not fitted) -> AE1
+    yr = 198.12
+    S.place("C51", 271.78, yr + 3.81, 0, ref_off=(1.27, 1.27), val_off=(1.27, 3.81))
+    S.place("L4", 279.4, yr, 90, ref_off=(-1.27, -2.54), val_off=(-1.27, -5.08))
+    S.place("C52", 287.02, yr + 3.81, 0, ref_off=(1.27, 1.27), val_off=(1.27, 3.81))
+    S.place("R41", 294.64, yr, 90, ref_off=(-1.27, -2.54), val_off=(-1.27, -5.08))
+    S.place("L5", 302.26, yr + 3.81, 0, ref_off=(1.27, 1.27), val_off=(1.27, 3.81))
+    S.place("AE1", 309.88, yr - 5.08, 0, ref_off=(3.81, -7.62), val_off=(3.81, -5.08))
+    l4 = sorted([S.pin("L4", "1"), S.pin("L4", "2")])
+    r41 = sorted([S.pin("R41", "1"), S.pin("R41", "2")])
+    if S.pin("L4", "1")[0] > S.pin("L4", "2")[0] or S.pin("R41", "1")[0] > S.pin("R41", "2")[0]:
+        raise SystemExit("RF chain: series parts are reversed")
+    for a, b in [((266.7, yr), S.pin("C51", "1")), (S.pin("C51", "1"), l4[0]), (l4[1], S.pin("C52", "1")),
+                 (S.pin("C52", "1"), r41[0]), (r41[1], S.pin("L5", "1")), (S.pin("L5", "1"), S.pin("AE1", "1"))]:
+        S.wire(a, b)
+    for p_ in (S.pin("C51", "1"), S.pin("C52", "1"), S.pin("L5", "1")):
+        S.junction(p_)
+    S.label("LNA_IN", (266.7, yr), 180)
+    S.label("RF_M", S.pin("C52", "1"), 0)
+    S.label("RF_ANT", S.pin("L5", "1"), 0)
+    for ref in ("C51", "C52", "L5"):
+        S.stub(ref, "2")
+    g = S.pin("AE1", "2")
+    S.wire(g, (g[0], g[1] + 5.08))
+    S.power("GND", (g[0], g[1] + 5.08), 0)
+    S.text("RF: 50 ohm line, 0201 parts. C51/L4/C52 = HDG C12/L2/C11, start values from the HDG ranges;\n"
+           "R41 (HDG C3) is a 0R link, L5 (HDG L1) not fitted. All five must be tuned with a network analyser.",
+           (262.89, 206.88), size=1.0)
+    # 32.768 kHz crystal (same parts as the module variant)
+    S.place("Y1", 238.76, 196.85, 0, ref_off=(-2.54, -3.81), val_off=(-5.08, -6.35))
+    S.place("C27", 228.6, 200.66, 0, ref_off=(-6.35, -1.27), val_off=(-6.35, 1.27))
+    S.place("C28", 248.92, 200.66, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
+    S.wire(S.pin("C27", "1"), S.pin("Y1", "1"))
+    S.wire(S.pin("Y1", "2"), S.pin("C28", "1"))
+    S.label("XTAL_32K_P", (228.6, 196.85), 180)
+    S.label("XTAL_32K_N", (248.92, 196.85), 0)
+    S.stub("C27", "2")
+    S.stub("C28", "2")
+    # USER/BOOT button and pull-ups, LED (as the module variant)
+    S.place("R23", 360.68, 186.69, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
+    S.place("SW1", 370.84, 196.85, 270, ref_off=(5.08, -1.27), val_off=(5.08, 1.27))
+    S.stub("R23", "1")
+    S.wire(S.pin("R23", "2"), (360.68, 191.77), S.pin("SW1", "1"))
+    S.wire((350.52, 191.77), (360.68, 191.77))
+    S.junction((360.68, 191.77))
+    S.label("BTN_USER", (350.52, 191.77), 180)
+    S.stub("SW1", "2")
+    S.place("R24", 388.62, 186.69, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
+    S.stub("R24", "1")
+    S.stub("R24", "2", label_angle=0)
+    S.place("R25", 370.84, 165.1, 90, ref_off=(-1.27, -2.54), val_off=(-1.27, 3.81))
+    S.place("D3", 386.08, 165.1, 180, ref_off=(-2.54, -2.54), val_off=(-2.54, 3.81))
+    S.stub("R25", "1")
+    S.wire(S.pin("R25", "2"), S.pin("D3", "2"))
+    S.label("LED_A", (375.92, 165.1), 0)
+    S.stub("D3", "1")
+    # debug pads, 2 x 3
+    S.place("J1", 391.16, 115.57, 0, ref_off=(-2.54, -6.35), val_off=(-2.54, 6.35))
+    S.stubs("J1", [str(i) for i in range(1, 6)], length=5.08)
+    g = S.pin("J1", "6")
+    S.wire(g, (g[0] + 2.54, g[1]), (g[0] + 2.54, g[1] + 2.54))
+    S.power("GND", (g[0] + 2.54, g[1] + 2.54), 0)
+    S.text("GPIO8/GPIO9 strapping: GPIO9 low at reset (SW1 held) = download mode.\n"
+           "GPIO0/1/2/3/4/25: no connect, firmware disables input + pull-down.\n"
+           "J1 (not fitted) has no supply pin: the cell powers the board.",
+           (332.74, 95.25), size=1.0)
+
+
 def sensor_block():
     x1, y1 = 307.34, 17.78
     S.frame(x1, y1, 406.4, 86.36, "SHT40 (on a slotted tongue, away from converters and module)")
@@ -556,7 +761,10 @@ def build():
     write_project_libs()
     power_block(33.02)
     rail_block()
-    module_block()
+    if D.VARIANT == "module":
+        module_block()
+    else:
+        chip_block()
     sensor_block()
     sense_block()
     misc_block()
@@ -564,11 +772,15 @@ def build():
     if missing:
         raise SystemExit("not placed: %s" % missing)
     lib_symbols = "\n".join(SYM[k].embedded() for k in sorted(SYM))
-    title = ('(title_block (title "%s") (date "%s") (rev "%s") (company "TH-SENSOR-H2") '
-             '(comment 1 "ESP32-H2 Matter over Thread, SHT40, 1 x CR2450, TPS63900 3.3 V") '
+    title = ('(title_block (title "%s") (date "%s") (rev "%s") (company "%s") '
+             '(comment 1 "%s") '
              '(comment 4 "Generated by hardware/scripts/gen_schematic.py from design.py - edit there") '
              '(comment 2 "Power path and battery life figures are ESTIMATES (docs/power_budget.md)") '
-             '(comment 3 "ERC/DRC reports: hardware/reports"))' % (D.TITLE, D.DATE, D.REV))
+             '(comment 3 "ERC/DRC reports: %s"))'
+             % (D.TITLE, D.DATE, D.REV, D.BOARD_NAME,
+                "ESP32-H2 Matter over Thread, SHT40, 1 x CR2450, TPS63900 3.3 V" if D.VARIANT == "module" else
+                "ESP32-H2FH4S chip + PCB antenna, Matter over Thread, SHT40, 1 x CR2450, TPS63900 3.3 V",
+                "hardware/reports" if D.VARIANT == "module" else "hardware/chip/reports"))
     body = "\n".join(S.items)
     sch = ('(kicad_sch (version 20250114) (generator "eeschema") (generator_version "9.0") (uuid "%s") (paper "A3")\n'
            '%s\n(lib_symbols\n%s\n)\n%s\n(sheet_instances (path "/" (page "1")))\n(embedded_fonts no)\n)\n'

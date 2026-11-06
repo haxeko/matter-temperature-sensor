@@ -22,7 +22,7 @@ import subprocess
 import design as D
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-HW = os.path.normpath(os.path.join(HERE, ".."))
+HW = D.HW_DIR
 SCH = os.path.join(HW, "kicad", D.PROJECT + ".kicad_sch")
 PCB = os.path.join(HW, "kicad", D.PROJECT + ".kicad_pcb")
 REP = os.path.join(HW, "reports")

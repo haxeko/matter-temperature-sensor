@@ -1,0 +1,36 @@
+GND fanout: 13 vias
+ok /U0RXD: U4.22 -> J1.2                    len    3.6 mm  vias 0
+ok /U0TXD_J: R40.2 -> J1.1                  len    5.7 mm  vias 1
+ok /LED: U4.21 -> R25.1                     len    4.7 mm  vias 1
+ok /nRST: U3.2 -> R22.1                     len    1.8 mm  vias 0
+ok /EN: C25.1 -> TP6.1                      len    1.5 mm  vias 0
+ok /EN: R22.2 -> C25.1                      len    1.6 mm  vias 0
+ok /EN: SW2.1 -> C25.1                      len    2.0 mm  vias 0
+ok /EN: SW2.1 -> SW2.1                      len    5.2 mm  vias 2
+ok /EN: U4.17 -> TP6.1                      len   12.9 mm  vias 1
+ok /VBAT_MEAS_EN: U4.14 -> Q3.1             len   10.3 mm  vias 1
+ok /BTN_USER: U4.11 -> J1.5                 len   17.5 mm  vias 0
+ok /BTN_USER: R23.2 -> U4.11                len    3.1 mm  vias 1
+ok /BTN_USER: SW1.1 -> U4.11                len   26.8 mm  vias 1
+ok /BTN_USER: SW1.1 -> SW1.1                len    5.2 mm  vias 2
+ok /I2C_SCL: U5.2 -> R27.2                  len    2.8 mm  vias 0
+ok /I2C_SCL: U4.13 -> R27.2                 len   41.4 mm  vias 3
+ok /I2C_SDA: U5.1 -> R26.2                  len    5.4 mm  vias 2
+ok /I2C_SDA: U4.12 -> R26.2                 len   40.1 mm  vias 4
+ok /VIN: C5.1 -> Q1.2                       len    3.7 mm  vias 0
+ok /VOUT: R21.1 -> TP3.1                    len    1.0 mm  vias 0
+ok /VOUT: C21.1 -> R21.1                    len    1.3 mm  vias 0
+ok /VOUT: C22.1 -> U1.6                     len    6.8 mm  vias 0
+ok +3V3: R24.1/R23.1 -> C48.1               len   13.2 mm  vias 1
+ok +3V3: C26.1 -> C46.1                     len   11.5 mm  vias 2
+ok +3V3: U3.3 -> C26.1                      len    0.8 mm  vias 0
+ok +3V3: TP4.1 -> R21.2                     len   15.6 mm  vias 1
+ok +3V3: R26.1 -> TP4.1                     len    3.7 mm  vias 0
+ok +3V3: R27.1 -> R26.1                     len    1.0 mm  vias 0
+ok +3V3: C29.1/U5.3 -> R27.1                len    3.9 mm  vias 0
+ok /VBAT: BT1.1 -> R1.1                     len   22.2 mm  vias 2
+ok /VBAT: R31.1 -> TP1.1                    len   59.9 mm  vias 1
+one-sided signal vias removed: 2; dangling stub segments trimmed or removed: 1
+stitching vias: 51 placed, 0 removed (single plane)
+references on F.Fab only (no room on silk; BT1 and AE1 by choice): AE1, BT1, C1, C25, C26, C40, C41, C42, C43, C44, C45, C46, C47, C48, C50, C51, C52, L4, L5, R22, R25, R26, R31, R32, R35, R40, SW1, U1
+unrouted: 0

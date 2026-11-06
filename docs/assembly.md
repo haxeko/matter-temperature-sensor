@@ -69,3 +69,14 @@ Theo đúng thứ tự `docs/test_plan.md` mục A (T-01…T-08) **trước khi*
 | R21 | dòng tải 3V3 (module, SHT40, LED, supervisor) | như trên; đây là điểm đo dòng ngủ |
 
 Khi đo dòng ngủ: rút USB (USB-Serial/JTAG giữ chip thức có chủ đích), tắt LED nếu cần (`config set led 0`).
+
+## Biến thể chip rời (H2C Rev A)
+
+File ở `hardware/chip/production/` (cùng cấu trúc: zip Gerber 4 lớp `th_sensor_h2c_revA_gerbers.zip`, `bom_jlc.csv` 36 dòng, `cpl_jlc.csv` 57 linh kiện, `orientation_check.md`, `assembly_top.pdf`, `manufacturing_blockers.md`, ảnh chụp tồn kho 2026-11-06). **Không có gì đã được đặt hàng.**
+
+- PCB: 4 lớp, 1.6 mm, stack-up JLC04161H-7628, kiểm soát trở kháng (50 Ω đơn trên L1/L2), ENIG, via phủ mask; rãnh lưỡi cảm biến 1 mm hình chữ L từ mép trên, phay.
+- **U4 ESP32-H2FH4S tồn kho JLC 0**: gửi linh kiện hoặc lắp phần còn lại rồi gắn U4 bằng stencil + khí nóng/bếp gia nhiệt. QFN 0.4 mm có pad đáy và các tụ/cuộn 0201 không hàn bằng mỏ hàn được.
+- 9 via trong pad đáy U4: hỏi lấp/bịt via hoặc chấp nhận hút thiếc và kiểm mối hàn.
+- Bản xem trước JLC: kiểm từng dòng `orientation_check.md`, nhất là **Y2** (xoay sai 90° đặt chân thạch anh lên pad GND), U4 (chấm chân 1), holder, C5.
+- C51/L4/C52/R41 (0201) và C49/C50 là giá trị khởi đầu; L5 không lắp. Nên mua thêm 0201 giá trị lân cận để chỉnh (`docs/chip_variant.md` mục 9).
+

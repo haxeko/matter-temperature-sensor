@@ -30,12 +30,14 @@ import pcbnew
 import design as D
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-HW = os.path.normpath(os.path.join(HERE, ".."))
+HW = D.HW_DIR
 PCB = os.path.join(HW, "kicad", D.PROJECT + ".kicad_pcb")
 OUT = os.path.join(HW, "production")
 GERB = os.path.join(OUT, "gerbers")
 SNAP = os.path.join(OUT, "jlc_parts_snapshot.jsonl")
 LAYERS = "F.Cu,B.Cu,F.Paste,B.Paste,F.SilkS,B.SilkS,F.Mask,B.Mask,Edge.Cuts"
+if D.VARIANT == "chip":
+    LAYERS = "F.Cu,In1.Cu,In2.Cu,B.Cu,F.Paste,B.Paste,F.SilkS,B.SilkS,F.Mask,B.Mask,Edge.Cuts"
 
 # parts whose orientation matters, with what pad 1 is
 POLARISED = {
@@ -45,6 +47,8 @@ POLARISED = {
     "C5": "pad 1 = + (base-plate chamfers on this side; the can marking is on the - side)",
     "BT": "pad 1 = + terminal (silkscreen '+')",
 }
+if D.VARIANT == "chip":
+    POLARISED["Y2"] = "pad 1 = crystal terminal on XTAL_P (pins 1/3 crystal, 2/4 case to GND)"
 
 
 def run(cmd):
@@ -63,7 +67,7 @@ def fab_files():
     run(["kicad-cli", "pcb", "export", "drill", "--format", "excellon", "--drill-origin", "plot",
          "--excellon-units", "mm", "--excellon-separate-th", "--generate-map", "--map-format", "pdf",
          "-o", GERB + "/", PCB])
-    z = os.path.join(OUT, "th_sensor_h2_rev%s_gerbers.zip" % D.REV)
+    z = os.path.join(OUT, "%s_rev%s_gerbers.zip" % (D.PROJECT, D.REV))
     with zipfile.ZipFile(z, "w", zipfile.ZIP_DEFLATED) as zf:
         for f in sorted(os.listdir(GERB)):
             if not f.endswith(".pdf"):
@@ -133,7 +137,8 @@ def cpl(board):
         rot = fp.GetOrientationDegrees() % 360
         rows.append({"Designator": ref, "Mid X": "%.3f" % x, "Mid Y": "%.3f" % y, "Layer": "Top",
                      "Rotation": "%g" % rot})
-        kind = next((v for k, v in POLARISED.items() if ref == k or (len(k) <= 2 and ref.startswith(k)
+        # a key ending in a digit is one reference ("C5" is not C50..C52), otherwise a reference prefix
+        kind = next((v for k, v in POLARISED.items() if ref == k or (not k[-1].isdigit() and ref.startswith(k)
                                                                     and ref[len(k):].isdigit())), None)
         if kind:
             p1 = next(p for p in fp.Pads() if p.GetNumber() == "1")
@@ -197,9 +202,19 @@ def blockers(rows, snap):
               "and degrades.",
               "- J1 is not fitted / not in the BOM (debug pads only).",
               "- Test pads TP1..TP%d (silkscreen shows their net names) and fiducials have no parts." % n_tp,
-              "- PCB options: 2 layers, 1.6 mm FR-4, 1 oz, tented vias (set in the board file), "
-              "lead-free HASL or ENIG. The SHT40 tongue is cut free by a 1 mm L-shaped slot that "
-              "opens into the antenna notch (routed, not V-cut).",
+              ("- PCB options: 2 layers, 1.6 mm FR-4, 1 oz, tented vias (set in the board file), "
+               "lead-free HASL or ENIG. The SHT40 tongue is cut free by a 1 mm L-shaped slot that "
+               "opens into the antenna notch (routed, not V-cut)." if D.VARIANT == "module" else
+               "- PCB options: 4 layers, 1.6 mm, JLC stack-up JLC04161H-7628 with impedance control (50 ohm "
+               "single-ended on L1 over the L2 ground; 0.35 mm computed, confirm with JLC's calculator), "
+               "tented vias, ENIG (flat pads for the QFN and 0201 parts). The SHT40 tongue is cut free by a "
+               "1 mm L-shaped slot from the top edge (routed, not V-cut)."),
+              *(["- U4 (QFN32, 0.4 mm pitch) has 9 GND vias in its exposed pad (HDG minimum): ask for via "
+                 "filling/plugging or accept some solder wicking.",
+                 "- RF parts C51/L4/C52/R41 are 0201 and only start values; L5 is not fitted. The PCB antenna "
+                 "AE1 is copper only (no part) and has not been measured: see docs/chip_variant.md.",
+                 "- Y2 (32 MHz): pin 1 must match orientation_check.md (a 90-degree error puts a crystal "
+                 "terminal on a ground pad); load caps C49/C50 are start values."] if D.VARIANT == "chip" else []),
               "- Nothing here proves the design works: see docs/test_plan.md (no prototype has been built)."]
     with open(os.path.join(OUT, "manufacturing_blockers.md"), "w") as f:
         f.write("\n".join(lines) + "\n")

@@ -65,3 +65,37 @@ Kết quả lần chạy cuối: `pin map OK: 13 defines, 6 unused GPIOs checked
 | 6 | GND |
 
 J1 không có chân nguồn: bo chạy bằng pin, hoặc nguồn bench vào TP1 (VBAT) sau khi tháo pin. Cắm USB vào J1 không cấp điện cho bo.
+
+## Biến thể chip rời (TH-SENSOR-H2C)
+
+Cùng `board_pins.h` (firmware dùng chung). Số chân là chân của chip ESP32-H2 vỏ QFN32 theo bảng chân trong ESP32-H2 Series Datasheet v1.3; kiểm bằng:
+
+```
+python3 tools/check_pinmap.py --variant chip
+```
+
+Kết quả lần chạy cuối: `pin map OK (chip): 13 defines, 6 unused GPIOs checked against the chip schematic` (**ĐÃ XÁC MINH** với netlist xuất từ schematic H2C).
+
+| Chip pin | GPIO | board_pins.h | Net |
+|---|---|---|---|
+| 3 | GPIO0 | `unused (input off, pull-down)` | - |
+| 4 | GPIO1 | `unused (input off, pull-down)` | - |
+| 5 | GPIO2 | `unused (input off, pull-down)` | - |
+| 6 | GPIO3 | `unused (input off, pull-down)` | - |
+| 7 | GPIO4 | `unused (input off, pull-down)` | - |
+| 8 | GPIO5 | `BOARD_GPIO_VBAT_SENSE` | VBAT_SENSE |
+| 10 | GPIO8 | `BOARD_GPIO_STRAP8` | STRAP_GPIO8 |
+| 11 | GPIO9 | `BOARD_GPIO_USER_BUTTON` | BTN_USER |
+| 12 | GPIO10 | `BOARD_GPIO_I2C_SDA` | I2C_SDA |
+| 13 | GPIO11 | `BOARD_GPIO_I2C_SCL` | I2C_SCL |
+| 14 | GPIO12 | `BOARD_GPIO_VBAT_MEAS_EN` | VBAT_MEAS_EN |
+| 15 | GPIO13 | `BOARD_GPIO_XTAL32K_P` | XTAL_32K_P |
+| 16 | GPIO14 | `BOARD_GPIO_XTAL32K_N` | XTAL_32K_N |
+| 21 | GPIO22 | `BOARD_GPIO_LED` | LED |
+| 22 | GPIO23 | `BOARD_GPIO_UART0_RX` | U0RXD |
+| 23 | GPIO24 | `BOARD_GPIO_UART0_TX` | U0TXD |
+| 24 | GPIO25 | `unused (input off, pull-down)` | - |
+| 25 | GPIO26 | `BOARD_GPIO_USB_DM` | USB_DM |
+| 26 | GPIO27 | `BOARD_GPIO_USB_DP` | USB_DP |
+
+Chân nguồn và chân khác của chip (không phải GPIO): 1, 2, 27, 30, 31 VDD3P3; 9 VDDPST1; 18 VBAT; 19 VDDA_PMU; 20 VDDPST2 (đều +3V3); 17 CHIP_EN (EN); 28 XTAL_N, 29 XTAL_P (qua L3 24 nH); 32 ANT (LNA_IN); 33 pad đáy = GND. J1 của H2C là 2 × 3 (không lắp) với cùng thứ tự chân 1 TX, 2 RX, 3 D+, 4 D−, 5 BOOT, 6 GND.

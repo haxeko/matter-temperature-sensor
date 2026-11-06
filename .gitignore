@@ -13,6 +13,7 @@ fp-info-cache
 \#auto_saved_files\#
 _autosave-*
 hardware/kicad/*.net
+hardware/chip/kicad/*.net
 
 # Python
 __pycache__/
