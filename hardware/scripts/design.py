@@ -15,19 +15,22 @@ Sourcing fields were looked up on the JLCPCB parts API on 2026-10-29 / 2026-10-3
 (tools/jlc_lookup.py); stock and Basic/Extended status change daily and must be
 re-checked before ordering (docs/assembly.md).
 
-Two board variants share everything except the radio part (environment variable
+Three board variants share everything except the radio part (environment variable
 TH_VARIANT, default "module"):
   module  TH-SENSOR-H2 Rev B: ESP32-H2-MINI-1-H4S module -> hardware/kicad, production, ...
   chip    TH-SENSOR-H2C Rev A: bare ESP32-H2FH4S chip (QFN32, 4 MB in-package flash), 32 MHz
           crystal, RF matching network and a TI DN007 PCB antenna on a 4-layer board
           -> hardware/chip/kicad, hardware/chip/production, ... (docs/chip_variant.md)
-The firmware is the same for both: every GPIO keeps its function.
+  wroom   TH-SENSOR-H2W Rev A: ESP32-H2-WROOM-02C-H4S module (bought and hand-soldered by the user, not in
+          the JLC BOM) on a square 4-layer board, the module antenna overhanging the top edge
+          -> hardware/wroom/kicad, hardware/wroom/production, ... (docs/wroom_variant.md)
+The firmware is the same for all three: every GPIO keeps its function.
 """
 import os as _os
 
 VARIANT = _os.environ.get("TH_VARIANT", "module")
-if VARIANT not in ("module", "chip"):
-    raise SystemExit("TH_VARIANT must be 'module' or 'chip', not %r" % VARIANT)
+if VARIANT not in ("module", "chip", "wroom"):
+    raise SystemExit("TH_VARIANT must be 'module', 'chip' or 'wroom', not %r" % VARIANT)
 _HW = _os.path.normpath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
 if VARIANT == "module":
     PROJECT = "th_sensor_h2"
@@ -36,13 +39,20 @@ if VARIANT == "module":
     DATE = "2026-10-30"
     HW_DIR = _HW                                    # hardware/kicad, hardware/production, ...
     BOARD_NAME = "TH-SENSOR-H2"
-else:
+elif VARIANT == "chip":
     PROJECT = "th_sensor_h2c"
     TITLE = "TH-SENSOR-H2C thermo-hygrometer (bare ESP32-H2 chip)"
     REV = "A"
     DATE = "2026-11-06"
     HW_DIR = _os.path.join(_HW, "chip")             # hardware/chip/kicad, hardware/chip/production, ...
     BOARD_NAME = "TH-SENSOR-H2C"
+else:
+    PROJECT = "th_sensor_h2w"
+    TITLE = "TH-SENSOR-H2W thermo-hygrometer (ESP32-H2-WROOM-02C module)"
+    REV = "A"
+    DATE = "2026-11-06"
+    HW_DIR = _os.path.join(_HW, "wroom")            # hardware/wroom/kicad, hardware/wroom/production, ...
+    BOARD_NAME = "TH-SENSOR-H2W"
 
 KSYM = "/usr/share/kicad/symbols/"
 # Espressif KiCad libraries (github.com/espressif/kicad-libraries, git dd76561812ab300351234ba6e0ec1295641796f0).
@@ -78,9 +88,15 @@ SYMBOLS = {
     "Connector_Generic:Conn_02x03_Odd_Even": (KSYM + "Connector_Generic.kicad_sym", "Conn_02x03_Odd_Even"),
     "th_sensor:AO3401A": (KSYM + "Transistor_FET.kicad_sym", "AO3401A"),
     "th_sensor:2N7002": (KSYM + "Transistor_FET.kicad_sym", "2N7002"),
+    # no library has it: gen_schematic.py draws it from the module datasheet (path None)
+    "th_sensor:ESP32-H2-WROOM-02C": (None, "ESP32-H2-WROOM-02C"),
 }
-for _k in (("th_sensor:ESP32-H2", "Device:Crystal_GND24", "Device:Antenna_Shield", "Connector_Generic:Conn_02x03_Odd_Even")
-           if VARIANT == "module" else ("th_sensor:ESP32-H2-MINI-1", "Connector_Generic:Conn_01x06")):
+_DROP = {"module": ("th_sensor:ESP32-H2", "Device:Crystal_GND24", "Device:Antenna_Shield",
+                    "Connector_Generic:Conn_02x03_Odd_Even", "th_sensor:ESP32-H2-WROOM-02C"),
+         "chip": ("th_sensor:ESP32-H2-MINI-1", "Connector_Generic:Conn_01x06", "th_sensor:ESP32-H2-WROOM-02C"),
+         "wroom": ("th_sensor:ESP32-H2-MINI-1", "th_sensor:ESP32-H2", "Device:Crystal_GND24", "Device:Antenna_Shield",
+                   "Connector_Generic:Conn_01x06")}[VARIANT]
+for _k in _DROP:
     del SYMBOLS[_k]
 
 FP_R0603 = "Resistor_SMD:R_0603_1608Metric"
@@ -208,6 +224,21 @@ if VARIANT == "module":
          src="H2MINI", desc="4 MB flash, PCB antenna; JLC stock 0 on 2026-10-29")
     part("C23", "Device:C", "10uF", FP_C0603, {"1": "+3V3", "2": "GND"}, src="10u", spec="10V X5R 0603", desc="Module decoupling")
     part("C24", "Device:C", "100nF", FP_C0603, {"1": "+3V3", "2": "GND"}, src="100n", desc="Module decoupling")
+elif VARIANT == "wroom":
+    # ESP32-H2-WROOM-02C datasheet v1.2: table 2 "Pin Definitions", figure 7 land pattern. The user buys and
+    # hand-solders the module, so it is not in the JLC BOM/CPL (in_bom=False). VBAT (14) is tied to the module's
+    # 3V3 inside it (R2 = 0R, datasheet section 8); tied to +3V3 here as well, as on Rev B. EN has no RC inside
+    # the module (section 8): R22/C25 stay. TXD0 has a 499R series resistor inside the module.
+    part("U4", "th_sensor:ESP32-H2-WROOM-02C", "ESP32-H2-WROOM-02C-H4S", "th_sensor:ESP32-H2-WROOM-02C",
+         {"1": "+3V3", "2": "EN", "3": None, "4": "VBAT_SENSE", "5": "I2C_SDA", "6": "I2C_SCL", "7": "STRAP_GPIO8",
+          "8": "BTN_USER", "9": "GND", "10": "VBAT_MEAS_EN", "11": "XTAL_32K_P", "12": "XTAL_32K_N", "13": "GND",
+          "14": "+3V3", "15": "LED", "16": None, "17": None, "18": None, "19": None, "20": None, "21": "U0RXD",
+          "22": "U0TXD", "23": "USB_DM", "24": "USB_DP", "25": None, "26": None, "27": None, "28": None,
+          "29": "GND"},
+         in_bom=False, desc="User-supplied, hand-soldered (not in the JLC BOM/CPL): 4 MB flash variant -H4S, PCB antenna "
+                            "overhanging the board edge")
+    part("C23", "Device:C", "10uF", FP_C0603, {"1": "+3V3", "2": "GND"}, src="10u", spec="10V X5R 0603", desc="Module decoupling")
+    part("C24", "Device:C", "100nF", FP_C0603, {"1": "+3V3", "2": "GND"}, src="100n", desc="Module decoupling")
 else:
     # Pin numbers: ESP32-H2 QFN32 (datasheet v1.3 / Espressif KiCad symbol "ESP32-H2"). Supply pins and
     # their capacitors follow the ESP32-H2 Hardware Design Guidelines v1.6 reference schematic
@@ -282,6 +313,11 @@ if VARIANT == "module":
     part("J1", "Connector_Generic:Conn_01x06", "DEBUG", "Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical",
          {"1": "U0TXD", "2": "U0RXD", "3": "USB_DP", "4": "USB_DM", "5": "BTN_USER", "6": "GND"}, dnp=True,
          desc="Debug/programming pads (not fitted): 1 TX 2 RX 3 D+ 4 D- 5 BOOT 6 GND; board powered by the cell")
+elif VARIANT == "wroom":
+    part("J1", "Connector_Generic:Conn_02x03_Odd_Even", "DEBUG",
+         "Connector_PinHeader_2.54mm:PinHeader_2x03_P2.54mm_Vertical",
+         {"1": "U0TXD", "2": "U0RXD", "3": "USB_DP", "4": "USB_DM", "5": "BTN_USER", "6": "GND"}, dnp=True,
+         desc="Debug/programming pads (not fitted), 2x3: 1 TX 2 RX 3 D+ 4 D- 5 BOOT 6 GND; board powered by the cell")
 else:
     part("J1", "Connector_Generic:Conn_02x03_Odd_Even", "DEBUG",
          "Connector_PinHeader_2.54mm:PinHeader_2x03_P2.54mm_Vertical",

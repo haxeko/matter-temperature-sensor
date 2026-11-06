@@ -36,7 +36,7 @@ OUT = os.path.join(HW, "production")
 GERB = os.path.join(OUT, "gerbers")
 SNAP = os.path.join(OUT, "jlc_parts_snapshot.jsonl")
 LAYERS = "F.Cu,B.Cu,F.Paste,B.Paste,F.SilkS,B.SilkS,F.Mask,B.Mask,Edge.Cuts"
-if D.VARIANT == "chip":
+if D.VARIANT in ("chip", "wroom"):
     LAYERS = "F.Cu,In1.Cu,In2.Cu,B.Cu,F.Paste,B.Paste,F.SilkS,B.SilkS,F.Mask,B.Mask,Edge.Cuts"
 
 # parts whose orientation matters, with what pad 1 is
@@ -135,8 +135,8 @@ def cpl(board):
         x = pcbnew.ToMM(pos.x - aux.x)
         y = -pcbnew.ToMM(pos.y - aux.y)
         rot = fp.GetOrientationDegrees() % 360
-        rows.append({"Designator": ref, "Mid X": "%.3f" % x, "Mid Y": "%.3f" % y, "Layer": "Top",
-                     "Rotation": "%g" % rot})
+        rows.append({"Designator": ref, "Mid X": "%.3f" % x, "Mid Y": "%.3f" % y,
+                     "Layer": "Bottom" if fp.IsFlipped() else "Top", "Rotation": "%g" % rot})
         # a key ending in a digit is one reference ("C5" is not C50..C52), otherwise a reference prefix
         kind = next((v for k, v in POLARISED.items() if ref == k or (not k[-1].isdigit() and ref.startswith(k)
                                                                     and ref[len(k):].isdigit())), None)
@@ -149,8 +149,8 @@ def cpl(board):
                 side.append("right" if dx > 0 else "left")
             if abs(dy) > 0.05:
                 side.append("up" if dy > 0 else "down")
-            checks.append((ref, fp.GetValue(), "%g" % rot, kind, " / ".join(side) or "centre",
-                           "%.2f, %.2f" % (dx, dy)))
+            checks.append((ref + (" (bottom)" if fp.IsFlipped() else ""), fp.GetValue(), "%g" % rot, kind,
+                           " / ".join(side) or "centre", "%.2f, %.2f" % (dx, dy)))
     with open(os.path.join(OUT, "cpl_jlc.csv"), "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=["Designator", "Mid X", "Mid Y", "Layer", "Rotation"])
         w.writeheader()
@@ -161,6 +161,9 @@ def cpl(board):
                 "X to the right, Y up (CPL convention). For each polarised part the offset of pad 1 from the part\n"
                 "centre is given; in the JLC preview the pin-1 / polarity mark of the part model must sit on that\n"
                 "side. If it does not, correct the rotation in JLC's tool (not in KiCad) and record it here.\n\n")
+        if any(c[0].endswith("(bottom)") for c in checks):
+            f.write("Parts marked (bottom) sit on the back. Their offsets are still given as seen from the top; JLC's\n"
+                    "preview shows the back mirrored, so check them in the bottom view against the silkscreen.\n\n")
         f.write("| Ref | Value | KiCad rotation | Pad 1 | Pad 1 direction | Pad 1 offset X, Y (mm) |\n")
         f.write("|---|---|---|---|---|---|\n")
         for c in checks:
@@ -179,6 +182,8 @@ def blockers(rows, snap):
              "Status from the JLC parts snapshot taken %s (`jlc_parts_snapshot.jsonl`)." % stamp,
              "Nothing here has been ordered. Re-run `tools/jlc_lookup.py` and this script before ordering.", "",
              "## Blocking", ""]
+    if D.VARIANT == "wroom" and not any(str(r["JLC stock"]) in ("0", "?") for r in rows):
+        lines.append("- none in the BOM (U4, the module, is bought separately by the user: see below)")
     for r in rows:
         if str(r["JLC stock"]) in ("0", "?"):
             lines.append("- **%s (%s, %s)**: JLC stock %s. Options: consigned parts (JLC global sourcing or "
@@ -196,25 +201,36 @@ def blockers(rows, snap):
               "- Placement preview: every line of `orientation_check.md` (holder, electrolytic, LED, ICs, "
               "MOSFETs).",
               "- Holder BT1 (MYOUNG BS-24-B4AA016): its + terminal must sit on pad 1, at the silkscreen '+' "
-              "(right). The footprint is drawn from the LCSC datasheet; compare it with a real part first "
-              "(docs/assembly.md).",
-              "- C5 (470 uF electrolytic): + pad up, towards the converter; reversed, it leaks heavily, drains the cell "
-              "and degrades.",
+              "(%s). The footprint is drawn from the LCSC datasheet; compare it with a real part first "
+              "(docs/assembly.md)." % ("on the back, left seen from the top" if D.VARIANT == "wroom" else "right"),
+              "- C5 (470 uF electrolytic): + pad %s; reversed, it leaks heavily, drains the cell "
+              "and degrades." % ("left, at the board edge" if D.VARIANT == "wroom" else "up, towards the converter"),
               "- J1 is not fitted / not in the BOM (debug pads only).",
               "- Test pads TP1..TP%d (silkscreen shows their net names) and fiducials have no parts." % n_tp,
-              ("- PCB options: 2 layers, 1.6 mm FR-4, 1 oz, tented vias (set in the board file), "
-               "lead-free HASL or ENIG. The SHT40 tongue is cut free by a 1 mm L-shaped slot that "
-               "opens into the antenna notch (routed, not V-cut)." if D.VARIANT == "module" else
-               "- PCB options: 4 layers, 1.6 mm, JLC stack-up JLC04161H-7628 with impedance control (50 ohm "
-               "single-ended on L1 over the L2 ground; 0.35 mm computed, confirm with JLC's calculator), "
-               "tented vias, ENIG (flat pads for the QFN and 0201 parts). The SHT40 tongue is cut free by a "
-               "1 mm L-shaped slot from the top edge (routed, not V-cut)."),
+              {"module": "- PCB options: 2 layers, 1.6 mm FR-4, 1 oz, tented vias (set in the board file), "
+                         "lead-free HASL or ENIG. The SHT40 tongue is cut free by a 1 mm L-shaped slot that "
+                         "opens into the antenna notch (routed, not V-cut).",
+               "chip": "- PCB options: 4 layers, 1.6 mm, JLC stack-up JLC04161H-7628 with impedance control (50 ohm "
+                       "single-ended on L1 over the L2 ground; 0.35 mm computed, confirm with JLC's calculator), "
+                       "tented vias, ENIG (flat pads for the QFN and 0201 parts). The SHT40 tongue is cut free by a "
+                       "1 mm L-shaped slot from the top edge (routed, not V-cut).",
+               "wroom": "- PCB options: 4 layers, 1.6 mm, JLC stack-up JLC04161H-7628 (no impedance control needed: "
+                        "no RF line on this board), tented vias (set in the board file: there are vias under the "
+                        "cell), lead-free HASL or ENIG. The SHT40 tongue is cut free by a 1 mm L-shaped slot from "
+                        "the left edge (routed, not V-cut)."}[D.VARIANT],
               *(["- U4 (QFN32, 0.4 mm pitch) has 9 GND vias in its exposed pad (HDG minimum): ask for via "
                  "filling/plugging or accept some solder wicking.",
                  "- RF parts C51/L4/C52/R41 are 0201 and only start values; L5 is not fitted. The PCB antenna "
                  "AE1 is copper only (no part) and has not been measured: see docs/chip_variant.md.",
                  "- Y2 (32 MHz): pin 1 must match orientation_check.md (a 90-degree error puts a crystal "
                  "terminal on a ground pad); load caps C49/C50 are start values."] if D.VARIANT == "chip" else []),
+              *(["- U4 (ESP32-H2-WROOM-02C-H4S) is NOT in this BOM/CPL: the user buys it and solders it by hand "
+                 "(castellated pads with an iron; the thermal pad from the back through the 0.8 mm hole, "
+                 "docs/wroom_variant.md). Its PCB antenna must overhang the top edge.",
+                 "- Two-sided assembly: BT1 (holder) is on the BOTTOM side (CPL layer Bottom), everything else on "
+                 "top. Either order assembly on both sides, or order top-side assembly only and hand-solder BT1 "
+                 "(two large pads). Its + terminal is on the LEFT seen from the top (pad 1, '+' on the back "
+                 "silkscreen)."] if D.VARIANT == "wroom" else []),
               "- Nothing here proves the design works: see docs/test_plan.md (no prototype has been built)."]
     with open(os.path.join(OUT, "manufacturing_blockers.md"), "w") as f:
         f.write("\n".join(lines) + "\n")

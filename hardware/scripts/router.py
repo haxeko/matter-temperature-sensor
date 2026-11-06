@@ -3,7 +3,8 @@
 Small two-layer grid router used by gen_pcb.py (no external autorouter).
 
 Model
-- The board is rasterised on a GRID mm lattice; layer 0 = F.Cu, 1 = B.Cu.
+- The board is rasterised on a GRID mm lattice; layer 0 = F.Cu, 1 = B.Cu (or the two copper layers given as
+  `layers`, e.g. F.Cu and In2.Cu; copper on the other layers then only keeps vias away).
 - For every layer and every width class there is an int32 "owner" map:
       0  free,  k > 0  only net code k may use the cell,  -1  nobody may.
   An obstacle of net k marks every cell whose centre lies within
@@ -28,6 +29,7 @@ SQ2 = math.sqrt(2.0)
 DIRS = [(1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1)]
 STEP = [1.0, SQ2, 1.0, SQ2, 1.0, SQ2, 1.0, SQ2]
 LAYERS = (pcbnew.F_Cu, pcbnew.B_Cu)
+ALL_CU = (pcbnew.F_Cu, pcbnew.In1_Cu, pcbnew.In2_Cu, pcbnew.B_Cu)
 NOHEAD = 8
 
 
@@ -37,8 +39,11 @@ def to_mm(v):
 
 class Router:
     def __init__(self, board, ox, oy, w, h, grid=0.1, clearance=0.2, edge_clearance=0.3,
-                 classes=None, slack=None):
+                 classes=None, slack=None, layers=None):
         self.board = board
+        # the two routing layers; with other than F.Cu/B.Cu, copper on the remaining layers blocks vias only
+        self.layers = tuple(layers) if layers else LAYERS
+        self.via_layers = LAYERS if self.layers == LAYERS else ALL_CU
         self.ox, self.oy = ox, oy
         self.g = grid
         self.nx = int(round(w / grid)) + 1
@@ -141,6 +146,22 @@ class Router:
             m = d <= hw + self.slack
             self.owner[c][layer][sl][m] = -1
 
+    def _mark_via_only(self, net, win, d):
+        """Copper on a layer the router does not route on: vias of other nets keep their clearance."""
+        sl, _, _ = win
+        R = self.clr + self.classes["via"] + self.slack
+        m = d <= R
+        if not m.any():
+            return
+        for li in (0, 1):
+            sub = self.owner["via"][li][sl]
+            if net > 0:
+                clash = m & (sub != 0) & (sub != net)
+                sub[m & (sub == 0)] = net
+                sub[clash] = -1
+            else:
+                sub[m] = -1
+
     # ------------------------------------------------------------ obstacles
     def shape_points(self, poly_set):
         out = []
@@ -152,9 +173,10 @@ class Router:
 
     def add_pad(self, pad):
         net = pad.GetNetCode()
-        for li, L in enumerate(LAYERS):
+        for L in self.via_layers:
             if not pad.IsOnLayer(L):
                 continue
+            li = self.layers.index(L) if L in self.layers else None
             ps = pad.GetEffectivePolygon(L, pcbnew.ERROR_INSIDE)
             for pts in self.shape_points(ps):
                 xs = [p[0] for p in pts]
@@ -164,13 +186,16 @@ class Router:
                 if win is None:
                     continue
                 d = self._poly_dist(win[1], win[2], pts)
-                self._mark(li, net, win, d)
+                if li is None:
+                    self._mark_via_only(net, win, d)
+                else:
+                    self._mark(li, net, win, d)
 
     def pad_cells(self, pad):
         """(layer, flat index) of lattice points inside the pad copper (polygon approximated from
         the inside and 0.02 mm inset, so a track ending there is certainly on the pad)."""
         cells = []
-        for li, L in enumerate(LAYERS):
+        for li, L in enumerate(self.layers):
             if not pad.IsOnLayer(L):
                 continue
             ps = pad.GetEffectivePolygon(L, pcbnew.ERROR_OUTSIDE)
@@ -280,7 +305,7 @@ class Router:
 
     def add_rule_area(self, zone):
         """KiCad rule area (board or footprint level)."""
-        layers = [li for li, L in enumerate(LAYERS) if zone.IsOnLayer(L)]
+        layers = [li for li, L in enumerate(self.layers) if zone.IsOnLayer(L)]
         for pts in self.shape_points(zone.Outline()):
             self.keepout_polygon(pts, layers, tracks=zone.GetDoNotAllowTracks(), vias=zone.GetDoNotAllowVias())
 
@@ -304,10 +329,25 @@ class Router:
                 self.add_via(t.GetNetCode(), (to_mm(p.x) - self.ox, to_mm(p.y) - self.oy), to_mm(t.GetWidth(pcbnew.F_Cu)),
                              to_mm(t.GetDrillValue()))
             else:
-                li = 0 if t.GetLayer() == pcbnew.F_Cu else 1
+                li = self._track_layer(t)
                 a, b = t.GetStart(), t.GetEnd()
-                self.add_segment(li, t.GetNetCode(), (to_mm(a.x) - self.ox, to_mm(a.y) - self.oy),
-                                 (to_mm(b.x) - self.ox, to_mm(b.y) - self.oy), to_mm(t.GetWidth()))
+                a, b = (to_mm(a.x) - self.ox, to_mm(a.y) - self.oy), (to_mm(b.x) - self.ox, to_mm(b.y) - self.oy)
+                if li is None:
+                    w = to_mm(t.GetWidth())
+                    m = w / 2 + self.classes["via"] + self.clr + self.slack + 0.1
+                    win = self._win(min(a[0], b[0]) - m, min(a[1], b[1]) - m, max(a[0], b[0]) + m,
+                                    max(a[1], b[1]) + m)
+                    if win is not None:
+                        d = self._seg_dist(win[1], win[2], a[0], a[1], b[0], b[1]) - w / 2
+                        self._mark_via_only(t.GetNetCode(), win, np.maximum(d, 0.0))
+                else:
+                    self.add_segment(li, t.GetNetCode(), a, b, to_mm(t.GetWidth()))
+
+    def _track_layer(self, t):
+        """Router layer index of a track, None for a copper layer the router does not route on."""
+        if self.layers == LAYERS:
+            return 0 if t.GetLayer() == pcbnew.F_Cu else 1
+        return self.layers.index(t.GetLayer()) if t.GetLayer() in self.layers else None
 
     # ------------------------------------------------------------ connectivity
     def clusters(self, netname):
@@ -368,7 +408,9 @@ class Router:
                 q = (to_mm(p.x) - self.ox, to_mm(p.y) - self.oy)
                 cells += self.segment_cells(0, q, q) + self.segment_cells(1, q, q)
             else:
-                li = 0 if t.GetLayer() == pcbnew.F_Cu else 1
+                li = self._track_layer(t)
+                if li is None:
+                    continue
                 a, b = t.GetStart(), t.GetEnd()
                 cells += self.segment_cells(li, (to_mm(a.x) - self.ox, to_mm(a.y) - self.oy),
                                             (to_mm(b.x) - self.ox, to_mm(b.y) - self.oy))
@@ -507,7 +549,7 @@ class Router:
                 t.SetStart(pcbnew.VECTOR2I(pcbnew.FromMM(self.ox + a[0]), pcbnew.FromMM(self.oy + a[1])))
                 t.SetEnd(pcbnew.VECTOR2I(pcbnew.FromMM(self.ox + b[0]), pcbnew.FromMM(self.oy + b[1])))
                 t.SetWidth(pcbnew.FromMM(width))
-                t.SetLayer(LAYERS[li])
+                t.SetLayer(self.layers[li])
                 t.SetNet(ni)
                 self.board.Add(t)
                 self.add_segment(li, code, a, b, width)
@@ -685,7 +727,7 @@ class Router:
         r = via_dia / 2 + gap
         for fp in self.board.GetFootprints():
             for p in fp.Pads():
-                for L in LAYERS:
+                for L in self.via_layers:
                     if not p.IsOnLayer(L):
                         continue
                     for pts in self.shape_points(p.GetEffectivePolygon(L, pcbnew.ERROR_INSIDE)):
@@ -706,7 +748,7 @@ class Router:
             for p in fp.Pads():
                 if p.HasHole():
                     continue
-                for L in LAYERS:
+                for L in self.via_layers:
                     if not p.IsOnLayer(L):
                         continue
                     for pts in self.shape_points(p.GetEffectivePolygon(L, pcbnew.ERROR_INSIDE)):

@@ -11,6 +11,8 @@ Phiên bản tài liệu là bản đã đọc khi thiết kế (2026-10). Đư�
 | ESP32-H2 Hardware Design Guidelines — https://docs.espressif.com/projects/esp-hardware-design-guidelines/en/latest/esp32h2/ | bản "latest" 2026-10 | vị trí module và vùng keepout anten (hình "Keepout Zone ... feed point on the left"), thạch anh, USB, UART |
 | ESP-Matter `examples/icd_app` — https://github.com/espressif/esp-matter/tree/main/examples/icd_app | esp_matter 1.6.0~1 | cấu hình ICD SIT, số đo dòng ngủ/poll của Espressif |
 | Espressif KiCad libraries — https://github.com/espressif/kicad-libraries | git dd76561812ab300351234ba6e0ec1295641796f0 | symbol, footprint, mô hình 3D ESP32-H2-MINI-1 (CC-BY-SA 4.0 với ngoại lệ cho thiết kế; bản sao + license trong `hardware/kicad/lib/`); **H2C**: symbol "ESP32-H2" và footprint QFN-32-1EP_4x4mm_P0.4mm_EP2.9x2.9mm (bản sao trong `hardware/chip/kicad/lib/`) |
+| ESP32-H2-WROOM-02C Datasheet — https://espressif.com/sites/default/files/documentation/esp32-h2-wroom-02c_datasheet_en.pdf | v1.2, đọc 2026-11-06 | **H2W**: bảng 2 (định nghĩa chân), hình 6 (kích thước, ăng-ten 6 mm, feed bên phải), hình 7 (land pattern, pad tản nhiệt), chương 8 (sơ đồ module: VBAT–3V3 qua 0 Ω, EN không có RC, TXD0 499 Ω), chương 9 (sơ đồ ngoại vi: 10 µF + 0.1 µF ở 3V3), mã -H2S/-H4S, MSL 3, reflow |
+| ESP32-H2 Hardware Design Guidelines, mục "Positioning a Module on a Base Board" — https://docs.espressif.com/projects/esp-hardware-design-guidelines/en/latest/esp32h2/pcb-layout-design.html | bản "latest", đọc 2026-11-06 | **H2W**: ăng-ten module đặt ngoài bo, feed gần mép bo; hình "antenna feed point on the right" (vị trí ③ và ④ được đánh dấu ✓); via GND dày gần ăng-ten; ≥ 15 mm khoảng trống quanh ăng-ten trong vỏ; UART/USB xa ăng-ten |
 | ESP32-H2 Hardware Design Guidelines, chương "Schematic Checklist" và "PCB Layout Design" — cùng địa chỉ | v1.6 (2025-06-05), đọc 2026-11-06 | **H2C**: tụ decoupling từng chân, thạch anh 32 MHz ±10 ppm + 24 nH, mạng CLC(CL) 0201 và stub 15 mil / 100 Ω, đường RF 50 Ω, stack-up 4 lớp, ≥ 9 via pad đáy, UART 499 Ω, USB 90 Ω |
 
 ## Texas Instruments
@@ -29,7 +31,7 @@ Phiên bản tài liệu là bản đã đọc khi thiết kế (2026-10). Đư�
 | Panasonic CR2450 — https://energy.panasonic.com/na/business/products/lithium/coin-cr-standard/models/CR2450 (datasheet PDF `CR2450_Datasheet_EN.pdf` trên trang) | 2026 | **Rev B**: 3 V, 620 mAh, dòng liên tục 0.2 mA, Ø24.5 × 5.0 mm, 6.2 g, −30…+85 °C; đường "capacity vs load"; đường kính trong trên bản vẽ (tỉ lệ diện tích dùng trong mô hình) |
 | Panasonic CR2032 — https://energy.panasonic.com/na/business/products/lithium/coin-cr-standard/models/CR2032 (datasheet PDF trên trang) | 2026 | 3 V, 225 mAh, dòng liên tục 0.2 mA, −30…+85 °C, đường điện áp theo tải và nhiệt độ (cơ sở của mô hình cell; Rev A) |
 | Panasonic Lithium Handbook (trang tải: https://energy.panasonic.com/eu/business/downloads/material) | 2025 | diode chặn ngược + điện trở bảo vệ khi cell có thể bị nạp, tổng điện tích nạp ≤ 3 % dung lượng với coin cell |
-| MYOUNG BS-24-B4AA016 — datasheet trên LCSC: https://www.lcsc.com/datasheet/lcsc_datasheet_2012181809_MYOUNG-BS-24-B4AA016_C964809.pdf | bản vẽ MY-CP-0138 (2018-05-30) | **Rev B**: holder SMT CR2450, kích thước thân, land pattern (footprint dự án), cực +; −25…+85 °C, tiếp điểm đồng phosphor mạ vàng (mô tả LCSC) |
+| MYOUNG BS-24-B4AA016 — datasheet trên LCSC: https://www.lcsc.com/datasheet/lcsc_datasheet_2012181809_MYOUNG-BS-24-B4AA016_C964809.pdf | bản vẽ MY-CP-0138 (2018-05-30) | **Rev B**: holder SMT CR2450, kích thước thân, land pattern (footprint dự án), cực +; −25…+85 °C, tiếp điểm đồng phosphor mạ vàng (mô tả LCSC). **H2W**: land pattern 37.00 mm quyết định bề rộng bo; hình cắt (pin nằm trên đáy nhựa của holder) là cơ sở cho via dưới pin |
 | KNSCHA RVT 470 µF 6.3 V (RVT470UF6.3V67RV0038) — datasheet trên LCSC: https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2109301630_KNSCHA-RVT470UF6-3V67RV0038_C2901342.pdf | — | **Rev B**: tụ đệm C5, Ø6.3 × 7.7 mm, ±20 %, 2000 h ở 105 °C, dòng rò ≤ 0.01 CV hoặc 3 µA sau 2 phút ở điện áp định mức |
 | Keystone 1060 (catalog coin cell holders) | catalog M65 | holder CR2032 của Rev A (không còn dùng) |
 
@@ -57,7 +59,7 @@ ESP32-H2FH4S (Espressif, mã đặt hàng trong datasheet ESP32-H2 v1.3), YXC X3
 
 ## Nguồn cung
 
-- JLCPCB parts search (công cụ `tools/jlc_lookup.py`, endpoint của trang jlcpcb.com/parts, không phải API công bố chính thức) — ảnh chụp dữ liệu 2026-10-30 06:47 UTC trong `hardware/production/jlc_parts_snapshot.jsonl` (lần tra trước: 2026-10-29 08:55 UTC, Rev A); biến thể H2C: 2026-11-06 07:12 UTC trong `hardware/chip/production/jlc_parts_snapshot.jsonl`.
+- JLCPCB parts search (công cụ `tools/jlc_lookup.py`, endpoint của trang jlcpcb.com/parts, không phải API công bố chính thức) — ảnh chụp dữ liệu 2026-10-30 06:47 UTC trong `hardware/production/jlc_parts_snapshot.jsonl` (lần tra trước: 2026-10-29 08:55 UTC, Rev A); biến thể H2C: 2026-11-06 07:12 UTC trong `hardware/chip/production/jlc_parts_snapshot.jsonl`; biến thể H2W: 2026-11-06 17:00 UTC trong `hardware/wroom/production/jlc_parts_snapshot.jsonl` (module WROOM-02C không tra: người dùng tự mua).
 
 ## Công cụ đã dùng
 

@@ -85,3 +85,14 @@ Các mục 1–9 áp dụng cho cả H2C (cùng nguồn, cảm biến, firmware)
 - Đường VBAT từ cầu chia tới TP1 dài ~60 mm (chủ yếu trên L4) vì router không đi dưới đường RF; dòng qua nó chỉ là dòng cầu chia.
 - 28 ký hiệu linh kiện chỉ có trên lớp Fab; render 3D không có mô hình chip.
 
+## 11. Biến thể WROOM-02C (H2W Rev A)
+
+Các mục 1–9 áp dụng cho cả H2W (cùng nguồn, cảm biến, firmware). Thêm:
+
+- **Module do người dùng tự mua và hàn** (không có trong BOM/CPL). Footprint và symbol vẽ theo datasheet v1.2, **chưa so với module thật**; in footprint 1:1 đặt module lên kiểm trước khi đặt PCB. Pad tản nhiệt chỉ hàn được qua lỗ 0.8 mm từ mặt dưới; miếng tản nhiệt nhỏ 2.8 × 0.55 mm không hàn được bằng mỏ.
+- **Via dưới pin** (mặt dưới, phủ mask): nếu mask trên vòng via bị trầy và vỏ pin (+) bị ép chạm xuống, có thể chập VBAT với GND hoặc với tín hiệu. Bản vẽ holder cho thấy pin nằm trên đáy nhựa, không chạm bo; chưa kiểm trên holder thật (W-03).
+- **Pin kim loại sau mặt GND, cách ranh giới ăng-ten 6.8 mm**; ảnh hưởng tới ăng-ten của module chưa đo (W-01). HDG khuyên chừa ≥ 15 mm quanh ăng-ten bên trong vỏ — thuộc thiết kế vỏ (chưa có vỏ).
+- **Lắp ráp hai mặt** (holder ở mặt dưới) hoặc tự hàn holder; xoay của linh kiện mặt dưới trong CPL phải kiểm trong bản xem trước của JLC.
+- Bốn đường UART/USB đi ra từ cột chân phải của module (vào trong 1.65 mm rồi xuống In2), vì mép phải module sát mép bo; via của chúng cách ranh giới ăng-ten 7–12 mm.
+- 24 ký hiệu linh kiện chỉ có trên lớp Fab; render 3D không có mô hình module.
+

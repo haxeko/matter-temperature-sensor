@@ -1,0 +1,52 @@
+GND fanout: 21 vias
+ok /XTAL_32K_P: Y1.1 -> C27.1               len    0.8 mm  vias 0
+ok /XTAL_32K_P: U4.11 -> Y1.1               len    1.3 mm  vias 0
+ok /XTAL_32K_N: Y1.2 -> C28.1               len    0.8 mm  vias 0
+ok /XTAL_32K_N: U4.12 -> Y1.2               len    1.3 mm  vias 0
+ok /USB_DP: U4.24 -> J1.3                   len   20.2 mm  vias 0
+ok /USB_DM: U4.23 -> J1.4                   len   24.0 mm  vias 2
+ok /U0TXD: U4.22 -> J1.1                    len   13.5 mm  vias 0
+ok /U0RXD: U4.21 -> J1.2                    len   11.9 mm  vias 0
+ok /LED: U4.15 -> R25.1                     len    3.0 mm  vias 0
+ok /LED_A: R25.2 -> D3.2                    len    2.8 mm  vias 2
+ok /I2C_SDA: U4.5 -> R26.2                  len    9.4 mm  vias 2
+ok /I2C_SCL: U4.6 -> R27.2                  len    9.4 mm  vias 2
+ok /STRAP_GPIO8: U4.7 -> R24.2              len    2.8 mm  vias 0
+ok /BTN_USER: U4.8 -> J1.5                  len   22.7 mm  vias 2
+ok /BTN_USER: R23.2 -> U4.8                 len    4.6 mm  vias 1
+ok /BTN_USER: SW1.1 -> R23.2                len   14.5 mm  vias 2
+ok /BTN_USER: SW1.1 -> SW1.1                len    5.2 mm  vias 0
+ok /VBAT_SENSE: U4.4 -> C31.1               len    0.7 mm  vias 0
+ok /VBAT_SENSE: R31.2 -> C31.1              len    4.9 mm  vias 0
+ok /VBAT_SENSE: R32.1 -> R31.2              len    1.4 mm  vias 0
+ok /SNS_LO: R32.2 -> Q3.3                   len    8.7 mm  vias 2
+ok /VBAT_MEAS_EN: U4.10 -> R35.1            len    4.1 mm  vias 0
+ok /VBAT_MEAS_EN: Q3.1 -> R35.1             len    6.8 mm  vias 2
+ok /EN: C25.1 -> TP6.1                      len    3.4 mm  vias 2
+ok /EN: U4.2 -> C25.1                       len    0.7 mm  vias 0
+ok /EN: R22.2 -> TP6.1                      len    8.2 mm  vias 2
+ok /EN: SW2.1 -> R22.2                      len    8.5 mm  vias 2
+ok /EN: SW2.1 -> SW2.1                      len    3.2 mm  vias 1
+ok /nRST: U3.2 -> R22.1                     len    2.3 mm  vias 0
+ok /VIN: TP2.1 -> Q1.2                      len    4.4 mm  vias 0
+ok /VIN: C5.1 -> Q1.2                       len    6.8 mm  vias 0
+ok /VOUT: C21.1 -> C4.1                     len    1.4 mm  vias 0
+ok /VOUT: C22.1 -> C21.1                    len    1.1 mm  vias 0
+ok /VOUT: R21.1 -> C21.1                    len    2.5 mm  vias 0
+ok /VOUT: TP3.1 -> C22.1                    len   11.1 mm  vias 2
+ok /VBAT: BT1.1 -> TP1.1                    len    1.7 mm  vias 0
+ok /VBAT: R1.1 -> TP1.1                     len    5.8 mm  vias 2
+ok /VBAT: R31.1 -> BT1.1                    len   18.6 mm  vias 1
+ok +3V3: R26.1 -> R27.1                     len    0.7 mm  vias 0
+ok +3V3: U3.3 -> R26.1                      len    2.4 mm  vias 0
+ok +3V3: C26.1 -> U3.3                      len    3.4 mm  vias 2
+ok +3V3: C24.1/U4.1 -> R27.1                len    8.1 mm  vias 1
+ok +3V3: R24.1 -> U3.3                      len   12.4 mm  vias 1
+ok +3V3: R23.1 -> R24.1                     len    0.7 mm  vias 0
+ok +3V3: TP4.1 -> R23.1                     len    8.2 mm  vias 1
+ok +3V3: C23.1/U4.14 -> TP4.1               len    8.4 mm  vias 2
+ok +3V3: R21.2 -> TP4.1                     len   10.3 mm  vias 1
+one-sided signal vias removed: 0; dangling stub segments trimmed or removed: 0
+references hidden (back side, module, or no room): BT1, C1, C23, C24, C25, C26, C28, C29, C4, C5, FID1, FID2, Q1, Q3, R22, R23, R24, R25, R26, R3, R32, R35, SW1, U1, U3, U4
+stitching vias: 66 placed, 0 removed (L2 only)
+unrouted: 0

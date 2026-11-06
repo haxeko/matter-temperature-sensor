@@ -36,6 +36,9 @@ def load_symbols():
     vendored = os.path.join(LIB, "th_sensor.kicad_sym")
     for lib_id, (path, name) in D.SYMBOLS.items():
         nick, new_name = lib_id.split(":")
+        if path is None:                             # drawn here from the datasheet (no library has it)
+            SYM[lib_id] = SymbolSource(None, name, nick, text=wroom02c_symbol())
+            continue
         if not os.path.exists(path) and nick == "th_sensor":
             path, name = vendored, new_name          # external library absent: use the copy in the repo
         overrides = None
@@ -61,7 +64,7 @@ def write_project_libs():
         f.write(")\n")
     # module / chip footprint (+ module 3D model) from the Espressif library (kept as vendored copies when it is
     # absent)
-    if os.path.isdir(D.ESPRESSIF_LIB):
+    if os.path.isdir(D.ESPRESSIF_LIB) and D.VARIANT != "wroom":
         if D.VARIANT == "module":
             src_fp = os.path.join(D.ESPRESSIF_LIB, "footprints", "Espressif.pretty", "ESP32-H2-MINI-1.kicad_mod")
             fp = open(src_fp).read()
@@ -77,6 +80,8 @@ def write_project_libs():
                         os.path.join(LIB, "LICENSE-espressif-kicad-libraries.md"))
     if D.VARIANT == "chip":
         open(os.path.join(LIB, "th_sensor.pretty", ANT_FP + ".kicad_mod"), "w").write(ti_dn007_ifa())
+    if D.VARIANT == "wroom":
+        open(os.path.join(LIB, "th_sensor.pretty", WROOM_FP + ".kicad_mod"), "w").write(wroom02c_footprint())
     open(os.path.join(LIB, "th_sensor.pretty", "L_Murata_DFE201612E.kicad_mod"), "w").write(murata_dfe201612e())
     open(os.path.join(LIB, "th_sensor.pretty", "BatteryHolder_MYOUNG_BS-24-B4AA016_1x2450.kicad_mod"), "w").write(
         myoung_bs24_b4aa016())
@@ -166,6 +171,113 @@ def ti_dn007_ifa():
 	(fp_poly (pts {crt_pts}) (stroke (width 0.05) (type solid)) (fill no) (layer "F.CrtYd") (uuid "{u('crt')}"))
 	(pad "1" smd rect (at 0 0.2) (size {fmt(DN007["W2"])} 0.4) (layers "F.Cu") (uuid "{u('p1')}"))
 	(pad "2" smd rect (at {fmt(round((x1 + x2) / 2, 4))} 0.3) (size {fmt(round(x2 - x1, 4))} 0.6) (layers "F.Cu") (zone_connect 2) (uuid "{u('p2')}"))
+	(embedded_fonts no)
+)
+"""
+
+
+# ESP32-H2-WROOM-02C, datasheet v1.2 (Espressif, 2024): table 2 "Pin Definitions" (names, types), figure 2 pin
+# layout, figure 6 dimensions, figure 7 "Recommended PCB Land Pattern". Neither KiCad nor Espressif's KiCad library
+# (git dd76561) has this module, so symbol and footprint are drawn here.
+WROOM_FP = "ESP32-H2-WROOM-02C"
+WROOM_PINS = {   # number: (name, KiCad electrical type, side, position on that side)
+    "1": ("3V3", "power_in", "L", 15.24), "14": ("VBAT", "power_in", "L", 12.7), "2": ("EN", "input", "L", 10.16),
+    "3": ("IO4", "bidirectional", "L", 5.08), "4": ("IO5", "bidirectional", "L", 2.54),
+    "7": ("IO8", "bidirectional", "L", 0.0), "8": ("IO9", "bidirectional", "L", -2.54),
+    "5": ("IO10", "bidirectional", "L", -5.08), "6": ("IO11", "bidirectional", "L", -7.62),
+    "10": ("IO12", "bidirectional", "L", -10.16), "11": ("IO13", "bidirectional", "L", -12.7),
+    "12": ("IO14", "bidirectional", "L", -15.24), "15": ("IO22", "bidirectional", "L", -17.78),
+    "28": ("IO0", "bidirectional", "R", 15.24), "27": ("IO1", "bidirectional", "R", 12.7),
+    "26": ("IO2", "bidirectional", "R", 10.16), "25": ("IO3", "bidirectional", "R", 7.62),
+    "20": ("IO25", "bidirectional", "R", 5.08), "21": ("RXD0", "bidirectional", "R", 0.0),
+    "22": ("TXD0", "bidirectional", "R", -2.54), "23": ("IO26", "bidirectional", "R", -5.08),
+    "24": ("IO27", "bidirectional", "R", -7.62), "16": ("NC", "no_connect", "R", -12.7),
+    "17": ("NC", "no_connect", "R", -15.24), "18": ("NC", "no_connect", "R", -17.78),
+    "19": ("NC", "no_connect", "R", -20.32),
+    "9": ("GND", "power_in", "B", -2.54), "13": ("GND", "power_in", "B", 0.0), "29": ("GND", "power_in", "B", 2.54),
+}
+
+
+def wroom02c_symbol():
+    """Symbol library text with the module symbol (pin names and types from the datasheet's table 2)."""
+    f = '(effects (font (size 1.27 1.27)))'
+    pins = []
+    for num, (name, etype, side, pos) in sorted(WROOM_PINS.items(), key=lambda kv: int(kv[0])):
+        x, y, a = {"L": (-15.24, pos, 0), "R": (15.24, pos, 180), "B": (pos, -25.4, 90)}[side]
+        pins.append('(pin %s line (at %s %s %d) (length 2.54) (name "%s" %s) (number "%s" %s))'
+                    % (etype, fmt(x), fmt(y), a, name, f, num, f))
+    hid = '(effects (font (size 1.27 1.27)) (hide yes))'
+    return (
+        '(kicad_symbol_lib (version 20241209) (generator "th_sensor_gen") (generator_version "9.0")\n'
+        '(symbol "%s" (exclude_from_sim no) (in_bom yes) (on_board yes)\n'
+        '(property "Reference" "U" (at -12.7 19.05 0) (effects (font (size 1.27 1.27)) (justify left)))\n'
+        '(property "Value" "%s" (at 12.7 19.05 0) (effects (font (size 1.27 1.27)) (justify right)))\n'
+        '(property "Footprint" "th_sensor:%s" (at 0 -30.48 0) %s)\n'
+        '(property "Datasheet" "https://www.espressif.com/sites/default/files/documentation/'
+        'esp32-h2-wroom-02c_datasheet_en.pdf" (at 0 -33.02 0) %s)\n'
+        '(property "Description" "ESP32-H2-WROOM-02C module (Bluetooth LE + IEEE 802.15.4), PCB antenna, 2 or 4 MB '
+        'flash (-H2S / -H4S); pins from datasheet v1.2 table 2, drawn by gen_schematic.py" (at 0 -35.56 0) %s)\n'
+        '(property "ki_keywords" "esp32-h2 wroom module thread zigbee matter" (at 0 0 0) %s)\n'
+        '(property "ki_fp_filters" "ESP32-H2-WROOM-02C*" (at 0 0 0) %s)\n'
+        '(symbol "%s_0_1" (rectangle (start -12.7 17.78) (end 12.7 -22.86) (stroke (width 0.254) (type default)) '
+        '(fill (type background))))\n'
+        '(symbol "%s_1_1" (text "ESP32-H2-WROOM-02C" (at 0 20.32 0) (effects (font (size 1.27 1.27))))\n%s)\n'
+        '(embedded_fonts no))\n)\n'
+        % (WROOM_FP, WROOM_FP, WROOM_FP, hid, hid, hid, hid, hid, WROOM_FP, WROOM_FP, "\n".join(pins)))
+
+
+def wroom02c_pads():
+    """(number, x, y, w, h) of the copper lands, origin = module centre, y down (module top at y = -10, the 6 mm
+    antenna area above y = -4). Datasheet figure 7: side pads 1.5 x 0.9 with their centres 0.25 mm inside the module
+    edge (so 0.5 mm of each pad is outside it), pitch 1.5, pins 1 and 28 7.1 mm below the module top; bottom pads
+    0.9 x 1.5 centred 0.25 mm above the bottom edge, pins 10 and 19 2.25 mm from the sides; thermal pad: 2.8 x 0.55
+    and 2.8 x 1.6, centred 8.53 mm from the left edge, 7.99 and 6.27 mm above the bottom edge."""
+    out = []
+    for k in range(1, 10):
+        out.append((str(k), -8.75, round(-2.9 + 1.5 * (k - 1), 4), 1.5, 0.9))
+    for k in range(10, 20):
+        out.append((str(k), round(-6.75 + 1.5 * (k - 10), 4), 9.75, 0.9, 1.5))
+    for k in range(20, 29):
+        out.append((str(k), 8.75, round(9.1 - 1.5 * (k - 20), 4), 1.5, 0.9))
+    out.append(("29", -0.47, 2.01, 2.8, 0.55))
+    out.append(("29", -0.47, 3.73, 2.8, 1.6))
+    return out
+
+
+WROOM_EPAD_HOLE = (-0.47, 3.73, 1.4, 0.8)          # x, y, pad diameter, drill
+
+
+def wroom02c_footprint():
+    """Land pattern of datasheet figure 7, plus one 0.8 mm plated hole in the larger thermal-pad copper, open on
+    both sides: the user solders the module by hand, and the module's EPAD can only be reached through it (solder
+    fed from the back). No paste on the thermal pad for the same reason. The antenna area (top 6 mm) is meant to
+    overhang the board edge (ESP32-H2 HDG, module placement figure, position 3)."""
+    u = lambda s_: new_uuid("fp-wroom02c-" + s_)
+    pads = []
+    for i, (num, x, y, w, h) in enumerate(wroom02c_pads()):
+        layers = '"F.Cu" "F.Mask" "F.Paste"' if num != "29" else '"F.Cu" "F.Mask"'
+        pads.append('\t(pad "%s" smd rect (at %s %s) (size %s %s) (layers %s) (uuid "%s"))'
+                    % (num, fmt(x), fmt(y), fmt(w), fmt(h), layers, u("p%d" % i)))
+    hx, hy, hd, hdr = WROOM_EPAD_HOLE
+    pads.append('\t(pad "29" thru_hole circle (at %s %s) (size %s %s) (drill %s) (layers "*.Cu" "*.Mask") '
+                '(uuid "%s"))' % (fmt(hx), fmt(hy), fmt(hd), fmt(hd), fmt(hdr), u("hole")))
+    return f"""(footprint "{WROOM_FP}"
+	(version 20241229)
+	(generator "th_sensor_gen")
+	(layer "F.Cu")
+	(descr "Espressif ESP32-H2-WROOM-02C module, 18 x 20 x 3.2 mm, land pattern per datasheet v1.2 figure 7; antenna area (top 6 mm) outside the base board; 0.8 mm plated hole in the thermal pad for hand soldering from the back")
+	(tags "esp32-h2 wroom module castellated")
+	(property "Reference" "REF**" (at -6 -5.2 0) (layer "F.SilkS") (uuid "{u('ref')}") (effects (font (size 1 1) (thickness 0.15))))
+	(property "Value" "{WROOM_FP}" (at 0 6.5 0) (layer "F.Fab") (uuid "{u('val')}") (effects (font (size 1 1) (thickness 0.15))))
+	(attr through_hole)
+	(fp_line (start -9.85 -3.6) (end -9.85 9.3) (stroke (width 0.12) (type solid)) (layer "F.SilkS") (uuid "{u('s1')}"))
+	(fp_rect (start -9 -10) (end 9 10) (stroke (width 0.1) (type solid)) (fill no) (layer "F.Fab") (uuid "{u('fab')}"))
+	(fp_line (start -9 -4) (end 9 -4) (stroke (width 0.1) (type dash)) (layer "F.Fab") (uuid "{u('fab2')}"))
+	(fp_poly (pts (xy -9 -3.4) (xy -8.4 -2.9) (xy -9 -2.4)) (stroke (width 0.1) (type solid)) (fill yes) (layer "F.Fab") (uuid "{u('fab3')}"))
+	(fp_text user "PCB antenna: outside the board" (at 0 -7 0) (layer "F.Fab") (uuid "{u('fab4')}") (effects (font (size 0.8 0.8) (thickness 0.12))))
+	(fp_text user "${{REFERENCE}}" (at 0 0 0) (layer "F.Fab") (uuid "{u('fabref')}") (effects (font (size 1 1) (thickness 0.15))))
+	(fp_rect (start -9.75 -10.25) (end 9.75 10.75) (stroke (width 0.05) (type solid)) (fill no) (layer "F.CrtYd") (uuid "{u('crt')}"))
+{chr(10).join(pads)}
 	(embedded_fonts no)
 )
 """
@@ -689,6 +801,81 @@ def chip_block():
            (332.74, 95.25), size=1.0)
 
 
+def wroom_block():
+    """WROOM variant: ESP32-H2-WROOM-02C (datasheet v1.2 peripheral schematic: 10 uF + 0.1 uF on 3V3, external RC
+    on EN), the 32.768 kHz crystal, button, pull-ups, LED and the 2 x 3 debug pads."""
+    x1, y1, x2, y2 = 213.36, 91.44, 406.4, 213.36
+    S.frame(x1, y1, x2, y2, "ESP32-H2-WROOM-02C-H4S (USER-SUPPLIED), 32.768 kHz CRYSTAL, USER/BOOT BUTTON, LED, DEBUG PADS")
+    ux, uy = 304.8, 149.86
+    S.place("U4", ux, uy, 0, ref_off=(-12.7, -24.13), val_off=(5.08, 33.02))
+    for num in ["2", "3", "4", "7", "8", "5", "6", "10", "11", "12", "15",
+                "28", "27", "26", "25", "20", "21", "22", "23", "24"]:
+        S.stub("U4", num, length=5.08)
+    # 3V3 (1) and VBAT (14) to one +3V3 symbol; the three GND pins to one GND symbol
+    p1, p14 = S.pin("U4", "1"), S.pin("U4", "14")
+    xs = p1[0] - 5.08
+    # (wires end at every junction: kicad-cli loses the far end of a wire that a junction splits)
+    S.wire(p1, (xs, p1[1]))
+    S.wire(p14, (xs, p14[1]), (xs, p1[1]), (xs, p1[1] - 5.08))
+    S.junction((xs, p1[1]))
+    S.power("+3V3", (xs, p1[1] - 5.08), 0)
+    gp = [S.pin("U4", n) for n in ("9", "13", "29")]
+    yb = gp[0][1] + 2.54
+    for q in gp:
+        S.wire(q, (q[0], yb))
+    S.wire((gp[0][0], yb), (gp[1][0], yb), (gp[2][0], yb))
+    S.junction((gp[1][0], yb))
+    S.wire((gp[1][0], yb), (gp[1][0], yb + 2.54))
+    S.power("GND", (gp[1][0], yb + 2.54), 0)
+    # module decoupling at pin 1 (datasheet peripheral schematic: 10 uF + 0.1 uF)
+    S.place("C23", 231.14, 106.68, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
+    S.place("C24", 241.3, 106.68, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
+    S.stubs("C23")
+    S.stubs("C24")
+    # crystal
+    S.place("Y1", 241.3, 175.26, 0, ref_off=(-2.54, -3.81), val_off=(-5.08, -6.35))
+    S.place("C27", 231.14, 179.07, 0, ref_off=(-6.35, -1.27), val_off=(-6.35, 1.27))
+    S.place("C28", 251.46, 179.07, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
+    S.wire(S.pin("C27", "1"), S.pin("Y1", "1"))
+    S.wire(S.pin("Y1", "2"), S.pin("C28", "1"))
+    S.label("XTAL_32K_P", (231.14, 175.26), 180)
+    S.label("XTAL_32K_N", (251.46, 175.26), 0)
+    S.stub("C27", "2")
+    S.stub("C28", "2")
+    # USER/BOOT button and pull-ups
+    S.place("R23", 360.68, 186.69, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
+    S.place("SW1", 370.84, 196.85, 270, ref_off=(5.08, -1.27), val_off=(5.08, 1.27))
+    S.stub("R23", "1")
+    S.wire(S.pin("R23", "2"), (360.68, 191.77), S.pin("SW1", "1"))
+    S.wire((350.52, 191.77), (360.68, 191.77))
+    S.junction((360.68, 191.77))
+    S.label("BTN_USER", (350.52, 191.77), 180)
+    S.stub("SW1", "2")
+    S.place("R24", 388.62, 186.69, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
+    S.stub("R24", "1")
+    S.stub("R24", "2", label_angle=0)
+    # LED
+    S.place("R25", 370.84, 165.1, 90, ref_off=(-1.27, -2.54), val_off=(-1.27, 3.81))
+    S.place("D3", 386.08, 165.1, 180, ref_off=(-2.54, -2.54), val_off=(-2.54, 3.81))
+    S.stub("R25", "1")
+    S.wire(S.pin("R25", "2"), S.pin("D3", "2"))
+    S.label("LED_A", (375.92, 165.1), 0)
+    S.stub("D3", "1")
+    # debug pads, 2 x 3 (USB D+/D- straight from the module)
+    S.place("J1", 391.16, 115.57, 0, ref_off=(-2.54, -6.35), val_off=(-2.54, 6.35))
+    S.stubs("J1", [str(i) for i in range(1, 6)], length=5.08)
+    g = S.pin("J1", "6")
+    S.wire(g, (g[0] + 2.54, g[1]), (g[0] + 2.54, g[1] + 2.54))
+    S.power("GND", (g[0] + 2.54, g[1] + 2.54), 0)
+    S.text("U4 is bought and hand-soldered by the user (not in the JLC BOM/CPL). Its EPAD (29) is soldered from the\n"
+           "back through the 0.8 mm hole in the land pattern. GPIO8/GPIO9 strapping: GPIO9 low at reset (SW1 held) =\n"
+           "download mode. VBAT (14) is tied to 3V3 inside the module (R2 = 0R); tied to +3V3 here as well.\n"
+           "EN has no RC inside the module (datasheet section 8): R22/C25 on the rail block. TXD0 has a 499R series\n"
+           "resistor inside the module. IO0/1/2/3/4/25: no connect, firmware disables input + pull-down; 16-19 are NC.\n"
+           "J1 (not fitted) has no supply pin: the cell powers the board.",
+           (x1 + 1.27, 195.58), size=1.0)
+
+
 def sensor_block():
     x1, y1 = 307.34, 17.78
     S.frame(x1, y1, 406.4, 86.36, "SHT40 (on a slotted tongue, away from converters and module)")
@@ -763,8 +950,10 @@ def build():
     rail_block()
     if D.VARIANT == "module":
         module_block()
-    else:
+    elif D.VARIANT == "chip":
         chip_block()
+    else:
+        wroom_block()
     sensor_block()
     sense_block()
     misc_block()
@@ -778,9 +967,12 @@ def build():
              '(comment 2 "Power path and battery life figures are ESTIMATES (docs/power_budget.md)") '
              '(comment 3 "ERC/DRC reports: %s"))'
              % (D.TITLE, D.DATE, D.REV, D.BOARD_NAME,
-                "ESP32-H2 Matter over Thread, SHT40, 1 x CR2450, TPS63900 3.3 V" if D.VARIANT == "module" else
-                "ESP32-H2FH4S chip + PCB antenna, Matter over Thread, SHT40, 1 x CR2450, TPS63900 3.3 V",
-                "hardware/reports" if D.VARIANT == "module" else "hardware/chip/reports"))
+                {"module": "ESP32-H2 Matter over Thread, SHT40, 1 x CR2450, TPS63900 3.3 V",
+                 "chip": "ESP32-H2FH4S chip + PCB antenna, Matter over Thread, SHT40, 1 x CR2450, TPS63900 3.3 V",
+                 "wroom": "ESP32-H2-WROOM-02C (user-supplied), Matter over Thread, SHT40, 1 x CR2450, TPS63900 3.3 V"}
+                [D.VARIANT],
+                {"module": "hardware/reports", "chip": "hardware/chip/reports",
+                 "wroom": "hardware/wroom/reports"}[D.VARIANT]))
     body = "\n".join(S.items)
     sch = ('(kicad_sch (version 20250114) (generator "eeschema") (generator_version "9.0") (uuid "%s") (paper "A3")\n'
            '%s\n(lib_symbols\n%s\n)\n%s\n(sheet_instances (path "/" (page "1")))\n(embedded_fonts no)\n)\n'

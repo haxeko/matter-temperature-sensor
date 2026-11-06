@@ -106,8 +106,9 @@ def downgrade_v10_symbol(block):
 class SymbolSource:
     """A symbol taken from a .kicad_sym file, flattened, ready to embed."""
 
-    def __init__(self, lib_path, name, lib_nick, new_name=None, overrides=None):
-        text = open(lib_path, encoding="utf-8").read()
+    def __init__(self, lib_path, name, lib_nick, new_name=None, overrides=None, text=None):
+        if text is None:
+            text = open(lib_path, encoding="utf-8").read()
         block = find_block(text, '(symbol "%s"' % name)
         if re.search(r'\(version 2025(?:0[2-9]|1)', text[:200]):
             block = downgrade_v10_symbol(block)

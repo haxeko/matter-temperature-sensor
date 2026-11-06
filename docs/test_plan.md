@@ -77,4 +77,8 @@ Sau T-30…T-39: chạy lại `hardware/analysis/power_model.py` với số đo,
 
 Các mục A–E áp dụng nguyên cho H2C (cùng tên net và điểm đo; T-10 nạp qua J1 2 × 3 cùng thứ tự chân). Thêm C-01…C-08 (thạch anh 32 MHz, phối hợp RF và ăng-ten bằng VNA, công suất và hài, tầm phủ so với module, mối hàn QFN, USB/UART, dòng ngủ): bảng ở `docs/chip_variant.md` mục 10. Nên làm C-01…C-03 trước khi làm nhiều bo H2C.
 
+## G. Biến thể WROOM-02C (H2W)
+
+Các mục A–E áp dụng nguyên cho H2W (cùng tên net và điểm đo; T-10 nạp qua J1 2 × 3 cùng thứ tự chân). Thêm W-01…W-06 (tầm phủ có pin ở mặt dưới, mối hàn module và EPAD, lắp/tháo pin với via dưới pin, footprint holder, USB/UART, dòng ngủ): bảng ở `docs/wroom_variant.md` mục 10. Nên làm W-02 và W-04 trước khi lắp pin lần đầu.
+
 Chứng nhận (Matter, FCC/CE, an toàn pin) **không nằm trong phạm vi** và không được tuyên bố.

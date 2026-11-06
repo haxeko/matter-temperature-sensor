@@ -99,3 +99,38 @@ Kết quả lần chạy cuối: `pin map OK (chip): 13 defines, 6 unused GPIOs 
 | 26 | GPIO27 | `BOARD_GPIO_USB_DP` | USB_DP |
 
 Chân nguồn và chân khác của chip (không phải GPIO): 1, 2, 27, 30, 31 VDD3P3; 9 VDDPST1; 18 VBAT; 19 VDDA_PMU; 20 VDDPST2 (đều +3V3); 17 CHIP_EN (EN); 28 XTAL_N, 29 XTAL_P (qua L3 24 nH); 32 ANT (LNA_IN); 33 pad đáy = GND. J1 của H2C là 2 × 3 (không lắp) với cùng thứ tự chân 1 TX, 2 RX, 3 D+, 4 D−, 5 BOOT, 6 GND.
+
+## Biến thể WROOM-02C (TH-SENSOR-H2W)
+
+Cùng `board_pins.h` (firmware dùng chung). Số chân là chân của module ESP32-H2-WROOM-02C theo bảng 2 "Pin Definitions" của datasheet v1.2 (RXD0 = GPIO23, TXD0 = GPIO24, IO26/IO27 = USB D−/D+); kiểm bằng:
+
+```sh
+python3 tools/check_pinmap.py --variant wroom
+```
+
+Kết quả lần chạy cuối: `pin map OK (wroom): 13 defines, 6 unused GPIOs checked against the wroom schematic` (**ĐÃ XÁC MINH** với netlist xuất từ schematic H2W).
+
+| Module pin | GPIO | board_pins.h | Net |
+|---|---|---|---|
+| 3 | GPIO4 | `unused (input off, pull-down)` | - |
+| 4 | GPIO5 | `BOARD_GPIO_VBAT_SENSE` | VBAT_SENSE |
+| 5 | GPIO10 | `BOARD_GPIO_I2C_SDA` | I2C_SDA |
+| 6 | GPIO11 | `BOARD_GPIO_I2C_SCL` | I2C_SCL |
+| 7 | GPIO8 | `BOARD_GPIO_STRAP8` | STRAP_GPIO8 |
+| 8 | GPIO9 | `BOARD_GPIO_USER_BUTTON` | BTN_USER |
+| 10 | GPIO12 | `BOARD_GPIO_VBAT_MEAS_EN` | VBAT_MEAS_EN |
+| 11 | GPIO13 | `BOARD_GPIO_XTAL32K_P` | XTAL_32K_P |
+| 12 | GPIO14 | `BOARD_GPIO_XTAL32K_N` | XTAL_32K_N |
+| 15 | GPIO22 | `BOARD_GPIO_LED` | LED |
+| 20 | GPIO25 | `unused (input off, pull-down)` | - |
+| 21 | GPIO23 | `BOARD_GPIO_UART0_RX` | U0RXD |
+| 22 | GPIO24 | `BOARD_GPIO_UART0_TX` | U0TXD |
+| 23 | GPIO26 | `BOARD_GPIO_USB_DM` | USB_DM |
+| 24 | GPIO27 | `BOARD_GPIO_USB_DP` | USB_DP |
+| 25 | GPIO3 | `unused (input off, pull-down)` | - |
+| 26 | GPIO2 | `unused (input off, pull-down)` | - |
+| 27 | GPIO1 | `unused (input off, pull-down)` | - |
+| 28 | GPIO0 | `unused (input off, pull-down)` | - |
+
+Chân khác của module: 1 3V3 và 14 VBAT (đều +3V3; VBAT đã nối 3V3 trong module qua 0 Ω), 2 EN, 9, 13 và 29 (EPAD) GND, 16–19 NC. J1 của H2W là 2 × 3 (không lắp) với cùng thứ tự chân 1 TX, 2 RX, 3 D+, 4 D−, 5 BOOT, 6 GND.
+

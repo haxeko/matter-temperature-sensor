@@ -134,3 +134,15 @@ Hai endpoint riêng (Temperature Sensor, Humidity Sensor) thay vì gộp, vì đ
 - **Router**: thêm cho bản chip — coi vùng đồng đã đổ của một net là đã nối (đảo +3V3 ở L3), cấm via trong pad SMD, kích thước via theo net; mặc định giữ hành vi cũ nên Rev B không đổi.
 - **Lệch so với HDG (ghi nhận, không sửa)**: nguồn < 350 mA (như Rev B); C46 không đứng riêng ở chân 20 (pad C47 nhận chân 18–20); L3 cách chân 4–6 mm; đường nguồn 0.4 mm thay vì 0.5 mm, lỗ via nguồn nhỏ hơn bề rộng đường; không chừa R/C nối tiếp trên USB; tụ ADC 22 nF thay vì 0.1 µF; ăng-ten chưa mô phỏng/đo. Chi tiết: `docs/chip_variant.md` mục 4.
 
+## D22. Biến thể WROOM-02C TH-SENSOR-H2W Rev A (2026-11-06)
+
+- **Yêu cầu**: "thiết kế bản sử dụng module wroom, kích thước nhỏ nhất có thể, kích thước vuông tính cả phần ăng ten nhô ra của module"; "dùng module wroom h2-02c, nhưng cái này tôi sẽ tự mua và hàn". Rev B và H2C giữ nguyên.
+- **Giả định đã báo người dùng** (có thể đổi): giữ 1 × CR2450 và holder BS-24-B4AA016, giữ mọi mạch của Rev B, PCB 4 lớp, ăng-ten 6 mm nhô khỏi mép trên, module không có trong BOM JLC.
+- **Kích thước**: bề rộng bị chặn dưới bởi land pattern của holder (37.0 mm) + 2 × 0.3 mm đồng–mép = 37.6 mm; holder lật xuống mặt dưới để chồng lên module theo hình chiếu; bo cao 37.6 − 6.0 = 31.6 mm để khung vuông 37.6 × 37.6 mm tính cả ăng-ten. Không bỏ hay thay linh kiện nào để bo nhỏ hơn.
+- **Vị trí module**: góc trên phải, vùng ăng-ten ngoài bo — vị trí ③ trong hình "antenna feed point on the right" của HDG (đánh dấu ✓), vì feed của ăng-ten WROOM-02C ở bên phải. Hàng via GND dày dọc mép trên dưới module.
+- **Vùng dưới pin ở mặt dưới**: không đường mạch, không đổ đồng; **cho phép via phủ mask** (Rev B cấm cả via dưới pin vì holder ở mặt trên và bo còn chỗ). Lý do: bản vẽ MY-CP-0138 cho thấy pin nằm trên đáy nhựa của holder, không chạm bo; cấm via ở vùng Ø25.7 mm giữa bo thì không đi được dây cho mặt trên trong kích thước này. Rủi ro còn lại ghi ở `docs/limitations.md` mục 11 và kiểm thử W-03.
+- **Footprint để hàn tay**: theo land pattern hình 7 của datasheet, thêm một lỗ mạ 0.8 mm ở giữa pad tản nhiệt (mớm thiếc từ mặt dưới), không phủ kem hàn trên pad tản nhiệt. Symbol và footprint vẽ trong `gen_schematic.py` vì không thư viện nào có module này.
+- **Mạch quanh module**: chân 14 (VBAT) nối +3V3 (trong module đã nối qua 0 Ω); giữ R22/C25 vì module không có RC trên EN; không thêm 499 Ω cho TXD0 (đã có trong module); C23 đặt ở chân 14, C24 ở chân 1.
+- **Router**: thêm tham số lớp (`layers`) để đi dây trên F.Cu + In2.Cu, B.Cu chỉ có pad holder và đổ GND; mặc định không đổi nên Rev B và H2C sinh lại giống từng byte (đã kiểm).
+- **Test pad** ở mặt trên như Rev B (đã thử đặt ở mặt dưới, nhưng chỗ trống ở mặt dưới chỉ còn sau module và làm tắc lớp In2); 24 ký hiệu linh kiện chỉ có trên lớp Fab vì thiếu chỗ trên silkscreen.
+
