@@ -132,5 +132,5 @@ Kết quả lần chạy cuối: `pin map OK (wroom): 13 defines, 6 unused GPIOs
 | 27 | GPIO1 | `unused (input off, pull-down)` | - |
 | 28 | GPIO0 | `unused (input off, pull-down)` | - |
 
-Chân khác của module: 1 3V3 và 14 VBAT (đều +3V3; VBAT đã nối 3V3 trong module qua 0 Ω), 2 EN, 9, 13 và 29 (EPAD) GND, 16–19 NC. J1 của H2W là 2 × 3 (không lắp) với cùng thứ tự chân 1 TX, 2 RX, 3 D+, 4 D−, 5 BOOT, 6 GND.
+Chân khác của module: 1 3V3 và 14 VBAT (đều +3V3; VBAT đã nối 3V3 trong module qua 0 Ω), 2 EN, 9, 13 và 29 (EPAD) GND, 16–19 NC. J1 của H2W là 6 pad dán (không lỗ) xếp 2 × 3 bước 2.54 mm, cùng thứ tự chân 1 TX, 2 RX, 3 D+, 4 D−, 5 BOOT, 6 GND. H2W không có nút RST (EN chỉ ra TP6).
 

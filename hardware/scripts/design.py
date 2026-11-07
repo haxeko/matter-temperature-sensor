@@ -135,6 +135,7 @@ SRC = {
     "FC135": ("C32346", "Seiko Epson", "Q13FC13500004"),
     "TS1187A": ("C318884", "XKB", "TS-1187A-B-A-B"),
     "KT0603R": ("C2286", "KENTO", "KT-0603R"),
+    "EVQP7A": ("C79167", "PANASONIC", "EVQP7A01P"),       # side-push tactile switch (wroom variant)
     # chip variant (JLC parts search 2026-11-06)
     "H2FH4S": ("C50392664", "Espressif", "ESP32-H2FH4S"),
     "XTAL32M": ("C5210649", "YXC", "X322532MLB4SI"),
@@ -208,8 +209,9 @@ part("C26", "Device:C", "100nF", FP_C0603, {"1": "+3V3", "2": "GND"}, src="100n"
 part("R22", "Device:R", "10k", FP_R0603, {"1": "nRST", "2": "EN"}, src="10k",
      desc="Isolates the push-pull supervisor from the RST button / J1")
 part("C25", "Device:C", "1uF", FP_C0603, {"1": "EN", "2": "GND"}, src="1u", desc="EN RC (Espressif reference)")
-part("SW2", "Switch:SW_Push", "RST", "Button_Switch_SMD:SW_Push_1P1T_XKB_TS-1187A", {"1": "EN", "2": "GND"},
-     src="TS1187A", desc="Reset")
+if VARIANT != "wroom":         # wroom: no RST button (reset = TP6/EN to GND, or the USB-Serial/JTAG reset)
+    part("SW2", "Switch:SW_Push", "RST", "Button_Switch_SMD:SW_Push_1P1T_XKB_TS-1187A", {"1": "EN", "2": "GND"},
+         src="TS1187A", desc="Reset")
 
 # ------------------------------------------------------------------ radio: module or bare chip
 if VARIANT == "module":
@@ -300,8 +302,13 @@ part("C27", "Device:C", "18pF", FP_C0603, {"1": "XTAL_32K_P", "2": "GND"}, src="
      spec="50V C0G 0603", desc="Load cap (CL 12.5 pF, ~3 pF stray assumed; tune at bring-up)")
 part("C28", "Device:C", "18pF", FP_C0603, {"1": "XTAL_32K_N", "2": "GND"}, src="18p",
      spec="50V C0G 0603", desc="Load cap")
-part("SW1", "Switch:SW_Push", "USER/BOOT", "Button_Switch_SMD:SW_Push_1P1T_XKB_TS-1187A",
-     {"1": "BTN_USER", "2": "GND"}, src="TS1187A", desc="GPIO9: user button, BOOT strap at reset")
+if VARIANT == "wroom":
+    part("SW1", "Switch:SW_Push", "USER/BOOT", "Button_Switch_SMD:SW_SPST_EVQP7A",
+         {"1": "BTN_USER", "2": "GND"}, src="EVQP7A",
+         desc="GPIO9: user button, BOOT strap at reset; side-push, actuator over the left board edge")
+else:
+    part("SW1", "Switch:SW_Push", "USER/BOOT", "Button_Switch_SMD:SW_Push_1P1T_XKB_TS-1187A",
+         {"1": "BTN_USER", "2": "GND"}, src="TS1187A", desc="GPIO9: user button, BOOT strap at reset")
 part("R23", "Device:R", "10k", FP_R0603, {"1": "+3V3", "2": "BTN_USER"}, src="10k",
      desc="GPIO9 pull-up (strap, deep-sleep wake)")
 part("R24", "Device:R", "10k", FP_R0603, {"1": "+3V3", "2": "STRAP_GPIO8"}, src="10k",
@@ -314,10 +321,10 @@ if VARIANT == "module":
          {"1": "U0TXD", "2": "U0RXD", "3": "USB_DP", "4": "USB_DM", "5": "BTN_USER", "6": "GND"}, dnp=True,
          desc="Debug/programming pads (not fitted): 1 TX 2 RX 3 D+ 4 D- 5 BOOT 6 GND; board powered by the cell")
 elif VARIANT == "wroom":
-    part("J1", "Connector_Generic:Conn_02x03_Odd_Even", "DEBUG",
-         "Connector_PinHeader_2.54mm:PinHeader_2x03_P2.54mm_Vertical",
+    part("J1", "Connector_Generic:Conn_02x03_Odd_Even", "DEBUG", "th_sensor:TestPads_2x03_P2.54mm_SMD",
          {"1": "U0TXD", "2": "U0RXD", "3": "USB_DP", "4": "USB_DM", "5": "BTN_USER", "6": "GND"}, dnp=True,
-         desc="Debug/programming pads (not fitted), 2x3: 1 TX 2 RX 3 D+ 4 D- 5 BOOT 6 GND; board powered by the cell")
+         desc="Debug/programming SMD pads (no holes), 2x3 at 2.54 mm: 1 TX 2 RX 3 D+ 4 D- 5 BOOT 6 GND; wires or "
+              "pogo pins; board powered by the cell")
 else:
     part("J1", "Connector_Generic:Conn_02x03_Odd_Even", "DEBUG",
          "Connector_PinHeader_2.54mm:PinHeader_2x03_P2.54mm_Vertical",

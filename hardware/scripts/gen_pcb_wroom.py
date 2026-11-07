@@ -91,7 +91,8 @@ at("Q3", 12.6, 13.05, 0)
 at("R35", 16.55, 13.3, 180)             # pad 1 (VBAT_MEAS_EN) towards pin 10
 at("R24", 16.55, 10.1, 180)             # pad 2 (STRAP_GPIO8) next to pin 7
 at("R23", 16.55, 11.65, 180)            # pad 2 (BTN_USER) next to pin 8
-at("SW1", 3.2, 10.9, 90)
+# USER/BOOT: side-push switch in the middle of the left edge, actuator 0.5 mm over the edge (pads 0.35 mm inside)
+at("SW1", 1.6, H / 2, 270)
 at("FID1", 9.3, 13.6, 0)
 # under the module: 32.768 kHz crystal at pins 11/12, LED at pin 15
 at("Y1", 23.3, 16.4, 180)               # pad 1 (XTAL_32K_P) left, under pin 11; pad 2 under pin 12
@@ -113,8 +114,7 @@ for key, x, y, rot in G.BLOCK_PLACE:
     if ref.startswith("TP"):
         continue
     at(ref, *block_xy(x, y), rot)
-at("C5", 4.85, 18.6, 0)
-at("SW2", 13.6, 18.4, 0)
+at("C5", 10.6, 18.6, 0)
 at("C21", 22.6, 23.5, 90)
 at("C22", 25.3, 23.5, 90)
 at("R21", 22.8, 28.6, 0)
@@ -361,10 +361,11 @@ ROUTE_PLAN = [
     # (net, width, layer costs F.Cu / In2.Cu, small vias)
     ("XTAL_32K_P", SIGNAL_W, (1.0, 50.0), True),
     ("XTAL_32K_N", SIGNAL_W, (1.0, 50.0), True),
-    ("USB_DP", SIGNAL_W, (2.0, 1.0), True),
-    ("USB_DM", SIGNAL_W, (2.0, 1.0), True),
+    # J1 pad 1 (TX) is the far corner of the pad block from the module: route it first
     ("U0TXD", SIGNAL_W, (2.0, 1.0), True),
     ("U0RXD", SIGNAL_W, (2.0, 1.0), True),
+    ("USB_DP", SIGNAL_W, (2.0, 1.0), True),
+    ("USB_DM", SIGNAL_W, (2.0, 1.0), True),
     ("LED", SIGNAL_W, (1.0, 2.0), True),
     ("LED_A", SIGNAL_W, (1.0, 2.0), True),
     ("I2C_SDA", SIGNAL_W, (1.0, 1.5), True),
@@ -484,8 +485,7 @@ def prune_stitching(board, vias):
 
 
 # ------------------------------------------------------------------ silkscreen
-SILK_LABELS = (("RST", "SW2", (10.0, 21.4, 17.4, 22.4), (0,)),
-               ("USER/BOOT", "SW1", (6.9, 10.0, 7.3, 11.6), (90,)))
+SILK_LABELS = (("USER/BOOT", "SW1", (4.0, 15.0, 4.4, 16.6), (90,)),)
 
 
 def silkscreen(board):

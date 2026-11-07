@@ -82,6 +82,7 @@ def write_project_libs():
         open(os.path.join(LIB, "th_sensor.pretty", ANT_FP + ".kicad_mod"), "w").write(ti_dn007_ifa())
     if D.VARIANT == "wroom":
         open(os.path.join(LIB, "th_sensor.pretty", WROOM_FP + ".kicad_mod"), "w").write(wroom02c_footprint())
+        open(os.path.join(LIB, "th_sensor.pretty", TESTPADS_FP + ".kicad_mod"), "w").write(testpads_2x03())
     open(os.path.join(LIB, "th_sensor.pretty", "L_Murata_DFE201612E.kicad_mod"), "w").write(murata_dfe201612e())
     open(os.path.join(LIB, "th_sensor.pretty", "BatteryHolder_MYOUNG_BS-24-B4AA016_1x2450.kicad_mod"), "w").write(
         myoung_bs24_b4aa016())
@@ -277,6 +278,38 @@ def wroom02c_footprint():
 	(fp_text user "PCB antenna: outside the board" (at 0 -7 0) (layer "F.Fab") (uuid "{u('fab4')}") (effects (font (size 0.8 0.8) (thickness 0.12))))
 	(fp_text user "${{REFERENCE}}" (at 0 0 0) (layer "F.Fab") (uuid "{u('fabref')}") (effects (font (size 1 1) (thickness 0.15))))
 	(fp_rect (start -9.75 -10.25) (end 9.75 10.75) (stroke (width 0.05) (type solid)) (fill no) (layer "F.CrtYd") (uuid "{u('crt')}"))
+{chr(10).join(pads)}
+	(embedded_fonts no)
+)
+"""
+
+
+TESTPADS_FP = "TestPads_2x03_P2.54mm_SMD"
+
+
+def testpads_2x03():
+    """Debug pads in the 2 x 3 header layout (2.54 mm, same numbering as PinHeader_2x03), SMD only (no holes):
+    1.6 mm pads for soldering wires or for pogo pins; pad 1 square. No paste (nothing is placed on them)."""
+    u = lambda s_: new_uuid("fp-tp2x3-" + s_)
+    pads = []
+    for k in range(6):
+        x, y = 2.54 * (k % 2), 2.54 * (k // 2)
+        shape = "rect" if k == 0 else "circle"
+        pads.append('\t(pad "%d" smd %s (at %s %s) (size 1.6 1.6) (layers "F.Cu" "F.Mask") (uuid "%s"))'
+                    % (k + 1, shape, fmt(x), fmt(y), u("p%d" % k)))
+    return f"""(footprint "{TESTPADS_FP}"
+	(version 20241229)
+	(generator "th_sensor_gen")
+	(layer "F.Cu")
+	(descr "Debug test pads, 2 x 3 at 2.54 mm in the PinHeader_2x03 layout, SMD 1.6 mm (pad 1 square), no holes")
+	(tags "test pad debug pogo smd")
+	(property "Reference" "REF**" (at 1.27 -2.2 0) (layer "F.SilkS") (uuid "{u('ref')}") (effects (font (size 0.8 0.8) (thickness 0.15))))
+	(property "Value" "{TESTPADS_FP}" (at 1.27 7.3 0) (layer "F.Fab") (uuid "{u('val')}") (effects (font (size 0.8 0.8) (thickness 0.12))))
+	(attr smd)
+	(fp_rect (start -1.27 -1.27) (end 3.81 6.35) (stroke (width 0.12) (type solid)) (fill no) (layer "F.SilkS") (uuid "{u('silk')}"))
+	(fp_rect (start -1.0 -1.0) (end 3.54 6.08) (stroke (width 0.1) (type solid)) (fill no) (layer "F.Fab") (uuid "{u('fab')}"))
+	(fp_rect (start -1.05 -1.05) (end 3.59 6.13) (stroke (width 0.05) (type solid)) (fill no) (layer "F.CrtYd") (uuid "{u('crt')}"))
+	(fp_text user "${{REFERENCE}}" (at 1.27 2.54 90) (layer "F.Fab") (uuid "{u('fabref')}") (effects (font (size 0.8 0.8) (thickness 0.12))))
 {chr(10).join(pads)}
 	(embedded_fonts no)
 )
@@ -609,20 +642,30 @@ def rail_block():
     S.place("U3", 248.92, ys, 0, ref_off=(3.81, -6.35), val_off=(3.81, 10.16))
     S.place("R22", 266.7, ys, 90, ref_off=(-1.27, -3.81), val_off=(-1.27, 3.81))
     S.place("C25", 279.4, ys + 3.81, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
-    S.place("SW2", 289.56, ys + 5.08, 270, ref_off=(5.08, -1.27), val_off=(5.08, 1.27))
+    has_rst = any(q["ref"] == "SW2" for q in D.PARTS)       # the wroom board has no RST button
+    if has_rst:
+        S.place("SW2", 289.56, ys + 5.08, 270, ref_off=(5.08, -1.27), val_off=(5.08, 1.27))
     S.stubs("U3", ["3", "1"])
     S.stubs("C26")
     S.wire(S.pin("U3", "2"), S.pin("R22", "1"))
     S.label("nRST", (259.08, ys), 0)
-    S.wire(S.pin("R22", "2"), S.pin("C25", "1"), S.pin("SW2", "1"), (293.37, ys), (297.18, ys))
-    S.junction(S.pin("C25", "1"))
-    S.junction(S.pin("SW2", "1"))
+    if has_rst:
+        S.wire(S.pin("R22", "2"), S.pin("C25", "1"), S.pin("SW2", "1"), (293.37, ys), (297.18, ys))
+        S.junction(S.pin("C25", "1"))
+        S.junction(S.pin("SW2", "1"))
+    else:
+        S.wire(S.pin("R22", "2"), S.pin("C25", "1"), (293.37, ys), (297.18, ys))
+        S.junction(S.pin("C25", "1"))
     S.label("EN", (297.18, ys), 0)
     S.place("TP6", 293.37, ys - 5.08, 0, ref_off=(1.27, -3.81), val_off=(1.27, -6.35))
     S.wire(S.pin("TP6", "1"), (293.37, ys))
     S.junction((293.37, ys))
     S.stub("C25", "2")
-    S.stub("SW2", "2")
+    if has_rst:
+        S.stub("SW2", "2")
+    else:
+        S.text("No RST button on this board: reset = short TP6 (EN) to GND,\n"
+               "or the automatic reset of the USB-Serial/JTAG port.", (276.86, ys + 7.62), size=1.0)
 
 
 def module_block():
@@ -872,7 +915,8 @@ def wroom_block():
            "download mode. VBAT (14) is tied to 3V3 inside the module (R2 = 0R); tied to +3V3 here as well.\n"
            "EN has no RC inside the module (datasheet section 8): R22/C25 on the rail block. TXD0 has a 499R series\n"
            "resistor inside the module. IO0/1/2/3/4/25: no connect, firmware disables input + pull-down; 16-19 are NC.\n"
-           "J1 (not fitted) has no supply pin: the cell powers the board.",
+           "J1: six SMD pads (no holes) for wires or pogo pins, no supply pin: the cell powers the board.\n"
+           "SW1 is a side-push switch at the board edge; there is no RST button (see the rail block).",
            (x1 + 1.27, 195.58), size=1.0)
 
 

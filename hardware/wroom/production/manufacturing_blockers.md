@@ -1,6 +1,6 @@
 # Manufacturing blockers and open checks (Rev A)
 
-Status from the JLC parts snapshot taken 2026-11-06 17:00 UTC (`jlc_parts_snapshot.jsonl`).
+Status from the JLC parts snapshot taken 2026-11-07 00:03 UTC (`jlc_parts_snapshot.jsonl`).
 Nothing here has been ordered. Re-run `tools/jlc_lookup.py` and this script before ordering.
 
 ## Blocking
@@ -18,6 +18,7 @@ Nothing here has been ordered. Re-run `tools/jlc_lookup.py` and this script befo
 - L1: DFE201612E-2R2M=P2 (C337893)
 - R3: 0603WAF1052T5E (C22855)
 - R4: 0603WAF1622T5E (C22885)
+- SW1: EVQP7A01P (C79167)
 - U1: TPS63900DSKR (C1518762)
 - U3: TPS3839K33DBZR (C96333)
 - U5: SHT40-AD1B-R3 (C2848306)

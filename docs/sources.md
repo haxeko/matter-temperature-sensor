@@ -34,6 +34,7 @@ Phiên bản tài liệu là bản đã đọc khi thiết kế (2026-10). Đư�
 | MYOUNG BS-24-B4AA016 — datasheet trên LCSC: https://www.lcsc.com/datasheet/lcsc_datasheet_2012181809_MYOUNG-BS-24-B4AA016_C964809.pdf | bản vẽ MY-CP-0138 (2018-05-30) | **Rev B**: holder SMT CR2450, kích thước thân, land pattern (footprint dự án), cực +; −25…+85 °C, tiếp điểm đồng phosphor mạ vàng (mô tả LCSC). **H2W**: land pattern 37.00 mm quyết định bề rộng bo; hình cắt (pin nằm trên đáy nhựa của holder) là cơ sở cho via dưới pin |
 | KNSCHA RVT 470 µF 6.3 V (RVT470UF6.3V67RV0038) — datasheet trên LCSC: https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2109301630_KNSCHA-RVT470UF6-3V67RV0038_C2901342.pdf | — | **Rev B**: tụ đệm C5, Ø6.3 × 7.7 mm, ±20 %, 2000 h ở 105 °C, dòng rò ≤ 0.01 CV hoặc 3 µA sau 2 phút ở điện áp định mức |
 | Keystone 1060 (catalog coin cell holders) | catalog M65 | holder CR2032 của Rev A (không còn dùng) |
+| Panasonic Light Touch Switches EVQP7/P3/9P7 — datasheet LCSC: https://www.lcsc.com/datasheet/lcsc_datasheet_2304140030_PANASONIC-EVQP7A01P_C79167.pdf | 01 Sep. 2013 | **H2W**: SW1 EVQP7A01P bấm cạnh, không chốt, 3.5 × 2.9 × 1.35 mm, 2.2 N, land pattern tham khảo (trùng footprint KiCad `SW_SPST_EVQP7A`) |
 
 ## Sensirion
 
@@ -59,7 +60,7 @@ ESP32-H2FH4S (Espressif, mã đặt hàng trong datasheet ESP32-H2 v1.3), YXC X3
 
 ## Nguồn cung
 
-- JLCPCB parts search (công cụ `tools/jlc_lookup.py`, endpoint của trang jlcpcb.com/parts, không phải API công bố chính thức) — ảnh chụp dữ liệu 2026-10-30 06:47 UTC trong `hardware/production/jlc_parts_snapshot.jsonl` (lần tra trước: 2026-10-29 08:55 UTC, Rev A); biến thể H2C: 2026-11-06 07:12 UTC trong `hardware/chip/production/jlc_parts_snapshot.jsonl`; biến thể H2W: 2026-11-06 17:00 UTC trong `hardware/wroom/production/jlc_parts_snapshot.jsonl` (module WROOM-02C không tra: người dùng tự mua).
+- JLCPCB parts search (công cụ `tools/jlc_lookup.py`, endpoint của trang jlcpcb.com/parts, không phải API công bố chính thức) — ảnh chụp dữ liệu 2026-10-30 06:47 UTC trong `hardware/production/jlc_parts_snapshot.jsonl` (lần tra trước: 2026-10-29 08:55 UTC, Rev A); biến thể H2C: 2026-11-06 07:12 UTC trong `hardware/chip/production/jlc_parts_snapshot.jsonl`; biến thể H2W: 2026-11-07 00:03 UTC trong `hardware/wroom/production/jlc_parts_snapshot.jsonl` (module WROOM-02C không tra: người dùng tự mua).
 
 ## Công cụ đã dùng
 

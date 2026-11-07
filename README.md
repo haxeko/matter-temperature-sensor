@@ -13,7 +13,7 @@ Rev B thay Rev A (2 × CR2032, bo 72 × 58 mm) theo yêu cầu chỉ dùng một
 
 Biến thể **TH-SENSOR-H2C Rev A** dùng **chip ESP32-H2FH4S rời** (QFN32) thay cho module: thạch anh 32 MHz, mạng phối hợp RF 0201, **ăng-ten in trên PCB** (inverted-F theo TI DN007), **PCB 4 lớp**, cùng kích thước bo, cùng đường nguồn và cùng firmware. File ở `hardware/chip/`, mô tả và giới hạn ở `docs/chip_variant.md`. Phần RF của biến thể này chưa đo và chưa chỉnh.
 
-Biến thể **TH-SENSOR-H2W Rev A** dùng **module ESP32-H2-WROOM-02C-H4S** (người dùng tự mua và hàn, không có trong BOM JLC) trên một **bo 4 lớp vuông 37.6 × 37.6 mm tính cả phần ăng-ten của module nhô ra ngoài mép trên** (bo 37.6 × 31.6 mm); holder CR2450 ở mặt dưới, mạch điện và firmware như Rev B. File ở `hardware/wroom/`, mô tả và giới hạn ở `docs/wroom_variant.md`.
+Biến thể **TH-SENSOR-H2W Rev A** dùng **module ESP32-H2-WROOM-02C-H4S** (người dùng tự mua và hàn, không có trong BOM JLC) trên một **bo 4 lớp vuông 37.6 × 37.6 mm tính cả phần ăng-ten của module nhô ra ngoài mép trên** (bo 37.6 × 31.6 mm); holder CR2450 ở mặt dưới, một nút USER/BOOT bấm cạnh ở giữa mép trái (không có nút RST), J1 là 6 pad dán; mạch nguồn, cảm biến và firmware như Rev B. File ở `hardware/wroom/`, mô tả và giới hạn ở `docs/wroom_variant.md`.
 
 ## Trạng thái — đọc trước
 
@@ -223,7 +223,7 @@ Mô hình năng lượng: `python3 hardware/analysis/power_model.py --plots` (~6
 | `docs/power_budget.md` | ngân sách dòng, tuổi thọ 25/50/100/200 µA, mô phỏng xung, tụ đệm, chế độ hỏng, phương án dự phòng |
 | `docs/decisions.md` | các quyết định thiết kế và lý do (D1–D22; D20 = Rev B, một CR2450; D21 = biến thể chip rời; D22 = biến thể WROOM-02C) |
 | `docs/chip_variant.md` | biến thể chip rời H2C: khác biệt, đối chiếu HDG, ăng-ten, phối hợp RF, stack-up 4 lớp, kiểm thử C-01…C-08 |
-| `docs/wroom_variant.md` | biến thể WROOM-02C H2W: kích thước vuông, vị trí module theo HDG, holder mặt dưới, hàn tay module, kiểm thử W-01…W-06 |
+| `docs/wroom_variant.md` | biến thể WROOM-02C H2W: kích thước vuông, vị trí module theo HDG, holder mặt dưới, hàn tay module, nút bấm cạnh, kiểm thử W-01…W-07 |
 | `docs/commissioning.md` | ghép Matter, cửa sổ commissioning, factory reset, dữ liệu sản xuất |
 | `docs/assembly.md` | file sản xuất, kiểm tra preview JLC, lắp tay, link đo dòng |
 | `docs/test_plan.md` | kế hoạch bring-up và kiểm thử T-01…T-42 |

@@ -94,5 +94,5 @@ Các mục 1–9 áp dụng cho cả H2W (cùng nguồn, cảm biến, firmware)
 - **Pin kim loại sau mặt GND, cách ranh giới ăng-ten 6.8 mm**; ảnh hưởng tới ăng-ten của module chưa đo (W-01). HDG khuyên chừa ≥ 15 mm quanh ăng-ten bên trong vỏ — thuộc thiết kế vỏ (chưa có vỏ).
 - **Lắp ráp hai mặt** (holder ở mặt dưới) hoặc tự hàn holder; xoay của linh kiện mặt dưới trong CPL phải kiểm trong bản xem trước của JLC.
 - Bốn đường UART/USB đi ra từ cột chân phải của module (vào trong 1.65 mm rồi xuống In2), vì mép phải module sát mép bo; via của chúng cách ranh giới ăng-ten 7–12 mm.
-- 24 ký hiệu linh kiện chỉ có trên lớp Fab; render 3D không có mô hình module.
-
+- 17 ký hiệu linh kiện chỉ có trên lớp Fab; render 3D không có mô hình module.
+- **Không có nút RST**: reset/vào download cần chập TP6 (EN) xuống GND hoặc tháo/lắp pin khi USB không tự reset được. SW1 bấm cạnh chỉ cao 1.35 mm, núm nhô 0.5 mm khỏi mép bo: dễ bấm nhầm khi cầm bo trần, và vỏ cần một nút đẩy đúng vị trí. J1 là pad dán: không cắm header được.
