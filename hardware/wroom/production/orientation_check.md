@@ -17,4 +17,4 @@ preview shows the back mirrored, so check them in the bottom view against the si
 | Q3 | 2N7002 | 0 | pin 1 (gate) | left / up | -0.94, 0.95 |
 | U1 | TPS63900DSKR | 90 | pin 1 | left / down | -1.00, -1.21 |
 | U3 | TPS3839K33DBZR | 0 | pin 1 | left / up | -0.94, 0.95 |
-| U5 (bottom) | SHT40-AD1B-R3 | 180 | pin 1 | right / up | 0.70, 0.40 |
+| U5 | SHT40-AD1B-R3 | 180 | pin 1 | right / down | 0.70, -0.40 |

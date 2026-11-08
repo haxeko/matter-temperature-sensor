@@ -13,7 +13,7 @@ Rev B thay Rev A (2 × CR2032, bo 72 × 58 mm) theo yêu cầu chỉ dùng một
 
 Biến thể **TH-SENSOR-H2C Rev A** dùng **chip ESP32-H2FH4S rời** (QFN32) thay cho module: thạch anh 32 MHz, mạng phối hợp RF 0201, **ăng-ten in trên PCB** (inverted-F theo TI DN007), **PCB 4 lớp**, cùng kích thước bo, cùng đường nguồn và cùng firmware. File ở `hardware/chip/`, mô tả và giới hạn ở `docs/chip_variant.md`. Phần RF của biến thể này chưa đo và chưa chỉnh.
 
-Biến thể **TH-SENSOR-H2W Rev A** dùng **module ESP32-H2-WROOM-02C-H4S** (người dùng tự mua và hàn, không có trong BOM JLC) trên một **bo 4 lớp vuông 37.6 × 37.6 mm tính cả phần ăng-ten của module nhô ra ngoài mép trên** (bo 37.6 × 31.6 mm); holder CR2450 ở mặt dưới, SHT40 ở mặt dưới của lưỡi cảm biến (hướng xuống), tụ đệm C5 là tụ tantal thấp nên cả cụm cao ≈ 12.3 mm (ước tính), một nút USER/BOOT bấm cạnh ở giữa mép trái (không có nút RST), J1 là 6 pad dán; mạch nguồn, cảm biến và firmware như Rev B. File ở `hardware/wroom/`, mô tả và giới hạn ở `docs/wroom_variant.md`.
+Biến thể **TH-SENSOR-H2W Rev A** dùng **module ESP32-H2-WROOM-02C-H4S** (người dùng tự mua và hàn, không có trong BOM JLC) trên một **bo 4 lớp vuông 37.6 × 37.6 mm tính cả phần ăng-ten của module nhô ra ngoài mép trên** (bo 37.6 × 31.6 mm); holder CR2450 ở mặt dưới, tụ đệm C5 là tụ tantal thấp nên cả cụm cao ≈ 12.3 mm (ước tính), một nút USER/BOOT bấm cạnh ở giữa mép trái (không có nút RST), J1 là 6 pad dán; gắn tường với cạnh có nút quay xuống đất (nút bấm từ dưới lên, lưỡi cảm biến ở góc dưới); mạch nguồn, cảm biến và firmware như Rev B. File ở `hardware/wroom/`, mô tả và giới hạn ở `docs/wroom_variant.md`.
 
 ## Trạng thái — đọc trước
 
@@ -35,7 +35,7 @@ Nhãn dùng trong toàn bộ repo: **ĐÃ XÁC MINH** (kiểm bằng công cụ 
 | Biến thể chip rời H2C: ERC, DRC + parity, pin map | ĐÃ XÁC MINH: 0 lỗi, 0 cảnh báo; 0 vi phạm, 0 pad chưa nối, 0 lỗi parity | `hardware/chip/reports/`, `tools/check_pinmap.py --variant chip` |
 | Biến thể chip rời H2C: ăng-ten, phối hợp RF, thạch anh | **CHƯA KIỂM THỬ** — giá trị RF chỉ là giá trị khởi đầu, cần VNA để chỉnh | `docs/chip_variant.md` |
 | Biến thể WROOM-02C H2W: ERC, DRC + parity, pin map | ĐÃ XÁC MINH: 0 lỗi, 0 cảnh báo; 0 vi phạm, 0 pad chưa nối, 0 lỗi parity | `hardware/wroom/reports/`, `tools/check_pinmap.py --variant wroom` |
-| Biến thể WROOM-02C H2W: hàn tay module, ăng-ten trên bo này, ảnh hưởng của pin ở mặt dưới, SHT40 hướng xuống | **CHƯA KIỂM THỬ** | `docs/wroom_variant.md` |
+| Biến thể WROOM-02C H2W: hàn tay module, ăng-ten trên bo này, ảnh hưởng của pin ở mặt dưới, hướng gắn tường | **CHƯA KIỂM THỬ** | `docs/wroom_variant.md` |
 
 Chưa có đơn đặt PCB hay linh kiện nào. Chưa đo dòng, chưa ghép Matter với controller nào.
 
@@ -47,7 +47,7 @@ Chưa có đơn đặt PCB hay linh kiện nào. Chưa đo dòng, chưa ghép Ma
 4. **Không giả định** Apple Home, Google Home, Alexa, SmartThings, Home Assistant… sẽ chấp nhận firmware tự build này; thử lần đầu bằng `chip-tool` + OpenThread Border Router (`docs/commissioning.md`).
 5. **Không bao giờ sao chép** toàn bộ flash/NVS, Thread dataset hay thông tin xác thực giữa các thiết bị.
 6. **Biến thể chip rời (H2C)**: ESP32-H2FH4S tồn kho JLC = 0 (tra 2026-11-06); ăng-ten PCB và mạng phối hợp chưa mô phỏng, chưa đo — phải chỉnh bằng VNA trên bo thật; bo này không còn chứng nhận RF sẵn có của module. Xem `docs/chip_variant.md`.
-7. **Biến thể WROOM-02C (H2W)**: module **không có trong BOM/CPL** (người dùng tự mua bản -H4S và hàn tay; pad tản nhiệt hàn qua lỗ 0.8 mm từ mặt dưới); holder, SHT40 và C29 ở **mặt dưới** (lắp ráp hai mặt; SHT40 không hàn được bằng mỏ); dưới pin có via phủ mask. Xem `docs/wroom_variant.md`.
+7. **Biến thể WROOM-02C (H2W)**: module **không có trong BOM/CPL** (người dùng tự mua bản -H4S và hàn tay; pad tản nhiệt hàn qua lỗ 0.8 mm từ mặt dưới); holder ở **mặt dưới** (lắp ráp hai mặt hoặc tự hàn holder); dưới pin có via phủ mask. Xem `docs/wroom_variant.md`.
 8. **Chỉ dùng CR2450, không sạc** (silkscreen mặt trên: "CR2450 ONLY" / "NO CHARGE" phía trên holder, dấu + và − ở hai đầu holder; mặt dưới: "CR2450 ONLY - NO CHARGE"; bản H2W: cả hai dòng và dấu +/− ở mặt dưới, cạnh holder). **Không bao giờ cấp nguồn bench khi pin đang nằm trong holder** — bo không có diode hay điện trở bảo vệ nối tiếp; xem `docs/limitations.md` mục 3.
 
 ## Sơ đồ khối
@@ -223,7 +223,7 @@ Mô hình năng lượng: `python3 hardware/analysis/power_model.py --plots` (~6
 | `docs/power_budget.md` | ngân sách dòng, tuổi thọ 25/50/100/200 µA, mô phỏng xung, tụ đệm, chế độ hỏng, phương án dự phòng |
 | `docs/decisions.md` | các quyết định thiết kế và lý do (D1–D22; D20 = Rev B, một CR2450; D21 = biến thể chip rời; D22 = biến thể WROOM-02C) |
 | `docs/chip_variant.md` | biến thể chip rời H2C: khác biệt, đối chiếu HDG, ăng-ten, phối hợp RF, stack-up 4 lớp, kiểm thử C-01…C-08 |
-| `docs/wroom_variant.md` | biến thể WROOM-02C H2W: kích thước vuông, vị trí module theo HDG, holder và SHT40 mặt dưới, C5 tantal, hàn tay module, nút bấm cạnh, kiểm thử W-01…W-08 |
+| `docs/wroom_variant.md` | biến thể WROOM-02C H2W: kích thước vuông, vị trí module theo HDG, holder mặt dưới, C5 tantal, hướng gắn tường, hàn tay module, nút bấm cạnh, kiểm thử W-01…W-08 |
 | `docs/commissioning.md` | ghép Matter, cửa sổ commissioning, factory reset, dữ liệu sản xuất |
 | `docs/assembly.md` | file sản xuất, kiểm tra preview JLC, lắp tay, link đo dòng |
 | `docs/test_plan.md` | kế hoạch bring-up và kiểm thử T-01…T-42 |

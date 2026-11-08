@@ -5,9 +5,12 @@ TH-SENSOR-H2 board (docs/wroom_variant.md).
 
 Square outline including the module antenna: the board is 37.6 x 31.6 mm and the module's 6 mm antenna area
 overhangs its top edge, so the whole assembly fits a 37.6 x 37.6 mm square. 37.6 mm is the CR2450 holder's land
-pattern (37.0 mm over the pads, drawing MY-CP-0138) plus 0.3 mm copper-to-edge on each side. The holder and the
-SHT40 (with C29) sit on the back, everything else on the front: the sensor faces down, away from settling dust,
-and C5 is a 3.1 mm tantalum, so the front is no taller than the module.
+pattern (37.0 mm over the pads, drawing MY-CP-0138) plus 0.3 mm copper-to-edge on each side. The holder sits on
+the back, everything else on the front; C5 is a 3.1 mm tantalum, so the front is no taller than the module.
+
+Mounting (user's choice, docs/wroom_variant.md): on a wall, back to the wall, with the left edge (SW1) towards the
+floor. The side-push button is then pressed from below and the SHT40 tongue is the lowest corner, under the module;
+the module's antenna points sideways.
 
 Module position: ESP32-H2 Hardware Design Guidelines, "Positioning a Module on a Base Board", figure "antenna feed
 point on the right", position 3 (marked as strongly recommended): module in the top-right corner, its PCB antenna
@@ -17,9 +20,9 @@ Stack-up JLC04161H-7628 (4 layers, 1.6 mm):
   L1 F.Cu    parts, short connections, GND pour
   L2 In1.Cu  GND plane, no tracks
   L3 In2.Cu  second routing layer (signals, power), GND pour in the rest
-  L4 B.Cu    holder pads, SHT40 and its tracks on the back of the tongue, GND pour outside the cell (the holder's
-             - pad sits in it); no tracks and no pour under the cell and the holder body, only tented vias (the cell
-             rests on the holder's plastic floor, not on the board: drawing MY-CP-0138, side view)
+  L4 B.Cu    holder pads, GND pour outside the cell (the holder's - pad sits in it); no tracks and no pour under the
+             cell and the holder body, only tented vias (the cell rests on the holder's plastic floor, not on the
+             board: drawing MY-CP-0138, side view)
 Coordinates are relative to the board's top-left corner (KiCad y down), as in gen_pcb.py.
 
 Usage: TH_VARIANT=wroom python3 gen_pcb_wroom.py [--no-route] [--silk-draft]
@@ -73,17 +76,16 @@ def at(ref, x, y, rot=0, back=False):
 
 at("U4", *MOD, 0)
 at("BT1", *CELL, 0, back=True)          # flipped: + (pad 1) ends up on the left
-# tongue, BACK side (sensor facing down): the SHT40 turned so that SDA/SCL face the bridge; C29 on the far side
-# between VDD and GND, GND leaves over the top and VDD under the bottom (nothing crosses on the tongue, where vias
-# are not allowed). Back footprints are mirrored: at rot 0, SDA/SCL end up on the right (bridge) side.
-at("U5", 3.4, 2.4, 0, back=True)
-at("C29", 1.4, 2.4, 90, back=True)
+# tongue: the SHT40 turned so that SCL/SDA face the bridge; C29 on the far side between VDD and GND, VDD leaves
+# over the top and GND under the bottom (nothing crosses on the tongue, where vias are not allowed)
+at("U5", 3.4, 2.4, 180)
+at("C29", 1.4, 2.4, 270)
 # left of the module: decoupling at pin 1, EN cap at pin 2, divider at pin 4, pull-ups at pins 7/8
 at("C24", 16.55, 1.1, 180)              # pad 1 (+3V3) next to pin 1
 at("C25", 16.55, 2.65, 180)             # pad 1 (EN) next to pin 2
 at("C31", 16.55, 5.8, 180)              # pad 1 (VBAT_SENSE) next to pin 4
-at("R27", 10.2, 4.0, 90)                # I2C pull-ups past the bridge, pad 2 (SCL / SDA) up; SCL left, SDA right,
-at("R26", 11.7, 4.0, 90)                # the order in which the back lanes reach their vias
+at("R26", 10.2, 4.0, 90)                # I2C pull-ups below the bridge, pad 2 (SDA / SCL) up
+at("R27", 11.7, 4.0, 90)
 at("R32", 12.7, 7.6, 90)
 at("R31", 14.2, 7.6, 90)
 at("U3", 10.0, 7.8, 0)
@@ -284,26 +286,24 @@ def courtyard_overlaps(board):
 
 
 # ------------------------------------------------------------------ fixed copper
-# SHT40 tongue (tracks only, all on B.Cu: the sensor is on the back): lanes through the bridge at 0.5 mm pitch, top
-# to bottom GND, SDA, SCL, VDD. Past the bridge each lane ends in a via, the bottom one first, so that no lane
-# crosses another: VDD, SCL, SDA, GND from left to right. On the front, short tracks take the vias into the pull-ups
-# (R27 = SCL left, R26 = SDA right) and VDD into the +3V3 pad of R27; GND joins the planes at its via.
-BCU, FCU = pcbnew.B_Cu, pcbnew.F_Cu
-TV = {"+3V3": (8.3, 2.8), "I2C_SCL": (9.3, 2.3), "I2C_SDA": (10.3, 1.8), "GND": (10.9, 0.55)}
+# SHT40 tongue (tracks only, all on F.Cu): lanes through the bridge at 0.5 mm pitch, top to bottom VDD, SCL, SDA,
+# GND; they continue 0.5 mm past the bridge, where the router takes over (GND drops to a via there)
+BRIDGE_END = TONGUE["tx"] + TONGUE["sw"] + 0.5
 TONGUE_ROUTES = [
-    ("GND", SIGNAL_W, BCU, [("U5", "4"), (2.1, 2.0), ("C29", "2")]),
-    ("GND", SIGNAL_W, BCU, [("C29", "2"), (1.4, 0.55), TV["GND"]]),
-    ("I2C_SDA", SIGNAL_W, BCU, [("U5", "1"), (4.8, 2.0), (4.8, 1.05), (TV["I2C_SDA"][0], 1.05), TV["I2C_SDA"]]),
-    ("I2C_SCL", SIGNAL_W, BCU, [("U5", "2"), (5.3, 2.8), (5.3, 1.55), (TV["I2C_SCL"][0], 1.55), TV["I2C_SCL"]]),
-    ("+3V3", SIGNAL_W, BCU, [("U5", "3"), (2.1, 2.8), ("C29", "1")]),
-    ("+3V3", SIGNAL_W, BCU, [("C29", "1"), (1.4, 4.6), (6.1, 4.6), (6.1, 2.05), (TV["+3V3"][0], 2.05), TV["+3V3"]]),
-    # front: vias into the pull-ups
-    ("I2C_SCL", SIGNAL_W, FCU, [TV["I2C_SCL"], ("R27", "2")]),
-    ("I2C_SDA", SIGNAL_W, FCU, [TV["I2C_SDA"], (11.2, 1.8), (11.7, 2.3), ("R26", "2")]),
-    ("+3V3", SIGNAL_W, FCU, [TV["+3V3"], (8.3, 4.825), ("R27", "1")]),
-    ("+3V3", SIGNAL_W, FCU, [("R27", "1"), ("R26", "1")]),
+    ("+3V3", SIGNAL_W, [("U5", "3"), (2.1, 2.0), ("C29", "1")]),
+    ("+3V3", SIGNAL_W, [("C29", "1"), (1.4, 0.55), (BRIDGE_END, 0.55)]),
+    ("I2C_SCL", SIGNAL_W, [("U5", "2"), (4.8, 2.0), (4.8, 1.05), (BRIDGE_END, 1.05)]),
+    ("I2C_SDA", SIGNAL_W, [("U5", "1"), (5.3, 2.8), (5.3, 1.55), (BRIDGE_END, 1.55)]),
+    ("GND", SIGNAL_W, [("U5", "4"), (2.1, 2.8), ("C29", "2")]),
+    ("GND", SIGNAL_W, [("C29", "2"), (1.4, 4.6), (6.1, 4.6), (6.1, 2.05), (BRIDGE_END + 0.1, 2.05),
+                       (BRIDGE_END + 0.1, 2.7)]),
+    # fan-out past the bridge (0.5 mm pitch is too tight for the router): SDA and SCL into their pull-ups,
+    # VDD down into the +3V3 pad of R27
+    ("I2C_SDA", SIGNAL_W, [(BRIDGE_END, 1.55), (8.6, 1.55), (10.2, 3.15), ("R26", "2")]),
+    ("I2C_SCL", SIGNAL_W, [(BRIDGE_END, 1.05), (10.9, 1.05), (11.7, 1.85), ("R27", "2")]),
+    ("+3V3", SIGNAL_W, [(BRIDGE_END, 0.55), (12.1, 0.55), (12.6, 1.05), (12.6, 4.825), ("R27", "1")]),
 ]
-TONGUE_VIAS = sorted(TV.items())
+TONGUE_VIAS = [("GND", (BRIDGE_END + 0.1, 2.7))]
 
 # module thermal pad: the datasheet's via pattern (3 in the 2.8 x 0.55 strip, the 4 corners of the 2.8 x 1.6 area;
 # the centre of that area is the 0.8 mm hand-soldering hole of the footprint)
@@ -329,10 +329,10 @@ def hand_copper(board, nets):
     def point(p):
         return G.pad_xy(board, *p) if isinstance(p[0], str) else p
 
-    for net, w, layer, pts in TONGUE_ROUTES:
+    for net, w, pts in TONGUE_ROUTES:
         ps = [point(p) for p in pts]
         for a, c in zip(ps[:-1], ps[1:]):
-            G.add_track(board, nets[net], a, c, w, layer=layer)
+            G.add_track(board, nets[net], a, c, w)
     for net, p in TONGUE_VIAS:
         G.add_via(board, nets[net], p, *VIA_S)
     # converter block (Rev A orientation): the hand routes of gen_pcb.py without the Rev B test-pad branches
@@ -508,15 +508,12 @@ def silkscreen(board):
         tl = txt(label, 0.8)
         if not sp.free_spot(tl, region, step=0.1, angles=angles):
             missing.append(label)
-    # fixed marks: where the sensor is (front of the tongue, which carries no copper now) and "+" at the corner of
-    # C5's pad 1, the end the tantalum's band marks
+    # "+" at the corner of C5's pad 1, the end the tantalum's band marks
     x1, y1 = G.pad_xy(board, "C5", "1")
-    for text, x, y, size, bold in (("SHT40", 3.3, 1.6, 0.8, False), ("ON BACK", 3.3, 3.35, 0.8, False),
-                                   ("+", x1 - 1.86, y1 - 3.3, 0.8, False)):
-        tm = G.silk_text(board, text, x, y, size, bold=bold)
-        if not sp.free(sp._bbox(tm)):
-            missing.append(text)
-        sp.claim(tm)
+    tm = G.silk_text(board, "+", x1 - 1.86, y1 - 3.3, 0.8)
+    if not sp.free(sp._bbox(tm)):
+        missing.append("C5 +")
+    sp.claim(tm)
     # J1 (not fitted): pin names beside the left column, one row per header row
     jx, jy = PLACE["J1"][:2]
     for i, line in enumerate(("TX RX", "D+ D-", "BOOT GND")):
@@ -542,11 +539,13 @@ def silkscreen(board):
         if fp.IsFlipped() or ref == "U4" or not sp.place_reference(fp):
             fp.Reference().SetVisible(False)
             hidden.append(ref)
-    # back: cell warning and board name behind the module's right half, date in the free corner below the cell
+    # back: cell warning and board name behind the module's right half, date in the free corner below the cell,
+    # "SHT40" on the back of the tongue
     for text, y, bold in (("CR2450 ONLY", 5.2, True), ("NO CHARGE", 6.8, True), ("TH-SENSOR", 8.4, False),
                           ("H2W Rev %s" % D.REV, 10.0, False)):
         G.silk_text(board, text, 32.8, y, 0.8, layer="B.SilkS", bold=bold)
     G.silk_text(board, D.DATE, 5.0, 28.6, 0.8, layer="B.SilkS")
+    G.silk_text(board, "SHT40", 3.0, 4.2, 0.8, layer="B.SilkS")
     if missing and "--silk-draft" not in sys.argv:
         raise RuntimeError("silkscreen: no room for " + ", ".join(missing))
     if missing:

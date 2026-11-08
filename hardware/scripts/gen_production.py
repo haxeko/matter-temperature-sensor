@@ -232,11 +232,10 @@ def blockers(rows, snap):
               *(["- U4 (ESP32-H2-WROOM-02C-H4S) is NOT in this BOM/CPL: the user buys it and solders it by hand "
                  "(castellated pads with an iron; the thermal pad from the back through the 0.8 mm hole, "
                  "docs/wroom_variant.md). Its PCB antenna must overhang the top edge.",
-                 "- Two-sided assembly: BT1 (holder), U5 (SHT40, sensor facing down) and C29 are on the BOTTOM "
-                 "side (CPL layer Bottom), everything else on top. Either order assembly on both sides, or order "
-                 "top-side assembly only and fit the three bottom parts by hand: BT1 with an iron (two large "
-                 "pads), U5 only with hot air or reflow (DFN, no leads). The holder's + terminal is on the LEFT "
-                 "seen from the top (pad 1, '+' on the back silkscreen)."] if D.VARIANT == "wroom" else []),
+                 "- Two-sided assembly: BT1 (holder) is on the BOTTOM side (CPL layer Bottom), everything else on "
+                 "top. Either order assembly on both sides, or order top-side assembly only and hand-solder BT1 "
+                 "(two large pads). Its + terminal is on the LEFT seen from the top (pad 1, '+' on the back "
+                 "silkscreen)."] if D.VARIANT == "wroom" else []),
               "- Nothing here proves the design works: see docs/test_plan.md (no prototype has been built)."]
     with open(os.path.join(OUT, "manufacturing_blockers.md"), "w") as f:
         f.write("\n".join(lines) + "\n")
