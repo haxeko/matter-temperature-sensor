@@ -79,6 +79,6 @@ Các mục A–E áp dụng nguyên cho H2C (cùng tên net và điểm đo; T-1
 
 ## G. Biến thể WROOM-02C (H2W)
 
-Các mục A–E áp dụng nguyên cho H2W (cùng tên net và điểm đo; T-10 nạp qua 6 pad dán J1 cùng thứ tự chân; không có nút RST: chỗ nào ghi "nhấn RST" thì chập TP6 xuống GND). Thêm W-01…W-07 (tầm phủ có pin ở mặt dưới, mối hàn module và EPAD, lắp/tháo pin với via dưới pin, footprint holder, USB/UART, dòng ngủ): bảng ở `docs/wroom_variant.md` mục 10. Nên làm W-02 và W-04 trước khi lắp pin lần đầu.
+Các mục A–E áp dụng nguyên cho H2W (cùng tên net và điểm đo; T-10 nạp qua 6 pad dán J1 cùng thứ tự chân; không có nút RST: chỗ nào ghi "nhấn RST" thì chập TP6 xuống GND). Thêm W-01…W-08 (tầm phủ có pin ở mặt dưới, mối hàn module và EPAD, lắp/tháo pin với via dưới pin, footprint holder, USB/UART, dòng ngủ, nút bấm cạnh, SHT40 hướng xuống): bảng ở `docs/wroom_variant.md` mục 10. T-39 áp dụng cho C5 của H2W, là tụ tantal TAJD477K006RNJ thay cho tụ nhôm. Nên làm W-02 và W-04 trước khi lắp pin lần đầu.
 
 Chứng nhận (Matter, FCC/CE, an toàn pin) **không nằm trong phạm vi** và không được tuyên bố.

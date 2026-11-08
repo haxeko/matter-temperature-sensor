@@ -50,7 +50,7 @@ else:
     PROJECT = "th_sensor_h2w"
     TITLE = "TH-SENSOR-H2W thermo-hygrometer (ESP32-H2-WROOM-02C module)"
     REV = "A"
-    DATE = "2026-11-06"
+    DATE = "2026-11-08"
     HW_DIR = _os.path.join(_HW, "wroom")            # hardware/wroom/kicad, hardware/wroom/production, ...
     BOARD_NAME = "TH-SENSOR-H2W"
 
@@ -130,6 +130,7 @@ SRC = {
     "DFE201612E": ("C337893", "Murata", "DFE201612E-2R2M=P2"),
     "BS24SMT": ("C964809", "MYOUNG", "BS-24-B4AA016"),
     "470u_elec": ("C2901342", "KNSCHA", "RVT470UF6.3V67RV0038"),
+    "470u_tant": ("C7229", "Kyocera AVX", "TAJD477K006RNJ"),  # wroom variant: 470 uF tantalum, case D
     "H2MINI": ("C47967030", "Espressif", "ESP32-H2-MINI-1-H4S"),
     "SHT40": ("C2848306", "Sensirion", "SHT40-AD1B-R3"),
     "FC135": ("C32346", "Seiko Epson", "Q13FC13500004"),
@@ -177,9 +178,18 @@ part("C2", "Device:C", "100uF", FP_C1206, {"1": "VIN", "2": "GND"}, src="100u_12
      spec="6.3V X5R 1206", desc="Input buffer (coin cell pulse support)")
 part("C3", "Device:C", "100uF", FP_C1206, {"1": "VIN", "2": "GND"}, src="100u_1206",
      spec="6.3V X5R 1206", desc="Input buffer (coin cell pulse support)")
-part("C5", "Device:C_Polarized", "470uF", "Capacitor_SMD:CP_Elec_6.3x7.7", {"1": "VIN", "2": "GND"},
-     src="470u_elec", spec="6.3V Al electrolytic 6.3x7.7mm",
-     desc="Bulk input buffer: reports survive mid-life / cold cells (power model, ESTIMATE); leakage to be measured")
+if VARIANT == "wroom":
+    # Same 470 uF in a 7.3 x 4.3 mm tantalum (MnO2) case instead of the 7.7 mm tall aluminium can, so that the
+    # front stays as low as the module (docs/wroom_variant.md). MnO2, not polymer: polymer tantalums specify
+    # ~10x the leakage. The cell (3 V nominal) uses about half of the 6.3 V rating.
+    part("C5", "Device:C_Polarized", "470uF", "Capacitor_Tantalum_SMD:CP_EIA-7343-31_Kemet-D", {"1": "VIN", "2": "GND"},
+         src="470u_tant", spec="6.3V 10% tantalum MnO2 case D 7343-31",
+         desc="Bulk input buffer: reports survive mid-life / cold cells (power model, ESTIMATE); leakage to be "
+              "measured; pad 1 = + (marked end)")
+else:
+    part("C5", "Device:C_Polarized", "470uF", "Capacitor_SMD:CP_Elec_6.3x7.7", {"1": "VIN", "2": "GND"},
+         src="470u_elec", spec="6.3V Al electrolytic 6.3x7.7mm",
+         desc="Bulk input buffer: reports survive mid-life / cold cells (power model, ESTIMATE); leakage to be measured")
 part("U1", "Regulator_Switching:TPS63900", "TPS63900DSKR", "Package_SON:WSON-10-1EP_2.5x2.5mm_P0.5mm_EP1.2x2mm",
      {"10": "VIN", "1": "VIN", "2": "GND", "9": "LX1", "7": "LX2", "6": "VOUT",
       "3": "CFG1", "4": "CFG2", "5": "CFG3", "8": "GND", "11": "GND"},

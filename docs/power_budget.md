@@ -140,6 +140,8 @@ Rev B đặt ở nút VIN: 10 µF (0603) + 2 × 100 µF (1206 X5R 6.3 V, giả �
 
 Tụ điện phân có dòng rò: datasheet chỉ cho giới hạn ở điện áp định mức (29.6 µA); ở 3 V sau khi ổn định chưa có số liệu. Ngân sách tính 0 / 1 / 5 µA (tương đương 0 / 1.6 / 8 % dòng danh nghĩa). Nếu T-39 đo được > 5 µA sau 24 h ở 3 V: thay bằng loại rò thấp (polymer hoặc loại "low leakage") có số liệu rò công bố.
 
+**Biến thể H2W**: C5 là tụ tantal MnO2 Kyocera AVX TAJD477K006RNJ thay cho tụ nhôm, để mặt trên không cao hơn module (`docs/wroom_variant.md`). Datasheet TAJ: 470 µF ±10 %, DCL ≤ 28 µA ở 6.3 V, 25 °C, sau 5 phút (cùng cỡ giới hạn của tụ nhôm), ΔC/C trong +0/−10 % ở −55 °C. Trường hợp xấu nhất 0.9 × 0.9 × 470 µF + 85 µF ≈ 466 µF, không thấp hơn 461 µF của mục 4.2, nên kết quả mô hình ở trên áp dụng cho H2W. Rò ở ~3 V vẫn chưa có số liệu ⇒ cùng ngân sách 0 / 1 / 5 µA và cùng phép đo T-39 (với tantal, loại MnO2 như TAJ ghi giới hạn rò thấp hơn loại polymer).
+
 ## 6. Các chế độ hỏng và xử lý
 
 | Tình huống | Hệ quả dự kiến | Xử lý trong thiết kế | Trạng thái |

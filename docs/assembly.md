@@ -82,12 +82,12 @@ File ở `hardware/chip/production/` (cùng cấu trúc: zip Gerber 4 lớp `th_
 
 ## Biến thể WROOM-02C (H2W Rev A)
 
-File ở `hardware/wroom/production/` (zip Gerber 4 lớp `th_sensor_h2w_revA_gerbers.zip`, `bom_jlc.csv` 26 dòng, `cpl_jlc.csv` 39 linh kiện, `orientation_check.md`, `assembly_top.pdf`, `manufacturing_blockers.md`, ảnh chụp tồn kho 2026-11-07 00:03 UTC). **Không có gì đã được đặt hàng.**
+File ở `hardware/wroom/production/` (zip Gerber 4 lớp `th_sensor_h2w_revA_gerbers.zip`, `bom_jlc.csv` 26 dòng, `cpl_jlc.csv` 39 linh kiện, `orientation_check.md`, `assembly_top.pdf`, `manufacturing_blockers.md`, ảnh chụp tồn kho 2026-11-08 08:06 UTC). **Không có gì đã được đặt hàng.**
 
 - PCB: 4 lớp, 1.6 mm, JLC04161H-7628, via phủ mask (bắt buộc: có via dưới pin), HASL không chì hoặc ENIG; rãnh lưỡi cảm biến 1 mm hình chữ L từ mép trái, phay. Kích thước 37.6 × 31.6 mm; phần ăng-ten của module nhô thêm 6 mm khỏi mép trên.
 - **U4 không có trong BOM/CPL**: tự mua ESP32-H2-WROOM-02C-**H4S** (4 MB, bảng phân vùng của firmware cần 4 MB). Hàn tay: vùng ăng-ten của module nằm ngoài mép trên, pad răng cưa trùng pad bo (pad bo ló ra 0.5 mm để chạm mỏ); hàn một chân góc, căn, hàn hết; rồi mớm thiếc từ mặt dưới qua lỗ 0.8 mm cho pad tản nhiệt (EPAD, GND). Datasheet: MSL 3, reflow một lần đỉnh 235–250 °C nếu dùng khí nóng/reflow.
-- **Holder BT1 ở mặt dưới** (CPL `Bottom`, xoay 180 theo KiCad): đặt lắp ráp hai mặt, hoặc chỉ mặt trên rồi tự hàn BT1 (hai pad 3.62 × 4.5 mm). Cực + ở bên trái khi nhìn từ trên (pad 1, dấu "+" trên silkscreen mặt dưới) — kiểm trong bản xem trước mặt dưới của JLC.
-- Bản xem trước JLC: kiểm từng dòng `orientation_check.md` (holder mặt dưới, C5 + bên trái, LED, U1, U3, U5, Q1, Q3) và SW1 (EVQP7A01P bấm cạnh: núm quay ra mép trái bo).
+- **Mặt dưới: holder BT1, SHT40 (U5) và C29** (CPL `Bottom`; theo KiCad BT1 xoay 180, U5 180, C29 90): đặt lắp ráp hai mặt (khuyên dùng — SHT40 là vỏ DFN không chân, không hàn bằng mỏ được), hoặc chỉ mặt trên rồi tự gắn: BT1 bằng mỏ (hai pad 3.62 × 4.5 mm), U5/C29 bằng khí nóng. Cực + của holder ở bên trái khi nhìn từ trên (pad 1, dấu "+" trên silkscreen mặt dưới) — kiểm trong bản xem trước mặt dưới của JLC, cùng chân 1 của U5.
+- Bản xem trước JLC: kiểm từng dòng `orientation_check.md` (holder và U5 ở mặt dưới; C5 là tụ tantal: vạch trên thân = cực +, phải nằm bên trái, cạnh dấu "+"; LED, U1, U3, Q1, Q3) và SW1 (EVQP7A01P bấm cạnh: núm quay ra mép trái bo).
 - J1 là 6 pad dán (không có trong BOM): hàn dây hoặc dùng kim pogo. Không có nút RST: xem `docs/wroom_variant.md` mục 9.
 - Thứ tự gợi ý khi tự lắp phần còn lại: mặt trên (JLC) → module → holder. Kiểm W-02 (mối hàn module) và W-04 (cực holder) trước khi lắp pin lần đầu (`docs/wroom_variant.md` mục 10).
 

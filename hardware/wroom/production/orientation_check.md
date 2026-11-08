@@ -11,10 +11,10 @@ preview shows the back mirrored, so check them in the bottom view against the si
 | Ref | Value | KiCad rotation | Pad 1 | Pad 1 direction | Pad 1 offset X, Y (mm) |
 |---|---|---|---|---|---|
 | BT1 (bottom) | CR2450 holder | 180 | pad 1 = + terminal (silkscreen '+') | left | -16.68, -0.00 |
-| C5 | 470uF | 0 | pad 1 = + (base-plate chamfers on this side; the can marking is on the - side) | left | -2.70, -0.00 |
+| C5 | 470uF | 0 | pad 1 = + (tantalum: the band on the body marks this end; silkscreen '+') | left | -3.12, -0.00 |
 | D3 | red | 90 | pad 1 = cathode | down | 0.00, -0.79 |
 | Q1 | AO3401A | 180 | pin 1 (gate) | right / down | 0.94, -0.95 |
 | Q3 | 2N7002 | 0 | pin 1 (gate) | left / up | -0.94, 0.95 |
 | U1 | TPS63900DSKR | 90 | pin 1 | left / down | -1.00, -1.21 |
 | U3 | TPS3839K33DBZR | 0 | pin 1 | left / up | -0.94, 0.95 |
-| U5 | SHT40-AD1B-R3 | 180 | pin 1 | right / down | 0.70, -0.40 |
+| U5 (bottom) | SHT40-AD1B-R3 | 180 | pin 1 | right / up | 0.70, 0.40 |

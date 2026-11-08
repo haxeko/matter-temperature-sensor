@@ -49,6 +49,8 @@ POLARISED = {
 }
 if D.VARIANT == "chip":
     POLARISED["Y2"] = "pad 1 = crystal terminal on XTAL_P (pins 1/3 crystal, 2/4 case to GND)"
+if D.VARIANT == "wroom":
+    POLARISED["C5"] = "pad 1 = + (tantalum: the band on the body marks this end; silkscreen '+')"
 
 
 def run(cmd):
@@ -198,13 +200,16 @@ def blockers(rows, snap):
     lines += ["- %s: %s (%s)" % (r["Designator"], r["MPN"], r["LCSC Part #"]) for r in ext]
     n_tp = sum(1 for p in D.PARTS if p["ref"].startswith("TP"))
     lines += ["", "## Checks that need a person", "",
-              "- Placement preview: every line of `orientation_check.md` (holder, electrolytic, LED, ICs, "
-              "MOSFETs).",
+              "- Placement preview: every line of `orientation_check.md` (holder, %s, LED, ICs, "
+              "MOSFETs)." % ("tantalum C5" if D.VARIANT == "wroom" else "electrolytic"),
               "- Holder BT1 (MYOUNG BS-24-B4AA016): its + terminal must sit on pad 1, at the silkscreen '+' "
               "(%s). The footprint is drawn from the LCSC datasheet; compare it with a real part first "
               "(docs/assembly.md)." % ("on the back, left seen from the top" if D.VARIANT == "wroom" else "right"),
-              "- C5 (470 uF electrolytic): + pad %s; reversed, it leaks heavily, drains the cell "
-              "and degrades." % ("left, at the board edge" if D.VARIANT == "wroom" else "up, towards the converter"),
+              ("- C5 (470 uF tantalum, Kyocera AVX TAJD477K006RNJ, case D): the band on the body marks +, which "
+               "goes on pad 1 (left, silkscreen '+'). The TAJ datasheet gives no reverse-voltage rating: a "
+               "reversed part must not be powered." if D.VARIANT == "wroom" else
+               "- C5 (470 uF electrolytic): + pad up, towards the converter; reversed, it leaks heavily, drains "
+               "the cell and degrades."),
               "- J1 is not fitted / not in the BOM (debug pads only).",
               "- Test pads TP1..TP%d (silkscreen shows their net names) and fiducials have no parts." % n_tp,
               {"module": "- PCB options: 2 layers, 1.6 mm FR-4, 1 oz, tented vias (set in the board file), "
@@ -227,10 +232,11 @@ def blockers(rows, snap):
               *(["- U4 (ESP32-H2-WROOM-02C-H4S) is NOT in this BOM/CPL: the user buys it and solders it by hand "
                  "(castellated pads with an iron; the thermal pad from the back through the 0.8 mm hole, "
                  "docs/wroom_variant.md). Its PCB antenna must overhang the top edge.",
-                 "- Two-sided assembly: BT1 (holder) is on the BOTTOM side (CPL layer Bottom), everything else on "
-                 "top. Either order assembly on both sides, or order top-side assembly only and hand-solder BT1 "
-                 "(two large pads). Its + terminal is on the LEFT seen from the top (pad 1, '+' on the back "
-                 "silkscreen)."] if D.VARIANT == "wroom" else []),
+                 "- Two-sided assembly: BT1 (holder), U5 (SHT40, sensor facing down) and C29 are on the BOTTOM "
+                 "side (CPL layer Bottom), everything else on top. Either order assembly on both sides, or order "
+                 "top-side assembly only and fit the three bottom parts by hand: BT1 with an iron (two large "
+                 "pads), U5 only with hot air or reflow (DFN, no leads). The holder's + terminal is on the LEFT "
+                 "seen from the top (pad 1, '+' on the back silkscreen)."] if D.VARIANT == "wroom" else []),
               "- Nothing here proves the design works: see docs/test_plan.md (no prototype has been built)."]
     with open(os.path.join(OUT, "manufacturing_blockers.md"), "w") as f:
         f.write("\n".join(lines) + "\n")
