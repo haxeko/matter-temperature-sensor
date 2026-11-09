@@ -539,10 +539,12 @@ def silkscreen(board):
         if fp.IsFlipped() or ref == "U4" or not sp.place_reference(fp):
             fp.Reference().SetVisible(False)
             hidden.append(ref)
-    # back: cell warning and board name behind the module's right half, date in the free corner below the cell,
-    # "SHT40" on the back of the tongue
-    for text, y, bold in (("CR2450 ONLY", 5.2, True), ("NO CHARGE", 6.8, True), ("TH-SENSOR", 8.4, False),
-                          ("H2W Rev %s" % D.REV, 10.0, False)):
+    # back: product name (user's text) in the band above the cell, cell warning and revision behind the module's
+    # right half, date in the free corner below the cell, "SHT40" on the back of the tongue
+    for text, y, size, bold in (("Matter temperature Sensor", 1.85, 0.8, False), ("Villa Nest", 3.65, 1.0, True),
+                                ("Made in Vietnam", 5.4, 0.8, False)):
+        G.silk_text(board, text, 18.2, y, size, layer="B.SilkS", bold=bold)
+    for text, y, bold in (("CR2450 ONLY", 5.2, True), ("NO CHARGE", 6.8, True), ("H2W Rev %s" % D.REV, 8.4, False)):
         G.silk_text(board, text, 32.8, y, 0.8, layer="B.SilkS", bold=bold)
     G.silk_text(board, D.DATE, 5.0, 28.6, 0.8, layer="B.SilkS")
     G.silk_text(board, "SHT40", 3.0, 4.2, 0.8, layer="B.SilkS")

@@ -90,7 +90,7 @@ Nguồn: *ESP32-H2-WROOM-02C Datasheet* v1.2 — bảng 2 "Pin Definitions", hì
 - Bản vẽ MY-CP-0138 (hình cắt) cho thấy pin nằm trên **đáy nhựa của holder**, không chạm mặt bo; thân holder 27 × 16 mm, pin Ø24.5 mm nhô ra hai bên thân (hai "mảnh trăng"), ở đó mép vỏ pin (+) cao hơn mặt bo một khoảng bằng chiều dày đáy holder (bản vẽ không ghi số).
 - Rev B (holder mặt trên) cấm mọi thứ trên F.Cu dưới pin và thân holder vì còn chỗ. Bản này cần vùng đó: **B.Cu dưới pin và thân holder không có đường mạch và không đổ đồng; chỉ có via phủ mask (tented)** — rule area `CELL_BT1`, `HOLDER_BT1` trên B.Cu. Rủi ro còn lại (mask trên vòng via bị trầy và pin bị ép xuống): `docs/limitations.md` mục 11; quyết định: `docs/decisions.md` D22.
 - Pad + (bên trái nhìn từ trên) nối lên mặt trên bằng hai via ngay dưới pad (đoạn B.Cu 0.5 mm, ngoài vùng pin); pad − (bên phải) nằm trong vùng đổ GND của B.Cu (nối bằng thanh nhiệt, không cần via riêng).
-- Silkscreen mặt dưới: "+" / "−" của holder, "CR2450 ONLY", "NO CHARGE", tên bo, ngày, và "SHT40" ở mặt sau lưỡi cảm biến.
+- Silkscreen mặt dưới: tên sản phẩm theo yêu cầu người dùng (2026-11-09) ở dải trên vùng pin — "Matter temperature Sensor", "Villa Nest" (chữ đậm), "Made in Vietnam"; "+" / "−" của holder, "CR2450 ONLY", "NO CHARGE", "H2W Rev A", ngày, và "SHT40" ở mặt sau lưỡi cảm biến. Chữ "Matter" chỉ là tên gọi: sản phẩm chưa được chứng nhận Matter (CSA) — xem `docs/limitations.md` mục 11.
 
 ## 7. Stack-up, luật thiết kế, lớp
 
