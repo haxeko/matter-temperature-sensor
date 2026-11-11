@@ -1,0 +1,31 @@
+%TF.GenerationSoftware,KiCad,Pcbnew,9.0.9-9.0.9~ubuntu24.04.1*%
+%TF.CreationDate,2026-11-11T02:15:26+00:00*%
+%TF.ProjectId,th_sensor_h2w123,74685f73-656e-4736-9f72-5f6832773132,A*%
+%TF.SameCoordinates,Original*%
+%TF.FileFunction,Soldermask,Bot*%
+%TF.FilePolarity,Negative*%
+%FSLAX46Y46*%
+G04 Gerber Fmt 4.6, Leading zero omitted, Abs format (unit mm)*
+G04 Created by KiCad (PCBNEW 9.0.9-9.0.9~ubuntu24.04.1) date 2026-11-11 02:15:26*
+%MOMM*%
+%LPD*%
+G01*
+G04 APERTURE LIST*
+%ADD10C,1.400000*%
+%ADD11C,2.000000*%
+%ADD12R,3.200000X3.200000*%
+%ADD13C,3.200000*%
+G04 APERTURE END LIST*
+D10*
+%TO.C,U4*%
+X43030000Y39570000D03*
+%TD*%
+D11*
+%TO.C,BT1*%
+X17800000Y42600000D03*
+D12*
+X9400000Y42400000D03*
+D13*
+X9400000Y4900000D03*
+%TD*%
+M02*

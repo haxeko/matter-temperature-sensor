@@ -36,7 +36,7 @@ OUT = os.path.join(HW, "production")
 GERB = os.path.join(OUT, "gerbers")
 SNAP = os.path.join(OUT, "jlc_parts_snapshot.jsonl")
 LAYERS = "F.Cu,B.Cu,F.Paste,B.Paste,F.SilkS,B.SilkS,F.Mask,B.Mask,Edge.Cuts"
-if D.VARIANT in ("chip", "wroom"):
+if D.VARIANT == "chip" or D.WROOM:
     LAYERS = "F.Cu,In1.Cu,In2.Cu,B.Cu,F.Paste,B.Paste,F.SilkS,B.SilkS,F.Mask,B.Mask,Edge.Cuts"
 
 # parts whose orientation matters, with what pad 1 is
@@ -49,7 +49,9 @@ POLARISED = {
 }
 if D.VARIANT == "chip":
     POLARISED["Y2"] = "pad 1 = crystal terminal on XTAL_P (pins 1/3 crystal, 2/4 case to GND)"
-if D.VARIANT == "wroom":
+if D.CR123:
+    POLARISED["BT"] = "pin 1 = + terminal: square pad, at the end with the locating post (silkscreen '+')"
+elif D.VARIANT == "wroom":
     POLARISED["C5"] = "pad 1 = + (tantalum: the band on the body marks this end; silkscreen '+')"
 
 
@@ -184,7 +186,7 @@ def blockers(rows, snap):
              "Status from the JLC parts snapshot taken %s (`jlc_parts_snapshot.jsonl`)." % stamp,
              "Nothing here has been ordered. Re-run `tools/jlc_lookup.py` and this script before ordering.", "",
              "## Blocking", ""]
-    if D.VARIANT == "wroom" and not any(str(r["JLC stock"]) in ("0", "?") for r in rows):
+    if D.WROOM and not any(str(r["JLC stock"]) in ("0", "?") for r in rows):
         lines.append("- none in the BOM (U4, the module, is bought separately by the user: see below)")
     for r in rows:
         if str(r["JLC stock"]) in ("0", "?"):
@@ -200,12 +202,21 @@ def blockers(rows, snap):
     lines += ["- %s: %s (%s)" % (r["Designator"], r["MPN"], r["LCSC Part #"]) for r in ext]
     n_tp = sum(1 for p in D.PARTS if p["ref"].startswith("TP"))
     lines += ["", "## Checks that need a person", "",
-              "- Placement preview: every line of `orientation_check.md` (holder, %s, LED, ICs, "
-              "MOSFETs)." % ("tantalum C5" if D.VARIANT == "wroom" else "electrolytic"),
-              "- Holder BT1 (MYOUNG BS-24-B4AA016): its + terminal must sit on pad 1, at the silkscreen '+' "
-              "(%s). The footprint is drawn from the LCSC datasheet; compare it with a real part first "
-              "(docs/assembly.md)." % ("on the back, left seen from the top" if D.VARIANT == "wroom" else "right"),
-              ("- C5 (470 uF tantalum, Kyocera AVX TAJD477K006RNJ, case D): the band on the body marks +, which "
+              "- Placement preview: every line of `orientation_check.md` (%s, LED, ICs, "
+              "MOSFETs)." % ("holder" if D.CR123 else "holder, tantalum C5" if D.VARIANT == "wroom" else
+                             "holder, electrolytic"),
+              ("- Holder BT1 (MYOUNG BH-123A-A1CJ002, through-hole): its + terminal goes in the square pad at the "
+               "top (silkscreen '+'), the locating post in the 2.0 mm hole next to it; the post makes a reversed "
+               "holder impossible if the footprint is right. The footprint is drawn from drawing MY-CP-0398 in the "
+               "LCSC datasheet, including the side of the locating post: compare it with a real holder first "
+               "(docs/cr123a_variant.md). BT1 is in the BOM and the CPL as a through-hole part: order JLC's "
+               "through-hole assembly for it or solder its two pins by hand." if D.CR123 else
+               "- Holder BT1 (MYOUNG BS-24-B4AA016): its + terminal must sit on pad 1, at the silkscreen '+' "
+               "(%s). The footprint is drawn from the LCSC datasheet; compare it with a real part first "
+               "(docs/assembly.md)." % ("on the back, left seen from the top" if D.VARIANT == "wroom" else "right")),
+              ("- No bulk capacitor C5 on this board (the CR123A supplies the radio bursts); F1 (resettable fuse) "
+               "is not polarised." if D.CR123 else
+               "- C5 (470 uF tantalum, Kyocera AVX TAJD477K006RNJ, case D): the band on the body marks +, which "
                "goes on pad 1 (left, silkscreen '+'). The TAJ datasheet gives no reverse-voltage rating: a "
                "reversed part must not be powered." if D.VARIANT == "wroom" else
                "- C5 (470 uF electrolytic): + pad up, towards the converter; reversed, it leaks heavily, drains "
@@ -222,7 +233,11 @@ def blockers(rows, snap):
                "wroom": "- PCB options: 4 layers, 1.6 mm, JLC stack-up JLC04161H-7628 (no impedance control needed: "
                         "no RF line on this board), tented vias (set in the board file: there are vias under the "
                         "cell), lead-free HASL or ENIG. The SHT40 tongue is cut free by a 1 mm L-shaped slot from "
-                        "the left edge (routed, not V-cut)."}[D.VARIANT],
+                        "the left edge (routed, not V-cut).",
+               "wroom123": "- PCB options: 4 layers, 1.6 mm, JLC stack-up JLC04161H-7628 (no impedance control "
+                           "needed: no RF line on this board), tented vias (set in the board file), lead-free HASL "
+                           "or ENIG. The SHT40 tongue is cut free by a 1 mm L-shaped slot from the right edge "
+                           "(routed, not V-cut)."}[D.VARIANT],
               *(["- U4 (QFN32, 0.4 mm pitch) has 9 GND vias in its exposed pad (HDG minimum): ask for via "
                  "filling/plugging or accept some solder wicking.",
                  "- RF parts C51/L4/C52/R41 are 0201 and only start values; L5 is not fitted. The PCB antenna "
@@ -236,6 +251,13 @@ def blockers(rows, snap):
                  "top. Either order assembly on both sides, or order top-side assembly only and hand-solder BT1 "
                  "(two large pads). Its + terminal is on the LEFT seen from the top (pad 1, '+' on the back "
                  "silkscreen)."] if D.VARIANT == "wroom" else []),
+              *(["- U4 (ESP32-H2-WROOM-02C-H4S) is NOT in this BOM/CPL: the user buys it and solders it by hand "
+                 "(castellated pads with an iron; the thermal pad from the back through the 0.8 mm hole, "
+                 "docs/wroom_variant.md). Its PCB antenna must overhang the top edge.",
+                 "- One-sided assembly: every part is on the top side. Fit the holder last (it covers nothing, "
+                 "but it is the tallest part).",
+                 "- Firmware for this board: build with the sdkconfig.defaults.cr123a overlay "
+                 "(docs/cr123a_variant.md)."] if D.CR123 else []),
               "- Nothing here proves the design works: see docs/test_plan.md (no prototype has been built)."]
     with open(os.path.join(OUT, "manufacturing_blockers.md"), "w") as f:
         f.write("\n".join(lines) + "\n")

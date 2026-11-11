@@ -32,7 +32,11 @@ Dụng cụ cần: nguồn bench có giới hạn dòng, đồng hồ vạn năn
 | T-13 | Đo điện áp cell | Nguồn bench vào TP1 (đã tháo pin); so `status` (VBAT) với đồng hồ ở TP1 tại 3.0, 2.6, 2.2 V | sai số ≤ 30 mV sau hiệu chuẩn ADC |
 | T-14 | Null khi lỗi cảm biến | Rút SDA (cắt tạm hoặc giữ SCL thấp) trong lúc chạy | sau 3 lần đọc lỗi, controller thấy MeasuredValue = null; khôi phục khi nối lại |
 | T-15 | Nút | Nhấn ngắn, 3 lần trong 2 s, giữ 10 s rồi thả, giữ 60 s | đúng hành vi và LED theo `docs/architecture.md` §4.4; nhấn ngắn liên tục bị giới hạn 1 lần / 5 s |
-| T-16 | Power guard | Cell yếu giả lập (nguồn 2.3 V nối tiếp 50 Ω vào TP1) | không vòng reset liên tục; vào ngủ sâu backoff; nút USER đánh thức |
+| T-16 | Power guard | Cell yếu giả lập (nguồn 2.3 V nối tiếp 50 Ω vào TP1) | không vòng reset liên tục; LED nháy chậm 3 lần rồi ngủ sâu backoff; nút USER đánh thức |
+| T-16b | Power guard với pin tốt | Pin mới: tháo lắp lại một lần trong 10 phút đầu; rồi hai lần liên tiếp; rồi thay bằng một pin mới khác sau khi đã vào backoff | một lần: chạy bình thường; hai lần: LED nháy 3 lần, ngủ 5 phút, USER đánh thức; pin mới (số đo ≥ 3000 mV và cao hơn ≥ 50 mV): chạy ngay. Ghi số đo VBAT lúc khởi động của pin mới và pin cũ để chỉnh `APP_GUARD_FRESH_CELL_MV` |
+| T-16c | Gỡ fabric cuối rồi ghép lại | Xóa thiết bị khỏi ứng dụng, chờ quá 180 s, nhấn USER 3 lần | thiết bị tự khởi động lại, điện thoại thấy nó qua BLE, ghép lại được |
+| T-16d | Factory reset khi Matter không chạy | Làm hỏng phân vùng `nvs` (ghi đè vài trang bằng esptool), khởi động, giữ USER ≥ 10 s rồi thả | `nvs` bị xóa, thiết bị khởi động lại và quảng bá BLE; `fctry`/`esp_secure_cert` không đổi |
+| T-16e | Đo pin khi radio hoạt động | Nguồn bench 2.9 V nối tiếp 10 Ω vào TP1 (đã tháo pin); đặt `bat_interval` 600 s; để controller đọc/ghi liên tục (poll dày) qua vài chu kỳ đo; so BatVoltage với số đo lúc khởi động và với đồng hồ khi radio nghỉ | số công bố đầu tiên là số đo lúc khởi động; các số sau không thấp hơn mức lúc radio nghỉ quá 30 mV; BatChargeLevel không nhảy sang Warning rồi quay lại. Lệnh console `battery` đo ngay một lần hai mẫu; firmware không in từng mẫu riêng, muốn xem độ sụt của từng mẫu phải đo VBAT bằng máy hiện sóng. Dùng kết quả để chỉnh `APP_BAT_CONFIRM_DELAY_MS` |
 | T-17 | Heap | Dòng `heap` của lệnh `status` sau khởi động, ngay sau commissioning, sau 24 h và sau 7 ngày | ghi lại số đo; "free" ở cùng trạng thái nghỉ không giảm dần giữa các lần đo (không rò bộ nhớ); "minimum since boot" là biên an toàn còn lại; không có reset do thiếu bộ nhớ |
 
 ## C. Matter / Thread
@@ -80,5 +84,9 @@ Các mục A–E áp dụng nguyên cho H2C (cùng tên net và điểm đo; T-1
 ## G. Biến thể WROOM-02C (H2W)
 
 Các mục A–E áp dụng nguyên cho H2W (cùng tên net và điểm đo; T-10 nạp qua 6 pad dán J1 cùng thứ tự chân; không có nút RST: chỗ nào ghi "nhấn RST" thì chập TP6 xuống GND). Thêm W-01…W-08 (tầm phủ có pin ở mặt dưới, mối hàn module và EPAD, lắp/tháo pin với via dưới pin, footprint holder, USB/UART, dòng ngủ, nút bấm cạnh, gắn tường đúng hướng): bảng ở `docs/wroom_variant.md` mục 10. T-39 áp dụng cho C5 của H2W, là tụ tantal TAJD477K006RNJ thay cho tụ nhôm. Nên làm W-02 và W-04 trước khi lắp pin lần đầu.
+
+## H. Biến thể CR123A (H2W-123)
+
+Các mục A–E và G áp dụng cho H2W-123 với các khác biệt: không có C5 (bỏ T-39); pin là CR123A nên các mục dùng "pin đã dùng một nửa" (T-35, T-37) làm với CR123A đã xả trước; firmware build với lớp `sdkconfig.defaults.cr123a`. W-01, W-03 và W-04 (pin và holder ở mặt dưới) không áp dụng. Thêm K-01…K-07 (footprint đế pin so với đế thật, cầu chì F1, khởi động với pin gần hết và lạnh, tầm phủ có và không có pin, bảng phần trăm pin, dòng trung bình, gắn tường): bảng ở `docs/cr123a_variant.md` mục 9. Làm **K-01 trước khi đặt PCB** và W-02 trước khi lắp pin lần đầu.
 
 Chứng nhận (Matter, FCC/CE, an toàn pin) **không nằm trong phạm vi** và không được tuyên bố.

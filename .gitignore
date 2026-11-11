@@ -15,6 +15,7 @@ _autosave-*
 hardware/kicad/*.net
 hardware/chip/kicad/*.net
 hardware/wroom/kicad/*.net
+hardware/wroom123/kicad/*.net
 
 # Python
 __pycache__/

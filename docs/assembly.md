@@ -91,3 +91,16 @@ File ở `hardware/wroom/production/` (zip Gerber 4 lớp `th_sensor_h2w_revA_ge
 - J1 là 6 pad dán (không có trong BOM): hàn dây hoặc dùng kim pogo. Không có nút RST: xem `docs/wroom_variant.md` mục 9.
 - Thứ tự gợi ý khi tự lắp phần còn lại: mặt trên (JLC) → module → holder. Kiểm W-02 (mối hàn module) và W-04 (cực holder) trước khi lắp pin lần đầu (`docs/wroom_variant.md` mục 10).
 
+## Biến thể CR123A (H2W-123 Rev A)
+
+File ở `hardware/wroom123/production/` (zip Gerber 4 lớp `th_sensor_h2w123_revA_gerbers.zip`, `bom_jlc.csv` 26 dòng, `cpl_jlc.csv` 39 linh kiện, `orientation_check.md`, `assembly_top.pdf`, `manufacturing_blockers.md`, ảnh chụp tồn kho 2026-11-11 02:15 UTC). **Không có gì đã được đặt mua.** Chi tiết: `docs/cr123a_variant.md` mục 8.
+
+- PCB: 4 lớp, 1.6 mm, JLC04161H-7628, via phủ mask, HASL không chì hoặc ENIG; rãnh lưỡi cảm biến 1 mm hình chữ L từ mép phải, phay. Kích thước 53.3 × 47.3 mm; phần ăng-ten của module nhô thêm 6 mm khỏi mép trên.
+- **Lắp một mặt**: mọi linh kiện ở mặt trên. BT1 (đế CR123A) là linh kiện **xuyên lỗ**, có trong BOM/CPL: đặt thêm dịch vụ hàn xuyên lỗ, hoặc bỏ BT1 khỏi đơn và tự hàn hai chân. Chốt định vị của đế vào lỗ Ø2.0 mm cạnh pad vuông; pad vuông = cực +, ở phía trên (phía module). Sau khi hàn, chân đế nhô khoảng 2.5 mm ở mặt sau: cắt sát nếu cần áp bo vào mặt phẳng.
+- **Trước khi đặt PCB**: in lớp F.Fab/F.Cu tỉ lệ 1:1 và đặt một đế BH-123A-A1CJ002 thật lên (K-01) — phía đặt chốt định vị trong footprint là suy luận từ bản vẽ.
+- **U4 không có trong BOM/CPL**: tự mua ESP32-H2-WROOM-02C-**H4S** và hàn tay như H2W (mục trên).
+- Không có tụ C5 trên bo này. F1 (cầu chì tự phục hồi 1206) không phân cực.
+- Bản xem trước JLC: kiểm từng dòng `orientation_check.md` (đế pin, LED, U1, U3, U5, Q1, Q3) và SW1 (núm quay ra mép **dưới** bo).
+- J1 là 6 pad dán (không có trong BOM); không có nút RST: như H2W.
+- Thứ tự gợi ý khi tự lắp: mặt trên (JLC) → module → đế pin. Kiểm W-02 (mối hàn module) và đo thông mạch cực +/− của đế tới TP VBAT/GND trước khi lắp pin lần đầu.
+- Lắp pin: cực + của CR123A về phía dấu "+" (phía module). Lắp ngược không làm hỏng mạch (Q1 chặn) nhưng thiết bị không chạy. Chỉ dùng pin CR123A 3 V sơ cấp; **không dùng pin sạc 16340/RCR123A** (3.7–4.2 V) và không sạc.

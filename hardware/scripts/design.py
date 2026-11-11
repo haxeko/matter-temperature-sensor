@@ -15,8 +15,8 @@ Sourcing fields were looked up on the JLCPCB parts API on 2026-10-29 / 2026-10-3
 (tools/jlc_lookup.py); stock and Basic/Extended status change daily and must be
 re-checked before ordering (docs/assembly.md).
 
-Three board variants share everything except the radio part (environment variable
-TH_VARIANT, default "module"):
+Four board variants share everything except the radio part and, for the last one, the cell
+(environment variable TH_VARIANT, default "module"):
   module  TH-SENSOR-H2 Rev B: ESP32-H2-MINI-1-H4S module -> hardware/kicad, production, ...
   chip    TH-SENSOR-H2C Rev A: bare ESP32-H2FH4S chip (QFN32, 4 MB in-package flash), 32 MHz
           crystal, RF matching network and a TI DN007 PCB antenna on a 4-layer board
@@ -24,13 +24,19 @@ TH_VARIANT, default "module"):
   wroom   TH-SENSOR-H2W Rev A: ESP32-H2-WROOM-02C-H4S module (bought and hand-soldered by the user, not in
           the JLC BOM) on a square 4-layer board, the module antenna overhanging the top edge
           -> hardware/wroom/kicad, hardware/wroom/production, ... (docs/wroom_variant.md)
-The firmware is the same for all three: every GPIO keeps its function.
+  wroom123  TH-SENSOR-H2W-123 Rev A: the wroom circuit with ONE CR123A (IEC CR17345) in a through-hole holder
+          beside the electronics instead of the CR2450; no 470 uF buffer (the cell supplies the radio bursts
+          itself), a resettable fuse at the cell -> hardware/wroom123/... (docs/cr123a_variant.md)
+The firmware is the same for all four (every GPIO keeps its function); the CR123A board is built with the
+sdkconfig.defaults.cr123a overlay (battery table and Power Source texts).
 """
 import os as _os
 
 VARIANT = _os.environ.get("TH_VARIANT", "module")
-if VARIANT not in ("module", "chip", "wroom"):
-    raise SystemExit("TH_VARIANT must be 'module', 'chip' or 'wroom', not %r" % VARIANT)
+if VARIANT not in ("module", "chip", "wroom", "wroom123"):
+    raise SystemExit("TH_VARIANT must be 'module', 'chip', 'wroom' or 'wroom123', not %r" % VARIANT)
+WROOM = VARIANT in ("wroom", "wroom123")            # boards with the ESP32-H2-WROOM-02C module
+CR123 = VARIANT == "wroom123"                       # the board with the CR123A cell
 _HW = _os.path.normpath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
 if VARIANT == "module":
     PROJECT = "th_sensor_h2"
@@ -46,13 +52,20 @@ elif VARIANT == "chip":
     DATE = "2026-11-06"
     HW_DIR = _os.path.join(_HW, "chip")             # hardware/chip/kicad, hardware/chip/production, ...
     BOARD_NAME = "TH-SENSOR-H2C"
-else:
+elif VARIANT == "wroom":
     PROJECT = "th_sensor_h2w"
     TITLE = "TH-SENSOR-H2W thermo-hygrometer (ESP32-H2-WROOM-02C module)"
     REV = "A"
     DATE = "2026-11-08"
     HW_DIR = _os.path.join(_HW, "wroom")            # hardware/wroom/kicad, hardware/wroom/production, ...
     BOARD_NAME = "TH-SENSOR-H2W"
+else:
+    PROJECT = "th_sensor_h2w123"
+    TITLE = "TH-SENSOR-H2W-123 thermo-hygrometer (ESP32-H2-WROOM-02C module, CR123A cell)"
+    REV = "A"
+    DATE = "2026-11-11"
+    HW_DIR = _os.path.join(_HW, "wroom123")         # hardware/wroom123/kicad, hardware/wroom123/production, ...
+    BOARD_NAME = "TH-SENSOR-H2W-123"
 
 KSYM = "/usr/share/kicad/symbols/"
 # Espressif KiCad libraries (github.com/espressif/kicad-libraries, git dd76561812ab300351234ba6e0ec1295641796f0).
@@ -65,6 +78,7 @@ SYMBOLS = {
     "Device:C": (KSYM + "Device.kicad_sym", "C"),
     "Device:C_Polarized": (KSYM + "Device.kicad_sym", "C_Polarized"),
     "Device:L": (KSYM + "Device.kicad_sym", "L"),
+    "Device:Polyfuse": (KSYM + "Device.kicad_sym", "Polyfuse"),
     "Device:D_Schottky": (KSYM + "Device.kicad_sym", "D_Schottky"),
     "Device:LED": (KSYM + "Device.kicad_sym", "LED"),
     "Device:Battery_Cell": (KSYM + "Device.kicad_sym", "Battery_Cell"),
@@ -92,10 +106,13 @@ SYMBOLS = {
     "th_sensor:ESP32-H2-WROOM-02C": (None, "ESP32-H2-WROOM-02C"),
 }
 _DROP = {"module": ("th_sensor:ESP32-H2", "Device:Crystal_GND24", "Device:Antenna_Shield",
-                    "Connector_Generic:Conn_02x03_Odd_Even", "th_sensor:ESP32-H2-WROOM-02C"),
-         "chip": ("th_sensor:ESP32-H2-MINI-1", "Connector_Generic:Conn_01x06", "th_sensor:ESP32-H2-WROOM-02C"),
+                    "Connector_Generic:Conn_02x03_Odd_Even", "th_sensor:ESP32-H2-WROOM-02C", "Device:Polyfuse"),
+         "chip": ("th_sensor:ESP32-H2-MINI-1", "Connector_Generic:Conn_01x06", "th_sensor:ESP32-H2-WROOM-02C",
+                  "Device:Polyfuse"),
          "wroom": ("th_sensor:ESP32-H2-MINI-1", "th_sensor:ESP32-H2", "Device:Crystal_GND24", "Device:Antenna_Shield",
-                   "Connector_Generic:Conn_01x06")}[VARIANT]
+                   "Connector_Generic:Conn_01x06", "Device:Polyfuse"),
+         "wroom123": ("th_sensor:ESP32-H2-MINI-1", "th_sensor:ESP32-H2", "Device:Crystal_GND24",
+                      "Device:Antenna_Shield", "Connector_Generic:Conn_01x06")}[VARIANT]
 for _k in _DROP:
     del SYMBOLS[_k]
 
@@ -137,6 +154,9 @@ SRC = {
     "TS1187A": ("C318884", "XKB", "TS-1187A-B-A-B"),
     "KT0603R": ("C2286", "KENTO", "KT-0603R"),
     "EVQP7A": ("C79167", "PANASONIC", "EVQP7A01P"),       # side-push tactile switch (wroom variant)
+    # CR123A variant (JLC parts search 2026-11-11)
+    "BH123A": ("C5290177", "MYOUNG", "BH-123A-A1CJ002"),  # CR123A holder, through-hole, drawing MY-CP-0398
+    "PTC_0A5": ("C883122", "BHFUSE", "BSMD1206-050-6V"),  # resettable fuse 1206: hold 0.5 A, trip 1 A, 6 V
     # chip variant (JLC parts search 2026-11-06)
     "H2FH4S": ("C50392664", "Espressif", "ESP32-H2FH4S"),
     "XTAL32M": ("C5210649", "YXC", "X322532MLB4SI"),
@@ -165,9 +185,20 @@ def part(ref, lib_id, value, footprint, pins, src=None, dnp=False, in_bom=True, 
 
 
 # ------------------------------------------------------------------ power path (one CR2450)
-part("BT1", "Device:Battery_Cell", "CR2450 holder", "th_sensor:BatteryHolder_MYOUNG_BS-24-B4AA016_1x2450",
-     {"1": "VBAT", "2": "GND"}, src="BS24SMT",
-     desc="CR2450 SMT holder, gold-plated contacts, LCP housing (pad 1 = +)")
+if CR123:
+    # A CR123A can deliver amperes into a short (Energizer 123: 1.5 A continuous, 3.5 A pulse), a coin cell
+    # cannot: F1 sits directly at the holder's + pin, before anything else. Its resistance (0.15 .. 0.7 Ohm,
+    # JLC listing) drops at most 0.07 V at the converter's 100 mA input limit.
+    part("BT1", "Device:Battery_Cell", "CR123A holder", "th_sensor:BatteryHolder_MYOUNG_BH-123A-A1CJ002_1xCR123A",
+         {"1": "VCELL", "2": "GND"}, src="BH123A",
+         desc="CR123A through-hole holder, nickel-plated stainless contacts, PA66 UL94 V-0 (pin 1 = +, next to "
+              "the locating post)")
+    part("F1", "Device:Polyfuse", "0.5A", "Fuse:Fuse_1206_3216Metric", {"1": "VCELL", "2": "VBAT"}, src="PTC_0A5",
+         spec="PTC 6V hold 0.5A trip 1A 1206", desc="Resettable fuse at the cell: limits the current into a fault")
+else:
+    part("BT1", "Device:Battery_Cell", "CR2450 holder", "th_sensor:BatteryHolder_MYOUNG_BS-24-B4AA016_1x2450",
+         {"1": "VBAT", "2": "GND"}, src="BS24SMT",
+         desc="CR2450 SMT holder, gold-plated contacts, LCP housing (pad 1 = +)")
 part("R1", "Device:R", "0R", FP_R0805, {"1": "VBAT", "2": "VBAT_L"}, src="0R_0805",
      desc="Cell current-measurement link (remove, insert ammeter)")
 part("Q1", "th_sensor:AO3401A", "AO3401A", FP_SOT23, {"1": "GND", "2": "VIN", "3": "VBAT_L"}, src="AO3401A",
@@ -178,7 +209,9 @@ part("C2", "Device:C", "100uF", FP_C1206, {"1": "VIN", "2": "GND"}, src="100u_12
      spec="6.3V X5R 1206", desc="Input buffer (coin cell pulse support)")
 part("C3", "Device:C", "100uF", FP_C1206, {"1": "VIN", "2": "GND"}, src="100u_1206",
      spec="6.3V X5R 1206", desc="Input buffer (coin cell pulse support)")
-if VARIANT == "wroom":
+if CR123:
+    pass    # no C5: the CR123A carries the radio bursts itself (power model, docs/cr123a_variant.md)
+elif VARIANT == "wroom":
     # Same 470 uF in a 7.3 x 4.3 mm tantalum (MnO2) case instead of the 7.7 mm tall aluminium can, so that the
     # front stays as low as the module (docs/wroom_variant.md). MnO2, not polymer: polymer tantalums specify
     # ~10x the leakage. The cell (3 V nominal) uses about half of the 6.3 V rating.
@@ -219,7 +252,7 @@ part("C26", "Device:C", "100nF", FP_C0603, {"1": "+3V3", "2": "GND"}, src="100n"
 part("R22", "Device:R", "10k", FP_R0603, {"1": "nRST", "2": "EN"}, src="10k",
      desc="Isolates the push-pull supervisor from the RST button / J1")
 part("C25", "Device:C", "1uF", FP_C0603, {"1": "EN", "2": "GND"}, src="1u", desc="EN RC (Espressif reference)")
-if VARIANT != "wroom":         # wroom: no RST button (reset = TP6/EN to GND, or the USB-Serial/JTAG reset)
+if not WROOM:                  # wroom: no RST button (reset = TP6/EN to GND, or the USB-Serial/JTAG reset)
     part("SW2", "Switch:SW_Push", "RST", "Button_Switch_SMD:SW_Push_1P1T_XKB_TS-1187A", {"1": "EN", "2": "GND"},
          src="TS1187A", desc="Reset")
 
@@ -236,7 +269,7 @@ if VARIANT == "module":
          src="H2MINI", desc="4 MB flash, PCB antenna; JLC stock 0 on 2026-10-29")
     part("C23", "Device:C", "10uF", FP_C0603, {"1": "+3V3", "2": "GND"}, src="10u", spec="10V X5R 0603", desc="Module decoupling")
     part("C24", "Device:C", "100nF", FP_C0603, {"1": "+3V3", "2": "GND"}, src="100n", desc="Module decoupling")
-elif VARIANT == "wroom":
+elif WROOM:
     # ESP32-H2-WROOM-02C datasheet v1.2: table 2 "Pin Definitions", figure 7 land pattern. The user buys and
     # hand-solders the module, so it is not in the JLC BOM/CPL (in_bom=False). VBAT (14) is tied to the module's
     # 3V3 inside it (R2 = 0R, datasheet section 8); tied to +3V3 here as well, as on Rev B. EN has no RC inside
@@ -312,10 +345,11 @@ part("C27", "Device:C", "18pF", FP_C0603, {"1": "XTAL_32K_P", "2": "GND"}, src="
      spec="50V C0G 0603", desc="Load cap (CL 12.5 pF, ~3 pF stray assumed; tune at bring-up)")
 part("C28", "Device:C", "18pF", FP_C0603, {"1": "XTAL_32K_N", "2": "GND"}, src="18p",
      spec="50V C0G 0603", desc="Load cap")
-if VARIANT == "wroom":
+if WROOM:
     part("SW1", "Switch:SW_Push", "USER/BOOT", "Button_Switch_SMD:SW_SPST_EVQP7A",
          {"1": "BTN_USER", "2": "GND"}, src="EVQP7A",
-         desc="GPIO9: user button, BOOT strap at reset; side-push, actuator over the left board edge")
+         desc="GPIO9: user button, BOOT strap at reset; side-push, actuator over the %s board edge"
+              % ("bottom" if CR123 else "left"))
 else:
     part("SW1", "Switch:SW_Push", "USER/BOOT", "Button_Switch_SMD:SW_Push_1P1T_XKB_TS-1187A",
          {"1": "BTN_USER", "2": "GND"}, src="TS1187A", desc="GPIO9: user button, BOOT strap at reset")
@@ -330,7 +364,7 @@ if VARIANT == "module":
     part("J1", "Connector_Generic:Conn_01x06", "DEBUG", "Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical",
          {"1": "U0TXD", "2": "U0RXD", "3": "USB_DP", "4": "USB_DM", "5": "BTN_USER", "6": "GND"}, dnp=True,
          desc="Debug/programming pads (not fitted): 1 TX 2 RX 3 D+ 4 D- 5 BOOT 6 GND; board powered by the cell")
-elif VARIANT == "wroom":
+elif WROOM:
     part("J1", "Connector_Generic:Conn_02x03_Odd_Even", "DEBUG", "th_sensor:TestPads_2x03_P2.54mm_SMD",
          {"1": "U0TXD", "2": "U0RXD", "3": "USB_DP", "4": "USB_DM", "5": "BTN_USER", "6": "GND"}, dnp=True,
          desc="Debug/programming SMD pads (no holes), 2x3 at 2.54 mm: 1 TX 2 RX 3 D+ 4 D- 5 BOOT 6 GND; wires or "

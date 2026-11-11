@@ -35,6 +35,10 @@ Phiên bản tài liệu là bản đã đọc khi thiết kế (2026-10). Đư�
 | KNSCHA RVT 470 µF 6.3 V (RVT470UF6.3V67RV0038) — datasheet trên LCSC: https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2109301630_KNSCHA-RVT470UF6-3V67RV0038_C2901342.pdf | — | **Rev B**: tụ đệm C5, Ø6.3 × 7.7 mm, ±20 %, 2000 h ở 105 °C, dòng rò ≤ 0.01 CV hoặc 3 µA sau 2 phút ở điện áp định mức |
 | Kyocera AVX TAJ Series (Standard and Low Profile Tantalum Capacitors) — https://datasheets.kyocera-avx.com/TAJ.pdf | TDS-PTNO-0024 Rev 3, đọc 2026-11-08 | **H2W**: tụ đệm C5 TAJD477K006RNJ (LCSC C7229): vỏ D 7343-31 7.30 × 4.30 × 2.90 mm (chiều cao +0.20/−0.10), 470 µF ±10 %, 6.3 V tới 85 °C, DCL ≤ 28 µA (điện áp định mức, sau 5 phút), DF ≤ 12 %, ESR ≤ 0.4 Ω ở 100 kHz, MSL 1 (khuyên dùng bản dry pack), vạch cực = anode (+), −55…+125 °C, ΔC/C +0/−10 % ở −55 °C |
 | Keystone 1060 (catalog coin cell holders) | catalog M65 | holder CR2032 của Rev A (không còn dùng) |
+| Panasonic CR123A (CR Cylindrical-type Lithium Battery, Standard type) — https://energy.panasonic.com/dam/master/pdf/en/datasheet/lithium/CR123A_Datasheet_EN.pdf | July 2024, đọc 2026-11-10 | **H2W-123**: 3 V, 1550 mAh, dòng liên tục chuẩn 20 mA, Ø17.0 × 34.5 mm, ≈ 16 g, −40…+70 °C; đồ thị xả liên tục 20 mA–1 A (cơ sở của mô hình pin và bảng phần trăm) và xả xung 0.9 A ở +20 / −20 °C |
+| Energizer 123 Product Datasheet — https://data.energizer.com/pdfs/123.pdf | form 123GL1018, đọc 2026-11-10 | **H2W-123**: IEC CR17345, 1500 mAh tới 2.0 V, tối đa 1500 mA liên tục / 3500 mA xung (lý do có F1), −40…+60 °C, có PTC bên trong |
+| MYOUNG BH-123A-A1CJ002 — datasheet trên LCSC (C5290177) | bản vẽ MY-CP-0398 (2024-03-07), đọc 2026-11-11 | **H2W-123**: đế CR123A xuyên lỗ, thân 43.3 × 18.2 × 14.2 mm, hai chân cách 37.5 mm, chốt định vị Ø1.4 mm, lỗ khuyến nghị (footprint dự án), −25…+85 °C |
+| BHFUSE BSMD1206-050-6V — trang linh kiện JLCPCB/LCSC C883122 | đọc 2026-11-11 | **H2W-123**: F1, PTC tự phục hồi 1206, giữ 0.5 A, ngắt 1 A, 6 V, 100 A, 0.15–0.7 Ω (số của trang linh kiện; chưa đọc datasheet đầy đủ của hãng) |
 | Panasonic Light Touch Switches EVQP7/P3/9P7 — datasheet LCSC: https://www.lcsc.com/datasheet/lcsc_datasheet_2304140030_PANASONIC-EVQP7A01P_C79167.pdf | 01 Sep. 2013 | **H2W**: SW1 EVQP7A01P bấm cạnh, không chốt, 3.5 × 2.9 × 1.35 mm, 2.2 N, land pattern tham khảo (trùng footprint KiCad `SW_SPST_EVQP7A`) |
 
 ## Sensirion
@@ -61,7 +65,7 @@ ESP32-H2FH4S (Espressif, mã đặt hàng trong datasheet ESP32-H2 v1.3), YXC X3
 
 ## Nguồn cung
 
-- JLCPCB parts search (công cụ `tools/jlc_lookup.py`, endpoint của trang jlcpcb.com/parts, không phải API công bố chính thức) — ảnh chụp dữ liệu 2026-10-30 06:47 UTC trong `hardware/production/jlc_parts_snapshot.jsonl` (lần tra trước: 2026-10-29 08:55 UTC, Rev A); biến thể H2C: 2026-11-06 07:12 UTC trong `hardware/chip/production/jlc_parts_snapshot.jsonl`; biến thể H2W: 2026-11-08 08:06 UTC trong `hardware/wroom/production/jlc_parts_snapshot.jsonl` (module WROOM-02C không tra: người dùng tự mua).
+- JLCPCB parts search (công cụ `tools/jlc_lookup.py`, endpoint của trang jlcpcb.com/parts, không phải API công bố chính thức) — ảnh chụp dữ liệu 2026-10-30 06:47 UTC trong `hardware/production/jlc_parts_snapshot.jsonl` (lần tra trước: 2026-10-29 08:55 UTC, Rev A); biến thể H2C: 2026-11-06 07:12 UTC trong `hardware/chip/production/jlc_parts_snapshot.jsonl`; biến thể H2W: 2026-11-08 08:06 UTC trong `hardware/wroom/production/jlc_parts_snapshot.jsonl` (module WROOM-02C không tra: người dùng tự mua); biến thể H2W-123: 2026-11-11 02:15 UTC trong `hardware/wroom123/production/jlc_parts_snapshot.jsonl`.
 
 ## Công cụ đã dùng
 

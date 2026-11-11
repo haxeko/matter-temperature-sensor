@@ -64,7 +64,7 @@ def write_project_libs():
         f.write(")\n")
     # module / chip footprint (+ module 3D model) from the Espressif library (kept as vendored copies when it is
     # absent)
-    if os.path.isdir(D.ESPRESSIF_LIB) and D.VARIANT != "wroom":
+    if os.path.isdir(D.ESPRESSIF_LIB) and not D.WROOM:
         if D.VARIANT == "module":
             src_fp = os.path.join(D.ESPRESSIF_LIB, "footprints", "Espressif.pretty", "ESP32-H2-MINI-1.kicad_mod")
             fp = open(src_fp).read()
@@ -80,12 +80,15 @@ def write_project_libs():
                         os.path.join(LIB, "LICENSE-espressif-kicad-libraries.md"))
     if D.VARIANT == "chip":
         open(os.path.join(LIB, "th_sensor.pretty", ANT_FP + ".kicad_mod"), "w").write(ti_dn007_ifa())
-    if D.VARIANT == "wroom":
+    if D.WROOM:
         open(os.path.join(LIB, "th_sensor.pretty", WROOM_FP + ".kicad_mod"), "w").write(wroom02c_footprint())
         open(os.path.join(LIB, "th_sensor.pretty", TESTPADS_FP + ".kicad_mod"), "w").write(testpads_2x03())
     open(os.path.join(LIB, "th_sensor.pretty", "L_Murata_DFE201612E.kicad_mod"), "w").write(murata_dfe201612e())
-    open(os.path.join(LIB, "th_sensor.pretty", "BatteryHolder_MYOUNG_BS-24-B4AA016_1x2450.kicad_mod"), "w").write(
-        myoung_bs24_b4aa016())
+    if D.CR123:
+        open(os.path.join(LIB, "th_sensor.pretty", BH123A_FP + ".kicad_mod"), "w").write(myoung_bh123a_a1cj002())
+    else:
+        open(os.path.join(LIB, "th_sensor.pretty", "BatteryHolder_MYOUNG_BS-24-B4AA016_1x2450.kicad_mod"), "w").write(
+            myoung_bs24_b4aa016())
     with open(os.path.join(OUT, "sym-lib-table"), "w") as f:
         f.write('(sym_lib_table\n\t(version 7)\n\t(lib (name "th_sensor")(type "KiCad")(uri "${KIPRJMOD}/lib/th_sensor.kicad_sym")'
                 '(options "")(descr "%s project symbols"))\n)\n' % D.BOARD_NAME)
@@ -404,6 +407,50 @@ def myoung_bs24_b4aa016():
 '''
 
 
+BH123A_FP = "BatteryHolder_MYOUNG_BH-123A-A1CJ002_1xCR123A"
+
+
+def myoung_bh123a_a1cj002():
+    """CR123A through-hole holder MYOUNG BH-123A-A1CJ002 (LCSC C5290177), drawing MY-CP-0398 (2024-03-07):
+    body 43.3 x 18.2 mm, 14.2 mm high, two blade terminals (0.8 x 0.3 mm, 4.1 mm long) 37.5 +-0.5 mm apart on the
+    centre line in 1.8 mm holes, one locating post (1.4 mm dia., 1.7 mm long) in a 2.0 mm hole, 18.95 mm from
+    the centre and 8.4 mm from the terminal row, at the + end. Origin = body centre, component-side view.
+
+    Which side of the row the post is on: the drawing's "PCB Layout Diagram" is a bottom view with '+' on the
+    left, as in the top view, so it is the top view flipped about the long axis; the post is below the row there
+    and therefore above it (-y) from the component side. The end view agrees (post at the top). Pad 1 = + (the
+    terminal next to the post), pad 2 = -. To be compared with a real holder before ordering boards."""
+    u = lambda s_: new_uuid("fp-bh123a-" + s_)
+    bx, by = 21.65, 9.1
+    return f'''(footprint "{BH123A_FP}"
+	(version 20241229)
+	(generator "th_sensor_gen")
+	(layer "F.Cu")
+	(descr "CR123A (CR17345) through-hole battery holder, MYOUNG BH-123A-A1CJ002 (LCSC C5290177), PA66 UL94 V-0, nickel-plated stainless contacts, 43.3 x 18.2 x 14.2 mm; PCB layout per drawing MY-CP-0398: two 1.8 mm holes 37.5 mm apart, one 2.0 mm locating hole")
+	(tags "battery holder CR123A CR17345 tht")
+	(property "Reference" "REF**" (at 0 -10.6 0) (layer "F.SilkS") (uuid "{u('ref')}") (effects (font (size 1 1) (thickness 0.15))))
+	(property "Value" "{BH123A_FP}" (at 0 10.6 0) (layer "F.Fab") (uuid "{u('val')}") (effects (font (size 1 1) (thickness 0.15))))
+	(attr through_hole)
+	(fp_line (start -17.4 -{by + 0.12:.2f}) (end {bx + 0.12:.2f} -{by + 0.12:.2f}) (stroke (width 0.12) (type solid)) (layer "F.SilkS") (uuid "{u('s1')}"))
+	(fp_line (start {bx + 0.12:.2f} -{by + 0.12:.2f}) (end {bx + 0.12:.2f} {by + 0.12:.2f}) (stroke (width 0.12) (type solid)) (layer "F.SilkS") (uuid "{u('s2')}"))
+	(fp_line (start {bx + 0.12:.2f} {by + 0.12:.2f}) (end -{bx + 0.12:.2f} {by + 0.12:.2f}) (stroke (width 0.12) (type solid)) (layer "F.SilkS") (uuid "{u('s3')}"))
+	(fp_line (start -{bx + 0.12:.2f} {by + 0.12:.2f}) (end -{bx + 0.12:.2f} -6.9) (stroke (width 0.12) (type solid)) (layer "F.SilkS") (uuid "{u('s4')}"))
+	(fp_line (start -15.6 0) (end -13.6 0) (stroke (width 0.2) (type solid)) (layer "F.SilkS") (uuid "{u('p1')}"))
+	(fp_line (start -14.6 -1.0) (end -14.6 1.0) (stroke (width 0.2) (type solid)) (layer "F.SilkS") (uuid "{u('p2')}"))
+	(fp_line (start 13.6 0) (end 15.6 0) (stroke (width 0.2) (type solid)) (layer "F.SilkS") (uuid "{u('m1')}"))
+	(fp_rect (start -{bx:.2f} -{by:.2f}) (end {bx:.2f} {by:.2f}) (stroke (width 0.1) (type solid)) (fill no) (layer "F.Fab") (uuid "{u('fb')}"))
+	(fp_rect (start -17.25 -8.5) (end 17.25 8.5) (stroke (width 0.1) (type solid)) (fill no) (layer "F.Fab") (uuid "{u('fc')}"))
+	(fp_rect (start -{bx + 0.25:.2f} -{by + 0.25:.2f}) (end {bx + 0.25:.2f} {by + 0.25:.2f}) (stroke (width 0.05) (type solid)) (fill no) (layer "F.CrtYd") (uuid "{u('crt')}"))
+	(fp_text user "${{REFERENCE}}" (at 0 0 0) (layer "F.Fab") (uuid "{u('fabref')}") (effects (font (size 1 1) (thickness 0.15))))
+	(fp_text user "CR123A" (at 0 3.0 0) (layer "F.Fab") (uuid "{u('fabcell')}") (effects (font (size 1 1) (thickness 0.15))))
+	(pad "1" thru_hole rect (at -18.75 0) (size 3.2 3.2) (drill 1.8) (layers "*.Cu" "*.Mask") (uuid "{u('pad1')}"))
+	(pad "2" thru_hole circle (at 18.75 0) (size 3.2 3.2) (drill 1.8) (layers "*.Cu" "*.Mask") (uuid "{u('pad2')}"))
+	(pad "" np_thru_hole circle (at -18.95 -8.4) (size 2 2) (drill 2) (layers "*.Cu" "*.Mask") (uuid "{u('post')}"))
+	(embedded_fonts no)
+)
+'''
+
+
 # ---------------------------------------------------------------- schematic model
 class Sheet:
     def __init__(self):
@@ -552,9 +599,12 @@ CELL_RIGHT = 210.82
 
 def power_block(yc):
     x0, dx = 12.7, 12.7
-    S.frame(x0, yc - 15.24, CELL_RIGHT, yc + 50.8, "CR2450 -> P-MOSFET -> TPS63900 (3.3 V) -> VOUT")
-    c_in = ["C1", "C2", "C3", "C5"]
+    S.frame(x0, yc - 15.24, CELL_RIGHT, yc + 50.8,
+            "CR123A -> fuse -> P-MOSFET -> TPS63900 (3.3 V) -> VOUT" if D.CR123 else
+            "CR2450 -> P-MOSFET -> TPS63900 (3.3 V) -> VOUT")
+    c_in = ["C1", "C2", "C3"] + ([] if D.CR123 else ["C5"])
     rcfg = ["R2", "R3", "R4"]
+    tp1_x = 35.56 if D.CR123 else 30.48       # the VBAT node: after the fuse on the CR123A board
     S.place("BT1", 22.86, yc + 5.08, 0, ref_off=(3.81, -1.27), val_off=(3.81, 1.27))
     S.place("R1", 40.64, yc, 90, ref_off=(-1.27, -2.54), val_off=(-1.27, 3.81))
     S.place("Q1", 63.5, yc + 2.54, 90, ref_off=(3.81, 2.54), val_off=(3.81, 5.08))
@@ -565,13 +615,22 @@ def power_block(yc):
     S.place("C4", 165.1 + dx, yc + 3.81, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
     for i, rr in enumerate(rcfg):
         S.place(rr, 162.56 + dx + i * 10.16, yc + 26.67, 0, ref_off=(1.27, -1.27), val_off=(1.27, 1.27))
-    for tp, x in (("TP1", 30.48), ("TP2", 116.84 + dx)):
+    for tp, x in (("TP1", tp1_x), ("TP2", 116.84 + dx)):
         S.place(tp, x, yc - 5.08, 0, ref_off=(1.27, -3.81), val_off=(1.27, -6.35))
     # main chain along y = yc, split at every connection point
-    S.wire(S.pin("BT1", "1"), (30.48, yc), S.pin("R1", "1"))
-    S.wire(S.pin("TP1", "1"), (30.48, yc))
-    S.junction((30.48, yc))
-    S.label("VBAT", (24.13, yc), 0)
+    if D.CR123:
+        S.place("F1", 29.21, yc, 90, ref_off=(-1.27, 2.54), val_off=(-1.27, 5.08))
+        S.wire(S.pin("BT1", "1"), S.pin("F1", "1"))
+        S.label("VCELL", (24.13, yc), 0)
+        S.wire(S.pin("F1", "2"), (tp1_x, yc), S.pin("R1", "1"))
+        S.wire(S.pin("TP1", "1"), (tp1_x, yc))
+        S.junction((tp1_x, yc))
+        S.label("VBAT", (34.29, yc), 0)
+    else:
+        S.wire(S.pin("BT1", "1"), (30.48, yc), S.pin("R1", "1"))
+        S.wire(S.pin("TP1", "1"), (30.48, yc))
+        S.junction((30.48, yc))
+        S.label("VBAT", (24.13, yc), 0)
     S.wire(S.pin("R1", "2"), S.pin("Q1", "3"))
     S.label("VBAT_L", (46.99, yc), 0)
     vin_pts = [S.pin("Q1", "2"), (71.12, yc)] + [S.pin(c, "1") for c in c_in] + [(116.84 + dx, yc),
@@ -609,7 +668,9 @@ def power_block(yc):
         S.stub(rr, "1", label_angle=0)
         S.stub(rr, "2")
     S.text("SEL = L: VO(1) = 3.3 V (RCFG3 16.2k, table 7-3). Input current limit 100 mA from RCFG1 0R / RCFG2 10.5k\n"
-           "(table 7-2; 13.3k = 50 mA option). TI SLVSET3D, +-1 % resistors. C5: 470 uF electrolytic buffer.",
+           "(table 7-2; 13.3k = 50 mA option). TI SLVSET3D, +-1 %% resistors. %s"
+           % ("F1: resettable fuse at the cell; no 470 uF buffer (CR123A)." if D.CR123 else
+              "C5: 470 uF electrolytic buffer."),
            (x0 + 1.27, yc + 41.91), size=1.27)
 
 
@@ -983,7 +1044,8 @@ def misc_block():
     S.text("CR2450 ONLY - NOT RECHARGEABLE. No other supply can reach the rail: the cell is the only energy source.\n"
            "Power-path decision and its limits: docs/decisions.md, docs/power_budget.md (ESTIMATE until measured).\n"
            "Current measurement: remove R1 (cell) or R21 (load) and insert the ammeter.\n"
-           "U3 TPS3839K33: 2.93 V typ (2.857-2.974 V), push-pull ~RESET, 200 ms delay; R22 keeps it from fighting SW2 / TP6 (EN).",
+           "U3 TPS3839K33: 2.93 V typ (2.857-2.974 V), push-pull ~RESET, 200 ms delay; R22 keeps it from fighting %s."
+           % ("a short of TP6 (EN) to GND" if D.CR123 else "SW2 / TP6 (EN)"),
            (x1 + 1.27, 193.04))
 
 
@@ -1013,10 +1075,12 @@ def build():
              % (D.TITLE, D.DATE, D.REV, D.BOARD_NAME,
                 {"module": "ESP32-H2 Matter over Thread, SHT40, 1 x CR2450, TPS63900 3.3 V",
                  "chip": "ESP32-H2FH4S chip + PCB antenna, Matter over Thread, SHT40, 1 x CR2450, TPS63900 3.3 V",
-                 "wroom": "ESP32-H2-WROOM-02C (user-supplied), Matter over Thread, SHT40, 1 x CR2450, TPS63900 3.3 V"}
+                 "wroom": "ESP32-H2-WROOM-02C (user-supplied), Matter over Thread, SHT40, 1 x CR2450, TPS63900 3.3 V",
+                 "wroom123": "ESP32-H2-WROOM-02C (user-supplied), Matter over Thread, SHT40, 1 x CR123A, "
+                             "TPS63900 3.3 V"}
                 [D.VARIANT],
                 {"module": "hardware/reports", "chip": "hardware/chip/reports",
-                 "wroom": "hardware/wroom/reports"}[D.VARIANT]))
+                 "wroom": "hardware/wroom/reports", "wroom123": "hardware/wroom123/reports"}[D.VARIANT]))
     body = "\n".join(S.items)
     sch = ('(kicad_sch (version 20250114) (generator "eeschema") (generator_version "9.0") (uuid "%s") (paper "A3")\n'
            '%s\n(lib_symbols\n%s\n)\n%s\n(sheet_instances (path "/" (page "1")))\n(embedded_fonts no)\n)\n'

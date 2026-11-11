@@ -7,7 +7,7 @@
 Không có bo nào được sản xuất, lắp ráp, cấp nguồn hay đo. Những gì đã được kiểm (ĐÃ XÁC MINH):
 - firmware build sạch từ bản clone mới cho ESP32-H2: profile battery, debug và battery + lớp phủ prod (`docs/reports/firmware_build.md`);
 - chuỗi script phần cứng tái tạo schematic và board giống từng byte;
-- 40 unit test / 208 kiểm tra logic thuần trên máy host, 0 lỗi (`docs/reports/host_tests.txt`);
+- 43 unit test / 264 kiểm tra logic thuần trên máy host, 0 lỗi (`docs/reports/host_tests.txt`);
 - ERC 0 lỗi 0 cảnh báo; DRC 0 vi phạm, 0 pad chưa nối, schematic parity 0 lỗi (`hardware/reports/`);
 - pin map firmware ↔ schematic khớp (`tools/check_pinmap.py`).
 
@@ -57,6 +57,7 @@ Panasonic khuyến nghị diode chặn ngược **và** điện trở bảo vệ
 - Phần trăm pin suy ra từ điện áp theo hình dạng đường xả CR2032 của Panasonic (15 kΩ, 20 °C), dùng nguyên cho CR2450 với giả định cùng hóa học cho cùng dạng đường cong — chưa đối chiếu với đường CR2450. Chỉ mang tính chỉ báo; phụ thuộc nhiệt độ và tải.
 - Điện áp đo khi chip đang thức, tức là có tải qua bộ chuyển đổi; theo mô hình, khả năng khởi động lại mất khi phần trăm còn quanh 50 % (trên ngưỡng Warning 40 %), nên BatChargeLevel không báo trước được giới hạn ở mục 2.
 - Sai số ADC + dòng rò đầu vào trên cầu 235 kΩ Thevenin chưa được đo (T-13).
+- Mỗi lần đo lấy hai mẫu cách nhau 1.5 s và giữ mẫu cao hơn (từ 2026-11-11). Cách này lọc được một xung phát đơn lẻ, không lọc được tải kéo dài hơn 1.5 s (commissioning, tìm lại mạng); chưa kiểm trên phần cứng (T-16e).
 
 ## 8. PCB
 
@@ -99,3 +100,31 @@ Các mục 1–9 áp dụng cho cả H2W (cùng nguồn, cảm biến, firmware)
 - **C5 là tụ tantal MnO2** (TAJD477K006RNJ): datasheet chỉ cho giới hạn rò 28 µA ở 6.3 V (25 °C, sau 5 phút), ở ~3 V chưa có số liệu (T-39); datasheet không cho định mức điện áp ngược, nên tụ lắp ngược cực phải được sửa trước khi cấp điện. Giá 1.14 USD so với 0.04 USD của tụ nhôm (ảnh chụp JLC 2026-11-08), thêm một linh kiện Extended như trước.
 - **Hướng lắp**: thiết kế giả định gắn tường với cạnh có SW1 quay xuống đất. Khi đó ăng-ten module nằm ngang (nhô sang bên); ảnh hưởng tới tầm phủ chưa đo (W-01). Vỏ cần lỗ thông khí ở cạnh dưới gần lưỡi cảm biến và một nút đẩy ở cạnh dưới cho SW1; độ chính xác và thời gian đáp ứng của SHT40 ở tư thế này chưa đo (W-08). Mặt sau (holder) áp vào tường, nên thay pin phải gỡ thiết bị khỏi tường.
 - **Không có nút RST**: reset/vào download cần chập TP6 (EN) xuống GND hoặc tháo/lắp pin khi USB không tự reset được. SW1 bấm cạnh chỉ cao 1.35 mm, núm nhô 0.5 mm khỏi mép bo: dễ bấm nhầm khi cầm bo trần, và vỏ cần một nút đẩy đúng vị trí. J1 là pad dán: không cắm header được.
+
+## 12. Biến thể CR123A (H2W-123 Rev A)
+
+Các mục 1 và 3–9 áp dụng cho cả H2W-123 (cùng mạch nguồn, cảm biến, firmware); mục 2 (CR2450 "CHƯA ĐẠT") được thay bằng kết quả mô hình CR123A, vẫn là **ƯỚC TÍNH**. Các điểm của mục 11 về module tự hàn, nút bấm cạnh, không có nút RST và chữ in ở mặt sau áp dụng nguyên. Thêm:
+
+- **Ba điểm trong cách hiểu yêu cầu chưa được người dùng xác nhận**: 34.5 mm là bề rộng phần mạch (thiết bị vuông 53.3 mm), bo một tấm liền có đế pin hàn trên bo, và pin nằm bên trái (ảnh gương của hình vẽ) — `docs/decisions.md` D24.
+- **Footprint đế pin chưa so với đế thật.** Vị trí hai chân lấy trực tiếp từ bản vẽ; phía đặt chốt định vị là suy luận từ các hình chiếu. Nếu sai, đế không cắm vừa. Làm K-01 trước khi đặt PCB.
+- **Chân đế nhô ra mặt sau** khoảng 2.5 mm (chân dài 4.1 mm, bo dày 1.6 mm, theo bản vẽ): muốn áp mặt sau vào tường phải cắt chân sau khi hàn hoặc có vỏ/đệm. Chưa có thiết kế vỏ.
+- **Mô hình pin CR123A** khớp theo đồ thị xả liên tục ở 20 °C của Panasonic; điện trở khi pin gần hết và khi lạnh là giả định (lấy khắt khe như pin đồng xu), không có số liệu công bố. Tuổi thọ 2.3–2.6 năm giả định dòng trung bình 63 µA chưa đo và dùng được 85–95 % dung lượng (K-03, K-06).
+- **Không có C5 và không có chỗ đặt sẵn**: nếu đo thực tế cho thấy vẫn cần tụ đệm (pin hãng khác, nhiệt độ thấp) thì phải sửa bo.
+- **F1** thêm 0.15–0.7 Ω nối tiếp (số của trang JLC, chưa có datasheet đầy đủ của hãng); điện trở PTC tăng theo nhiệt độ và sau mỗi lần ngắt. Thời gian ngắt chưa đo (K-02). F1 không bảo vệ được đoạn mạch giữa cực + của đế và F1 (dài vài mm).
+- **Phần trăm pin gần như không dùng được ở nửa trên**: đường xả CR123A phẳng, bảng điện áp → phần trăm đọc từ một đồ thị 20 mA; chỉ mức Warning/Critical ở cuối đời pin có ý nghĩa, và các ngưỡng 20 % / 8 % / 2500 mV / 2200 mV là ƯỚC TÍNH (K-05). Ngưỡng nhận ra pin mới của power guard (3000 mV) cũng chưa kiểm với CR123A: nếu pin mới đọc thấp hơn, bộ đếm không tự xóa và phải bấm nút để đánh thức sau khi thay pin.
+- **Pin (vỏ thép Ø17 × 34.5 mm) cách module 16 mm**, cao hơn mặt bo khoảng 17 mm, đứng cạnh vùng ăng-ten: đã theo khuyến nghị ≥ 15 mm của HDG nhưng ảnh hưởng thực tế chưa đo (K-04).
+- **Đế pin là linh kiện xuyên lỗ**: cần dịch vụ hàn xuyên lỗ của JLC hoặc tự hàn; đế và F1 là linh kiện Extended.
+- **Kích thước**: 53.3 × 53.3 × khoảng 19–20 mm (chiều dày là ƯỚC TÍNH), lớn hơn H2W (37.6 × 37.6 × ≈ 12.3 mm) và nặng hơn khoảng 10 g (pin 16–17 g so với 6.2 g).
+- 10 ký hiệu linh kiện chỉ có trên lớp Fab; render 3D không có mô hình module và đế pin.
+
+## 13. Các điểm của bản đánh giá ngày 2026-11-10 chưa xử lý
+
+Người dùng chọn sửa bốn lỗi firmware (D23) và làm biến thể CR123A. Những điểm sau vẫn nguyên như lúc đánh giá:
+
+- CPL của H2W: góc xoay của BT1 ở mặt dưới lấy thẳng từ KiCad (`gen_production.py`), chưa đổi sang quy ước của JLC cho mặt dưới — phải kiểm trong bản xem trước.
+- Rev B: một via nằm trong pad của R26.
+- Ghi chú trong schematic H2W còn vài dòng cũ.
+- GPIO9 vừa là nút USER vừa là chân strap BOOT: giữ nút khi cấp nguồn/reset ⇒ vào chế độ download, thiết bị đứng yên tới lần reset sau.
+- Datasheet WROOM-02C không nhất quán về mạch RC trên EN trong module: đo điện trở EN–3V3 trên module thật trước khi quyết định giữ hay bỏ R22/C25.
+- Firmware: hàm xử lý `EV_RESCHEDULE` rỗng; kết quả publish không được đưa ngược về chính sách báo cáo; profile `battery` vẫn dùng credential thử nghiệm (chỉ profile `prod` dùng dữ liệu factory); công suất phát của khung đầu tiên có thể được đặt sau khi radio đã phát.
+- PCB: chữ silkscreen 0.8 mm (nhỏ hơn mức JLC khuyến nghị); H2C có chữ silkscreen bị cắt và đường XTAL_N dài 12.7 mm; `gen_reports.py` không xóa báo cáo cũ khi một bước lỗi.

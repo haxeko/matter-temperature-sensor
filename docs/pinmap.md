@@ -134,3 +134,12 @@ Kết quả lần chạy cuối: `pin map OK (wroom): 13 defines, 6 unused GPIOs
 
 Chân khác của module: 1 3V3 và 14 VBAT (đều +3V3; VBAT đã nối 3V3 trong module qua 0 Ω), 2 EN, 9, 13 và 29 (EPAD) GND, 16–19 NC. J1 của H2W là 6 pad dán (không lỗ) xếp 2 × 3 bước 2.54 mm, cùng thứ tự chân 1 TX, 2 RX, 3 D+, 4 D−, 5 BOOT, 6 GND. H2W không có nút RST (EN chỉ ra TP6).
 
+## Biến thể CR123A (TH-SENSOR-H2W-123)
+
+Cùng module và cùng bảng chân như H2W ở trên; chỉ khác phần nguồn trước `VBAT` (đế CR123A → F1 → VBAT; net mới `VCELL` giữa cực + và F1, không tới chân nào của module). Kiểm bằng:
+
+```sh
+python3 tools/check_pinmap.py --variant wroom123
+```
+
+Kết quả lần chạy cuối: `pin map OK (wroom123): 13 defines, 6 unused GPIOs checked against the wroom123 schematic` (**ĐÃ XÁC MINH** với netlist xuất từ schematic H2W-123). Cầu đo pin vẫn đo net `VBAT` (sau F1 và trước Q1), nên số đo thấp hơn điện áp cực pin một khoảng I × R của F1 (cỡ 10 mV hoặc ít hơn ở dòng lúc đo, ƯỚC TÍNH).

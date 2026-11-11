@@ -165,6 +165,7 @@ Các phương án dưới đây **chưa được áp dụng**; mọi thay đổi
 3. Firmware: giảm dòng lúc khởi động (tần số CPU thấp hơn trong lúc khởi tạo, chờ tụ nạp lại trước khi bật radio) — chỉ quyết định được sau khi đo dạng dòng khởi động thật (T-33).
 4. Matter LIT (check-in) với chu kỳ poll dài hơn — cần controller hỗ trợ LIT.
 5. Pin Li-MnO2 dày hơn cùng đường kính (CR2477) — cần holder khác; chỉ làm khi người dùng đồng ý.
+6. Pin Li-MnO2 hình trụ **CR123A** — người dùng đã yêu cầu làm thành một biến thể riêng ngày 2026-11-11 (TH-SENSOR-H2W-123, `docs/cr123a_variant.md`); Rev B, H2C và H2W vẫn dùng CR2450. Theo mô hình (`cr123a_study.py`, `results/cr123a_summary.md`, ƯỚC TÍNH) CR123A cấp được mọi dạng tải ở mọi trạng thái pin mà không cần tụ 470 µF, tuổi thọ 2.3–2.6 năm ở 63 µA.
 
 ## 8. Cách tái tạo
 

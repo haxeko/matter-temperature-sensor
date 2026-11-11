@@ -17,6 +17,7 @@ Usage:
     tools/check_pinmap.py                 # exit 1 on any mismatch
     tools/check_pinmap.py --variant chip  # the bare-chip board
     tools/check_pinmap.py --variant wroom # the ESP32-H2-WROOM-02C board
+    tools/check_pinmap.py --variant wroom123  # the ESP32-H2-WROOM-02C board with the CR123A cell
     tools/check_pinmap.py --markdown      # also print the pin table used in docs/pinmap.md
 """
 import argparse
@@ -31,6 +32,7 @@ PINS_H = os.path.join(ROOT, "firmware", "components", "board", "include", "board
 SCH = os.path.join(ROOT, "hardware", "kicad", "th_sensor_h2.kicad_sch")
 SCH_CHIP = os.path.join(ROOT, "hardware", "chip", "kicad", "th_sensor_h2c.kicad_sch")
 SCH_WROOM = os.path.join(ROOT, "hardware", "wroom", "kicad", "th_sensor_h2w.kicad_sch")
+SCH_WROOM123 = os.path.join(ROOT, "hardware", "wroom123", "kicad", "th_sensor_h2w123.kicad_sch")
 
 # ESP32-H2-MINI-1 / MINI-1U datasheet v1.6, table 3: module pad -> GPIO
 PAD_GPIO = {5: 2, 6: 3, 9: 0, 10: 1, 12: 13, 13: 14, 16: 12, 18: 4, 19: 5, 20: 10, 21: 11, 22: 8, 23: 9,
@@ -72,14 +74,14 @@ def parse_header():
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--markdown", action="store_true")
-    ap.add_argument("--variant", choices=("module", "chip", "wroom"), default="module")
+    ap.add_argument("--variant", choices=("module", "chip", "wroom", "wroom123"), default="module")
     a = ap.parse_args()
     defs = parse_header()
     if a.variant == "chip":
         return check_chip(defs, netlist_u4(SCH_CHIP), a.markdown)
-    if a.variant == "wroom":
-        return check_chip(defs, netlist_u4(SCH_WROOM), a.markdown, WROOM_GPIO_PIN, "wroom", "module pin",
-                          "the ESP32-H2-WROOM-02C")
+    if a.variant in ("wroom", "wroom123"):       # same module, same pin use; wroom123 = the CR123A board
+        return check_chip(defs, netlist_u4(SCH_WROOM if a.variant == "wroom" else SCH_WROOM123), a.markdown,
+                          WROOM_GPIO_PIN, a.variant, "module pin", "the ESP32-H2-WROOM-02C")
     u4 = netlist_u4()
     errors, rows = [], []
     gpio_of = {}
