@@ -179,6 +179,15 @@ Người dùng chọn sửa bốn lỗi trong bản đánh giá mã nguồn ("m�
 - **Nối pin bằng hai lỗ hàn dây (BT1)** thay vì chọn một đế hay kẹp cụ thể: cách giữ pin thuộc về vỏ, chưa có thiết kế vỏ. Bước 2.54 mm để cũng lắp được hàng chân. BT1 không vào BOM.
 - **Đánh đổi đã biết**: pin sát bo chỉ cách module khoảng 7 mm (bản D24: 16 mm; Espressif khuyên ≥ 15 mm). Người dùng yêu cầu kích thước nhỏ nhất; rủi ro tầm phủ ghi ở `docs/limitations.md` mục 12 và phép thử K-04.
 - **J1 và test pad chuyển sang mặt sau** (pad trần): ở mặt trên chúng chiếm khoảng 75 mm², tức 8 % bo. Hệ quả: phải lật bo để nạp và đo; khi đã gắn tường thì không tới được.
-- **Đi dây trên F.Cu + B.Cu**, In1 và In2 là mặt GND (H2W dùng In2 để đi dây vì mặt dưới có đế pin). Ba đường dài ở mặt sau (SCL, SDA, nút bấm tới J1) vạch tay, vì bộ đi dây tự động xếp thứ tự nào cũng bao kín một net.
+- **Đi dây trên F.Cu + B.Cu**, In1 và In2 là mặt GND (H2W dùng In2 để đi dây vì mặt dưới có đế pin); bỏ hai lớp trong ở D26. Ba đường dài ở mặt sau (SCL, SDA, nút bấm tới J1) vạch tay, vì bộ đi dây tự động xếp thứ tự nào cũng bao kín một net.
 - **Cầu đo pin đặt lại** quanh tụ C31 ở chân 4 (nút trở kháng cao dài 3 mm thay vì chạy vòng), R22 dời sang cạnh U3; I2C và nút bấm rời module qua via dưới module.
 - Tên biến thể, thư mục, lớp firmware và nhãn Rev A giữ nguyên (chưa có bo nào được làm theo bản D24).
+
+## D26. H2W-123: 2 lớp (2026-11-11)
+
+- **Yêu cầu**: người dùng hỏi mạch có cần 4 lớp không; được trả lời là không bắt buộc (hai lớp trong chỉ là GND, bản thử bỏ hai lớp trong cho DRC 0 và 0 pad chưa nối), rồi yêu cầu "làm lại mạch 2 lớp". Người dùng không chọn giữa "chuyển thẳng" và "chuyển rồi tối ưu GND"; bản này chuyển và sửa những chỗ GND mà DRC chỉ ra, không vạch lại đường dây.
+- **Giữ nguyên** vị trí linh kiện, ba đường vạch tay ở mặt sau, thứ tự đi dây.
+- **Via 0.6 / 0.3 mm** theo luật 2 lớp tiêu chuẩn đã dùng cho Rev B (`gen_project.py`: lỗ tối thiểu 0.3 mm, pad 0.6 mm), thay cho 0.45 / 0.2 mm của quy trình nhiều lớp. Hệ quả: via thoát chân trái của module dời vào trong 0.25 mm (lỗ via cách pad của chân 0.25 mm), via GND ở cầu nối lưỡi cảm biến dời lên 0.35 mm (giữ 0.3 mm tới mép bo); bộ đi dây tự tìm lại đường, không net nào hở.
+- **Túi đồng GND**: với hai lớp, đồng đổ chui vào hai khe giữa các đường dây và chỉ nối với phần còn lại bằng cổ rộng 0.07–0.1 mm (DRC connection_width). Script tìm các mảng như vậy sau khi đổ đồng và đặt một vùng cấm đổ đồng nhỏ lên mỗi mảng (`remove_fill_slivers`), nên bo sinh lại vẫn sạch nếu đường dây thay đổi.
+- **Không đổi**: firmware, BOM, CPL (chỉ file Gerber và luật thiết kế thay đổi).
+- **Đánh đổi**: mặt GND kém liền hơn (số đo ở `docs/cr123a_variant.md` mục 10), được đánh giá là chấp nhận được vì không có đường RF trên bo và dòng nhỏ; chưa đo.

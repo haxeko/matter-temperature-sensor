@@ -115,6 +115,7 @@ Các mục 1 và 3–9 áp dụng cho cả H2W-123 (cùng mạch nguồn, cảm 
 - **Mô hình pin CR123A** khớp theo đồ thị xả liên tục ở 20 °C của Panasonic; điện trở khi pin gần hết và khi lạnh là giả định (lấy khắt khe như pin đồng xu), không có số liệu công bố; không tính điện trở dây và tiếp điểm đế. Tuổi thọ 2.3–2.6 năm giả định dòng trung bình 63 µA chưa đo và dùng được 85–95 % dung lượng (K-03, K-06).
 - **Không có C5 và không có chỗ đặt sẵn**: nếu đo thực tế cho thấy vẫn cần tụ đệm (pin hãng khác, nhiệt độ thấp, dây dài) thì phải sửa bo.
 - **Phần trăm pin gần như không dùng được ở nửa trên**: đường xả CR123A phẳng, bảng điện áp → phần trăm đọc từ một đồ thị 20 mA; chỉ mức Warning/Critical ở cuối đời pin có ý nghĩa, và các ngưỡng 20 % / 8 % / 2500 mV / 2200 mV là ƯỚC TÍNH (K-05). Ngưỡng nhận ra pin mới của power guard (3000 mV) cũng chưa kiểm với CR123A: nếu pin mới đọc thấp hơn, bộ đếm không tự xóa và phải bấm nút để đánh thức sau khi thay pin.
+- **Bo 2 lớp**: mặt GND bị dây cắt thành nhiều mảng nối với nhau qua via (đồng GND phủ 52 % mặt trên, 63 % mặt dưới). Đường hồi dòng của bộ chuyển đổi và của module dài hơn so với bản 4 lớp; ảnh hưởng tới nhiễu, dòng ngủ và tầm phủ chưa đo (K-04, K-06).
 - 17 ký hiệu linh kiện mặt trên chỉ có trên lớp Fab; render 3D không có mô hình module.
 
 ## 13. Các điểm của bản đánh giá ngày 2026-11-10 chưa xử lý

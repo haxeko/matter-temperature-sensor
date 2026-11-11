@@ -93,9 +93,9 @@ File ở `hardware/wroom/production/` (zip Gerber 4 lớp `th_sensor_h2w_revA_ge
 
 ## Biến thể CR123A (H2W-123 Rev A)
 
-File ở `hardware/wroom123/production/` (zip Gerber 4 lớp `th_sensor_h2w123_revA_gerbers.zip`, `bom_jlc.csv` 25 dòng, `cpl_jlc.csv` 38 linh kiện, `orientation_check.md`, `assembly_top.pdf`, `manufacturing_blockers.md`, ảnh chụp tồn kho 2026-11-11 02:15 UTC). **Không có gì đã được đặt mua.** Chi tiết: `docs/cr123a_variant.md` mục 6 và 8.
+File ở `hardware/wroom123/production/` (zip Gerber 2 lớp `th_sensor_h2w123_revA_gerbers.zip`, `bom_jlc.csv` 25 dòng, `cpl_jlc.csv` 38 linh kiện, `orientation_check.md`, `assembly_top.pdf`, `manufacturing_blockers.md`, ảnh chụp tồn kho 2026-11-11 02:15 UTC). **Không có gì đã được đặt mua.** Chi tiết: `docs/cr123a_variant.md` mục 6 và 8.
 
-- PCB: 4 lớp, 1.6 mm, JLC04161H-7628, via phủ mask, HASL không chì hoặc ENIG; rãnh lưỡi cảm biến 1 mm hình chữ L từ mép trái, phay. Kích thước 24.8 × 37.3 mm; phần ăng-ten của module nhô thêm 6 mm khỏi mép trên.
+- PCB: **2 lớp**, FR-4 1.6 mm, đồng 1 oz, quy trình tiêu chuẩn (lỗ via 0.3 mm), via phủ mask, HASL không chì hoặc ENIG; rãnh lưỡi cảm biến 1 mm hình chữ L từ mép trái, phay. Kích thước 24.8 × 37.3 mm; phần ăng-ten của module nhô thêm 6 mm khỏi mép trên.
 - **Lắp một mặt**, toàn linh kiện dán ở mặt trên. Mặt sau chỉ có pad trần (J1, TP1–TP6) và hai lỗ hàn dây pin.
 - **Pin không nằm trên bo.** BT1 là hai lỗ mạ 1.0 mm ở mép trái: pad vuông = +, pad tròn = −, có dấu + / − ở cả hai mặt. Đế pin CR123A do người dùng chọn, đặt cạnh bo và hàn dây vào hai lỗ này; không có đế nào trong BOM/CPL. Đi dây vòng phía dưới hoặc bên trái bo, tránh vùng ăng-ten; cố định dây trong vỏ.
 - **U4 không có trong BOM/CPL**: tự mua ESP32-H2-WROOM-02C-**H4S** và hàn tay như H2W (mục trên).

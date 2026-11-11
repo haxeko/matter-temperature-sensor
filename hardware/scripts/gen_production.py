@@ -36,7 +36,7 @@ OUT = os.path.join(HW, "production")
 GERB = os.path.join(OUT, "gerbers")
 SNAP = os.path.join(OUT, "jlc_parts_snapshot.jsonl")
 LAYERS = "F.Cu,B.Cu,F.Paste,B.Paste,F.SilkS,B.SilkS,F.Mask,B.Mask,Edge.Cuts"
-if D.VARIANT == "chip" or D.WROOM:
+if D.VARIANT in ("chip", "wroom"):          # 4-layer boards; Rev B and the CR123A board are 2-layer
     LAYERS = "F.Cu,In1.Cu,In2.Cu,B.Cu,F.Paste,B.Paste,F.SilkS,B.SilkS,F.Mask,B.Mask,Edge.Cuts"
 
 # parts whose orientation matters, with what pad 1 is
@@ -233,9 +233,9 @@ def blockers(rows, snap):
                         "no RF line on this board), tented vias (set in the board file: there are vias under the "
                         "cell), lead-free HASL or ENIG. The SHT40 tongue is cut free by a 1 mm L-shaped slot from "
                         "the left edge (routed, not V-cut).",
-               "wroom123": "- PCB options: 4 layers, 1.6 mm, JLC stack-up JLC04161H-7628 (no impedance control "
-                           "needed: no RF line on this board), tented vias (set in the board file), lead-free HASL "
-                           "or ENIG. The SHT40 tongue is cut free by a 1 mm L-shaped slot from the left edge "
+               "wroom123": "- PCB options: 2 layers, 1.6 mm FR-4, 1 oz, standard process (0.3 mm via holes; no "
+                           "impedance control needed: no RF line on this board), tented vias (set in the board "
+                           "file), lead-free HASL or ENIG. The SHT40 tongue is cut free by a 1 mm L-shaped slot from the left edge "
                            "(routed, not V-cut)."}[D.VARIANT],
               *(["- U4 (QFN32, 0.4 mm pitch) has 9 GND vias in its exposed pad (HDG minimum): ask for via "
                  "filling/plugging or accept some solder wicking.",

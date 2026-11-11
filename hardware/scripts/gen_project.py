@@ -83,7 +83,7 @@ if D.VARIANT == "chip":
     pro["net_settings"]["classes"].append(netclass("RF", 0.35, 0.15, priority=2))
     pro["net_settings"]["netclass_patterns"] += [{"netclass": "RF", "pattern": n} for n in ("LNA_IN", "RF_M", "RF_ANT")]
 
-if D.WROOM:
+if D.VARIANT == "wroom":       # (the CR123A board, wroom123, is 2-layer: Rev B rules)
     # 4-layer board (docs/wroom_variant.md), JLC multilayer process: 0.45 mm / 0.2 mm vias (no surcharge from a
     # 0.45 mm pad with a 0.2 mm hole), otherwise the Rev B rules (all parts 0603 or larger)
     pro["board"]["design_settings"]["rules"].update(min_via_diameter=0.45, min_through_hole_diameter=0.2,

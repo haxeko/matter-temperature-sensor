@@ -5,7 +5,10 @@ Biến thể của TH-SENSOR-H2W (module ESP32-H2-WROOM-02C-H4S do người dùn
 Hai yêu cầu của người dùng, cùng ngày 2026-11-11:
 
 1. "Làm mục 1 và 3, chiều ngang board là 34,5cm bố trí như hình vẽ. Màu đen là cr123a xanh lá là pcb đỏ là esp h2 wroom hồng là cảm sht40, tổng thế thiết bị là vuông" (hình vẽ: pin đứng cạnh bo, module ở trên, SHT40 ở cạnh dưới). Bản đầu tiên (commit `d85e807`) hiểu thành một bo liền 53.3 × 47.3 mm có đế pin hàn trên bo.
-2. Trên hình bố trí của bản đó, người dùng khoanh phần mạch (không gồm pin) và viết: "Chỉ bố trí pcb khu vực này, thu gọn mạch nhỏ nhất có thể giữ nguyên vị trí sht40 và nút bấm như hình vẽ." Tài liệu này mô tả bản làm lại theo yêu cầu thứ hai; nó **thay thế** bản đầu tiên.
+2. Trên hình bố trí của bản đó, người dùng khoanh phần mạch (không gồm pin) và viết: "Chỉ bố trí pcb khu vực này, thu gọn mạch nhỏ nhất có thể giữ nguyên vị trí sht40 và nút bấm như hình vẽ." Bản thu nhỏ (commit `bec633c`) vẫn 4 lớp.
+3. Sau khi được giải thích rằng hai lớp trong của bản thu nhỏ chỉ là mặt GND, không có dây: "làm lại mạch 2 lớp". Bố trí linh kiện giữ nguyên; bo thành **2 lớp**, via 0.6 / 0.3 mm theo quy trình 2 lớp tiêu chuẩn như Rev B (mục 5, 10).
+
+Tài liệu này mô tả bản hiện tại (yêu cầu 2 và 3); nó **thay thế** bản đầu tiên.
 
 Cách hiểu yêu cầu thứ hai (đã báo người dùng, chưa được xác nhận lại):
 
@@ -22,7 +25,7 @@ Cách hiểu yêu cầu thứ hai (đã báo người dùng, chưa được xác
 | PCB: DRC + schematic parity | ĐÃ XÁC MINH: 0 vi phạm, 0 pad chưa nối, 0 lỗi parity (mọi mức) | `hardware/wroom123/reports/drc_report.txt` |
 | Pin map firmware ↔ module | ĐÃ XÁC MINH | `python3 tools/check_pinmap.py --variant wroom123` |
 | Kích thước bo 24.8 × 37.3 mm, ăng-ten nhô 6.0 mm ⇒ 24.8 × 43.3 mm | ĐÃ XÁC MINH trên file board | mục 4 |
-| Gerber 4 lớp, drill, BOM (25 dòng), CPL (38 linh kiện, tất cả mặt trên) | ĐÃ XÁC MINH là sinh được; **chưa gửi nhà máy** | `hardware/wroom123/production/` |
+| Gerber 2 lớp, drill, BOM (25 dòng), CPL (38 linh kiện, tất cả mặt trên) | ĐÃ XÁC MINH là sinh được; **chưa gửi nhà máy** | `hardware/wroom123/production/` |
 | Tái tạo giống từng byte (schematic, board, project) | ĐÃ XÁC MINH (chạy hai lần) | mục 10 |
 | Firmware với lớp `cr123a`: build | ĐÃ XÁC MINH (build được); chạy trên bo: **CHƯA KIỂM THỬ** | `docs/reports/firmware_build.md` |
 | Khả năng cấp xung của CR123A, tuổi thọ 2.3–2.6 năm | **ƯỚC TÍNH** (mô hình khớp theo đồ thị datasheet) | mục 2, `hardware/analysis/results/cr123a_summary.md` |
@@ -60,7 +63,8 @@ Tuổi thọ ở tải danh nghĩa (63.1 µA lấy từ pin, tự xả 1 %/năm)
 | Tụ đệm C5 470 µF | tantal TAJD477K006RNJ | **không có** (mục 2) |
 | Bảo vệ ngắn mạch | không (pin đồng xu tự giới hạn dòng) | **F1**, cầu chì tự phục hồi BHFUSE BSMD1206-050-6V (LCSC C883122) ngay sau lỗ + |
 | Bo | 37.6 × 31.6 mm (37.6 × 37.6 tính cả ăng-ten) | **24.8 × 37.3 mm (24.8 × 43.3 tính cả ăng-ten)**; cả cụm với đế pin bên cạnh: khoảng 43.3 × 43.3 mm |
-| Lớp đi dây | F.Cu + In2.Cu (mặt dưới dành cho đế pin) | F.Cu + B.Cu; In1.Cu và In2.Cu là hai mặt GND liền |
+| Số lớp, lớp đi dây | 4 lớp; F.Cu + In2.Cu (mặt dưới dành cho đế pin) | **2 lớp**; F.Cu + B.Cu, phần trống của cả hai mặt đổ GND |
+| Via | 0.45 / 0.2 mm (quy trình nhiều lớp) | 0.6 / 0.3 mm (quy trình 2 lớp tiêu chuẩn, như Rev B) |
 | Mặt dưới | đế pin (lắp ráp hai mặt) | chỉ có pad trần: J1, TP1–TP6; **lắp ráp một mặt** |
 | J1 và test pad | mặt trên | **mặt dưới** |
 | Nút SW1 (bấm cạnh) | giữa mép trái | **mép dưới**, bấm từ dưới lên khi gắn tường |
@@ -87,10 +91,11 @@ Tuổi thọ ở tải danh nghĩa (63.1 µA lấy từ pin, tự xả 1 %/năm)
 - **Dưới module**: thạch anh Y1 với C27/C28, C23, R25/D3 đặt y hệt bo H2W; bên phải là giám sát áp U3, C26, R22; bên trái là công tắc đo pin Q3.
 - **Hai lỗ hàn dây pin BT1** ở mép trái, y = 18.5 (−, pad tròn) và 21.0 (+, pad vuông); cầu chì F1 ngay bên phải lỗ +.
 - **Hàng bộ chuyển đổi** (y 21–31): Q1, R1, C2, C3, C1, U1, L1, C4, R2–R4, rồi C21, C22, R21; đầu vào ở bên trái, phía dây pin.
-- **Lưỡi SHT40** ở góc dưới trái (6.6 × 5.4 mm), cắt bằng rãnh 1 mm hình chữ L từ mép trái; cầu nối 1 × 2.6 mm ở mép dưới mang 4 dây bước 0.5 mm (từ mép vào: GND, SDA, SCL, 3V3); không via, không đổ đồng trên lưỡi (cả 4 lớp). Đây là lưỡi của H2W lật từ trên xuống dưới. Điện trở kéo lên R26/R27 ngay sau cầu nối. SHT40 cách U1 14.1 mm và cách tâm module 33 mm (bản đầu tiên: 22.5 và 41 mm); khi gắn tường nó nằm dưới mọi nguồn nhiệt. Tự sưởi: CHƯA KIỂM THỬ (K-08).
+- **Lưỡi SHT40** ở góc dưới trái (6.6 × 5.4 mm), cắt bằng rãnh 1 mm hình chữ L từ mép trái; cầu nối 1 × 2.6 mm ở mép dưới mang 4 dây bước 0.5 mm (từ mép vào: GND, SDA, SCL, 3V3); không via, không đổ đồng trên lưỡi (cả hai mặt). Đây là lưỡi của H2W lật từ trên xuống dưới. Điện trở kéo lên R26/R27 ngay sau cầu nối. SHT40 cách U1 14.1 mm và cách tâm module 33 mm (bản đầu tiên: 22.5 và 41 mm); khi gắn tường nó nằm dưới mọi nguồn nhiệt. Tự sưởi: CHƯA KIỂM THỬ (K-08).
 - **SW1** trên mép dưới, tâm cách mép phải 7.4 mm, núm nhô 0.5 mm ra ngoài mép.
 - **Mặt sau** (chỉ pad trần và chữ): J1 nằm sau module, ba hàng tính từ mép trên xuống, nhìn từ mặt sau từ trái sang, là GND BOOT / D− D+ / RX TX (pad vuông = TX), tên in cạnh từng pad; TP6 (EN) phía trên bên cạnh; TP1–TP5 thành một hàng ở giữa bo, nhìn từ mặt sau từ trái sang: 3V3, VOUT, GND, VIN, VBAT; dấu + và − cạnh hai lỗ dây pin; tên sản phẩm, cảnh báo loại pin, tên bo và ngày.
 - Gắn tường: mặt sau áp vào tường, ăng-ten hướng lên.
+- **Hai lớp**: dây ở cả hai mặt, phần trống của mỗi mặt đổ GND. Mặt trên dưới module không có dây (chỉ các đoạn thoát chân dài ≤ 1.4 mm và via), nên đồng GND ở đó gần như liền; dưới module ở mặt sau có J1 và các đường tới nó. So với bản 4 lớp, mặt GND kém liền hơn: đường hồi dòng của bộ chuyển đổi và module dài hơn. Dòng vào bị giới hạn 100 mA nên rủi ro được đánh giá là thấp, nhưng chưa đo (K-04, K-06).
 
 ## 6. Nối pin và cầu chì
 
@@ -121,7 +126,7 @@ Pin map không đổi (`tools/check_pinmap.py --variant wroom123`). Giới hạn
 
 ## 8. Sản xuất và lắp ráp
 
-- PCB: 4 lớp, 1.6 mm, JLC04161H-7628, via phủ mask, HASL không chì hoặc ENIG; rãnh lưỡi cảm biến 1 mm phay (không V-cut).
+- PCB: **2 lớp**, FR-4 1.6 mm, đồng 1 oz, quy trình tiêu chuẩn (lỗ via 0.3 mm), via phủ mask, HASL không chì hoặc ENIG; rãnh lưỡi cảm biến 1 mm phay (không V-cut). Không cần kiểm soát trở kháng: bo không có đường RF.
 - **Lắp một mặt**, toàn linh kiện dán: 38 linh kiện trong CPL, tất cả ở mặt trên. Linh kiện Extended: F1, L1, R3, R4, SW1, U1, U3, U5. Tồn kho thấp lúc tra: U3 733 cái.
 - **U4 tự mua** (ESP32-H2-WROOM-02C-**H4S**) và hàn tay như ở H2W (`docs/wroom_variant.md` mục 4 và 9).
 - **Pin và đế pin tự lắp** (mục 6).
@@ -148,17 +153,17 @@ Tất cả **CHƯA KIỂM THỬ**. Các mục W-02 (mối hàn module), W-05 (US
 
 ```sh
 TH_VARIANT=wroom123 python3 hardware/scripts/gen_schematic.py     # schematic, footprint lỗ hàn dây, kiểm parity
-TH_VARIANT=wroom123 python3 hardware/scripts/gen_pcb_wroom123.py  # đặt, đi dây F.Cu + B.Cu, đổ đồng 4 lớp, silkscreen
+TH_VARIANT=wroom123 python3 hardware/scripts/gen_pcb_wroom123.py  # đặt, đi dây F.Cu + B.Cu, đổ GND hai mặt, silkscreen
 TH_VARIANT=wroom123 python3 hardware/scripts/gen_project.py       # .kicad_pro
 TH_VARIANT=wroom123 python3 hardware/scripts/gen_reports.py       # ERC, DRC + parity, PDF/SVG/3D
-TH_VARIANT=wroom123 python3 hardware/scripts/gen_production.py    # Gerber 4 lớp, drill, BOM, CPL
+TH_VARIANT=wroom123 python3 hardware/scripts/gen_production.py    # Gerber 2 lớp, drill, BOM, CPL
 python3 tools/check_pinmap.py --variant wroom123
 python3 hardware/analysis/cr123a_study.py                        # bảng mô hình ở mục 2 (~1 phút)
 ```
 
 Schematic, board và project sinh lại **giống từng byte**; chỉ dấu thời gian trong Gerber/drill/báo cáo/PDF/ZIP và ảnh render thay đổi. Tồn kho JLC tra lúc 2026-11-11 02:15 UTC (`hardware/wroom123/production/jlc_parts_snapshot.jsonl`; file còn dòng của đế pin C5290177 từ bản đầu tiên, nay không thuộc BOM).
 
-Số liệu board: 85 via 0.45 / 0.2 mm (41 via khâu GND) và 15 via 0.6 / 0.3 mm; F.Cu 148 đoạn dây (203 mm), B.Cu 84 đoạn (226 mm), In1 và In2 chỉ có GND; 42 footprint ở mặt trên, 7 ở mặt sau (J1, TP1–TP6); 17 ký hiệu linh kiện mặt trên không đủ chỗ trên silkscreen, chỉ có trên lớp Fab.
+Số liệu board: 100 via 0.6 / 0.3 mm (67 via GND, trong đó 39 via khâu GND); F.Cu khoảng 208 mm dây, B.Cu khoảng 235 mm; 42 footprint ở mặt trên, 7 ở mặt sau (J1, TP1–TP6); 17 ký hiệu linh kiện mặt trên không đủ chỗ trên silkscreen, chỉ có trên lớp Fab. Đồng GND phủ 52 % mặt trên (69 % vùng dưới module, 56 % vùng bộ chuyển đổi) và 63 % mặt dưới (56 % dưới module, 74 % dưới bộ chuyển đổi); các mảng GND nối với nhau qua via. Hai túi đồng GND nhỏ bị nối bằng cổ hẹp hơn 0.13 mm được script tự loại (vùng cấm đổ đồng nhỏ, `remove_fill_slivers`).
 
 Ba đường dài ở mặt sau (SCL, SDA từ module xuống điện trở kéo lên, và đường nút bấm tới pad BOOT của J1) được vạch tay trong `gen_pcb_wroom123.py` theo một sơ đồ không cắt nhau; phần còn lại do bộ đi dây của dự án làm. Lý do: hai lớp trong là mặt GND, mặt trước dưới module không đi dây được, nên bộ đi dây tự động xếp các đường này theo thứ tự nào cũng bao kín một net khác.
 
