@@ -7,7 +7,6 @@
 	(property "Reference" "REF**" (at 1.27 -2.2 0) (layer "F.SilkS") (uuid "26714c9f-032e-5a02-b3ff-8c61d5d5992a") (effects (font (size 0.8 0.8) (thickness 0.15))))
 	(property "Value" "TestPads_2x03_P2.54mm_SMD" (at 1.27 7.3 0) (layer "F.Fab") (uuid "c532dcd5-eb59-59f7-8a45-a6f91782233c") (effects (font (size 0.8 0.8) (thickness 0.12))))
 	(attr smd)
-	(fp_rect (start -1.27 -1.27) (end 3.81 6.35) (stroke (width 0.12) (type solid)) (fill no) (layer "F.SilkS") (uuid "50f87396-8405-5bd8-b06c-34abaf7e3d31"))
 	(fp_rect (start -1.0 -1.0) (end 3.54 6.08) (stroke (width 0.1) (type solid)) (fill no) (layer "F.Fab") (uuid "84559087-5af6-5642-a99f-e09aa95d528c"))
 	(fp_rect (start -1.05 -1.05) (end 3.59 6.13) (stroke (width 0.05) (type solid)) (fill no) (layer "F.CrtYd") (uuid "d71e790e-5818-5377-b99f-17e521132072"))
 	(fp_text user "${REFERENCE}" (at 1.27 2.54 90) (layer "F.Fab") (uuid "4b8101c8-041c-5fa2-8d9d-fe5c56898ae1") (effects (font (size 0.8 0.8) (thickness 0.12))))

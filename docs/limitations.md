@@ -105,17 +105,17 @@ Các mục 1–9 áp dụng cho cả H2W (cùng nguồn, cảm biến, firmware)
 
 Các mục 1 và 3–9 áp dụng cho cả H2W-123 (cùng mạch nguồn, cảm biến, firmware); mục 2 (CR2450 "CHƯA ĐẠT") được thay bằng kết quả mô hình CR123A, vẫn là **ƯỚC TÍNH**. Các điểm của mục 11 về module tự hàn, nút bấm cạnh, không có nút RST và chữ in ở mặt sau áp dụng nguyên. Thêm:
 
-- **Ba điểm trong cách hiểu yêu cầu chưa được người dùng xác nhận**: 34.5 mm là bề rộng phần mạch (thiết bị vuông 53.3 mm), bo một tấm liền có đế pin hàn trên bo, và pin nằm bên trái (ảnh gương của hình vẽ) — `docs/decisions.md` D24.
-- **Footprint đế pin chưa so với đế thật.** Vị trí hai chân lấy trực tiếp từ bản vẽ; phía đặt chốt định vị là suy luận từ các hình chiếu. Nếu sai, đế không cắm vừa. Làm K-01 trước khi đặt PCB.
-- **Chân đế nhô ra mặt sau** khoảng 2.5 mm (chân dài 4.1 mm, bo dày 1.6 mm, theo bản vẽ): muốn áp mặt sau vào tường phải cắt chân sau khi hàn hoặc có vỏ/đệm. Chưa có thiết kế vỏ.
-- **Mô hình pin CR123A** khớp theo đồ thị xả liên tục ở 20 °C của Panasonic; điện trở khi pin gần hết và khi lạnh là giả định (lấy khắt khe như pin đồng xu), không có số liệu công bố. Tuổi thọ 2.3–2.6 năm giả định dòng trung bình 63 µA chưa đo và dùng được 85–95 % dung lượng (K-03, K-06).
-- **Không có C5 và không có chỗ đặt sẵn**: nếu đo thực tế cho thấy vẫn cần tụ đệm (pin hãng khác, nhiệt độ thấp) thì phải sửa bo.
-- **F1** thêm 0.15–0.7 Ω nối tiếp (số của trang JLC, chưa có datasheet đầy đủ của hãng); điện trở PTC tăng theo nhiệt độ và sau mỗi lần ngắt. Thời gian ngắt chưa đo (K-02). F1 không bảo vệ được đoạn mạch giữa cực + của đế và F1 (dài vài mm).
+- **Cách hiểu yêu cầu chưa được người dùng xác nhận**: pin nằm ngoài bo và nối bằng dây; bo thu xuống 24.8 × 37.3 mm; SHT40 ở góc dưới trái; J1 và test pad ở mặt sau — `docs/decisions.md` D25.
+- **Pin sát bo chỉ cách module khoảng 7 mm**, và đầu trên của đế pin ngang hàng với vùng ăng-ten. Espressif khuyên chừa ≥ 15 mm quanh ăng-ten. Đây là rủi ro lớn nhất của bản này: tầm phủ có thể giảm, chưa đo (K-04). Cách sửa không cần đổi bo: đặt đế pin xa bo hơn (thiết bị khi đó không còn vuông 43.3 mm).
+- **Pin, đế pin và dây không thuộc bo**: không có trong BOM, chưa chọn loại cụ thể, chưa có đế thật nào được so với bản vẽ. Bo không có chỗ kẹp dây; mối hàn dây chịu lực nếu vỏ không giữ dây. Đấu ngược cực không làm hỏng mạch nhưng phải kiểm trước khi cấp điện (K-01).
+- **F1 không bảo vệ đoạn dây từ pin tới bo**: chập giữa hai dây hoặc giữa hai tiếp điểm của đế vẫn làm pin phóng hàng ampe. F1 thêm 0.15–0.7 Ω nối tiếp (số của trang JLC, chưa có datasheet đầy đủ của hãng); thời gian ngắt chưa đo (K-02).
+- **J1 và test pad ở mặt sau**: nạp firmware và đo đều phải lật bo; khi bo đã gắn tường thì không tới được. Pad trần mang điện áp pin và 3.3 V nằm ở mặt áp vào tường: cần vỏ hoặc lớp cách điện.
+- **Khung vuông 43.3 × 43.3 mm** chỉ đúng với một đế pin 18.2 × 43.3 mm đặt cách bo 0.3 mm; chưa có thiết kế vỏ, chưa tính chỗ cho vỏ và dây.
+- **SHT40 cách bộ chuyển đổi 14 mm** (H2W-123 bản đầu: 22.5 mm). Tự sưởi chưa đo (K-08).
+- **Mô hình pin CR123A** khớp theo đồ thị xả liên tục ở 20 °C của Panasonic; điện trở khi pin gần hết và khi lạnh là giả định (lấy khắt khe như pin đồng xu), không có số liệu công bố; không tính điện trở dây và tiếp điểm đế. Tuổi thọ 2.3–2.6 năm giả định dòng trung bình 63 µA chưa đo và dùng được 85–95 % dung lượng (K-03, K-06).
+- **Không có C5 và không có chỗ đặt sẵn**: nếu đo thực tế cho thấy vẫn cần tụ đệm (pin hãng khác, nhiệt độ thấp, dây dài) thì phải sửa bo.
 - **Phần trăm pin gần như không dùng được ở nửa trên**: đường xả CR123A phẳng, bảng điện áp → phần trăm đọc từ một đồ thị 20 mA; chỉ mức Warning/Critical ở cuối đời pin có ý nghĩa, và các ngưỡng 20 % / 8 % / 2500 mV / 2200 mV là ƯỚC TÍNH (K-05). Ngưỡng nhận ra pin mới của power guard (3000 mV) cũng chưa kiểm với CR123A: nếu pin mới đọc thấp hơn, bộ đếm không tự xóa và phải bấm nút để đánh thức sau khi thay pin.
-- **Pin (vỏ thép Ø17 × 34.5 mm) cách module 16 mm**, cao hơn mặt bo khoảng 17 mm, đứng cạnh vùng ăng-ten: đã theo khuyến nghị ≥ 15 mm của HDG nhưng ảnh hưởng thực tế chưa đo (K-04).
-- **Đế pin là linh kiện xuyên lỗ**: cần dịch vụ hàn xuyên lỗ của JLC hoặc tự hàn; đế và F1 là linh kiện Extended.
-- **Kích thước**: 53.3 × 53.3 × khoảng 19–20 mm (chiều dày là ƯỚC TÍNH), lớn hơn H2W (37.6 × 37.6 × ≈ 12.3 mm) và nặng hơn khoảng 10 g (pin 16–17 g so với 6.2 g).
-- 10 ký hiệu linh kiện chỉ có trên lớp Fab; render 3D không có mô hình module và đế pin.
+- 17 ký hiệu linh kiện mặt trên chỉ có trên lớp Fab; render 3D không có mô hình module.
 
 ## 13. Các điểm của bản đánh giá ngày 2026-11-10 chưa xử lý
 

@@ -50,7 +50,7 @@ POLARISED = {
 if D.VARIANT == "chip":
     POLARISED["Y2"] = "pad 1 = crystal terminal on XTAL_P (pins 1/3 crystal, 2/4 case to GND)"
 if D.CR123:
-    POLARISED["BT"] = "pin 1 = + terminal: square pad, at the end with the locating post (silkscreen '+')"
+    POLARISED.pop("BT")         # the cell is not on the board: BT1 is two wire pads, nothing is placed
 elif D.VARIANT == "wroom":
     POLARISED["C5"] = "pad 1 = + (tantalum: the band on the body marks this end; silkscreen '+')"
 
@@ -202,15 +202,13 @@ def blockers(rows, snap):
     lines += ["- %s: %s (%s)" % (r["Designator"], r["MPN"], r["LCSC Part #"]) for r in ext]
     n_tp = sum(1 for p in D.PARTS if p["ref"].startswith("TP"))
     lines += ["", "## Checks that need a person", "",
-              "- Placement preview: every line of `orientation_check.md` (%s, LED, ICs, "
-              "MOSFETs)." % ("holder" if D.CR123 else "holder, tantalum C5" if D.VARIANT == "wroom" else
-                             "holder, electrolytic"),
-              ("- Holder BT1 (MYOUNG BH-123A-A1CJ002, through-hole): its + terminal goes in the square pad at the "
-               "top (silkscreen '+'), the locating post in the 2.0 mm hole next to it; the post makes a reversed "
-               "holder impossible if the footprint is right. The footprint is drawn from drawing MY-CP-0398 in the "
-               "LCSC datasheet, including the side of the locating post: compare it with a real holder first "
-               "(docs/cr123a_variant.md). BT1 is in the BOM and the CPL as a through-hole part: order JLC's "
-               "through-hole assembly for it or solder its two pins by hand." if D.CR123 else
+              "- Placement preview: every line of `orientation_check.md` (%sLED, ICs, "
+              "MOSFETs)." % ("" if D.CR123 else "holder, tantalum C5, " if D.VARIANT == "wroom" else
+                             "holder, electrolytic, "),
+              ("- The cell is NOT on this board. BT1 is two plated 1.0 mm holes on the left edge for the wires "
+               "from a CR123A holder mounted beside the board: square pad = + (marked '+' on both sides), round "
+               "pad = -. No holder is in the BOM/CPL; the user chooses and wires it (docs/cr123a_variant.md)."
+               if D.CR123 else
                "- Holder BT1 (MYOUNG BS-24-B4AA016): its + terminal must sit on pad 1, at the silkscreen '+' "
                "(%s). The footprint is drawn from the LCSC datasheet; compare it with a real part first "
                "(docs/assembly.md)." % ("on the back, left seen from the top" if D.VARIANT == "wroom" else "right")),
@@ -221,8 +219,9 @@ def blockers(rows, snap):
                "reversed part must not be powered." if D.VARIANT == "wroom" else
                "- C5 (470 uF electrolytic): + pad up, towards the converter; reversed, it leaks heavily, drains "
                "the cell and degrades."),
-              "- J1 is not fitted / not in the BOM (debug pads only).",
-              "- Test pads TP1..TP%d (silkscreen shows their net names) and fiducials have no parts." % n_tp,
+              "- J1 is not fitted / not in the BOM (debug pads only%s)." % (", on the back" if D.CR123 else ""),
+              "- Test pads TP1..TP%d (silkscreen shows their net names%s) and fiducials have no parts."
+              % (n_tp, "; on the back" if D.CR123 else ""),
               {"module": "- PCB options: 2 layers, 1.6 mm FR-4, 1 oz, tented vias (set in the board file), "
                          "lead-free HASL or ENIG. The SHT40 tongue is cut free by a 1 mm L-shaped slot that "
                          "opens into the antenna notch (routed, not V-cut).",
@@ -236,7 +235,7 @@ def blockers(rows, snap):
                         "the left edge (routed, not V-cut).",
                "wroom123": "- PCB options: 4 layers, 1.6 mm, JLC stack-up JLC04161H-7628 (no impedance control "
                            "needed: no RF line on this board), tented vias (set in the board file), lead-free HASL "
-                           "or ENIG. The SHT40 tongue is cut free by a 1 mm L-shaped slot from the right edge "
+                           "or ENIG. The SHT40 tongue is cut free by a 1 mm L-shaped slot from the left edge "
                            "(routed, not V-cut)."}[D.VARIANT],
               *(["- U4 (QFN32, 0.4 mm pitch) has 9 GND vias in its exposed pad (HDG minimum): ask for via "
                  "filling/plugging or accept some solder wicking.",
@@ -254,8 +253,8 @@ def blockers(rows, snap):
               *(["- U4 (ESP32-H2-WROOM-02C-H4S) is NOT in this BOM/CPL: the user buys it and solders it by hand "
                  "(castellated pads with an iron; the thermal pad from the back through the 0.8 mm hole, "
                  "docs/wroom_variant.md). Its PCB antenna must overhang the top edge.",
-                 "- One-sided assembly: every part is on the top side. Fit the holder last (it covers nothing, "
-                 "but it is the tallest part).",
+                 "- One-sided assembly: every part is on the top side; the back carries only bare pads (J1, "
+                 "TP1..TP6) and the two wire holes.",
                  "- Firmware for this board: build with the sdkconfig.defaults.cr123a overlay "
                  "(docs/cr123a_variant.md)."] if D.CR123 else []),
               "- Nothing here proves the design works: see docs/test_plan.md (no prototype has been built)."]

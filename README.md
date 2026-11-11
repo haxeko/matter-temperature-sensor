@@ -15,7 +15,7 @@ Biến thể **TH-SENSOR-H2C Rev A** dùng **chip ESP32-H2FH4S rời** (QFN32) t
 
 Biến thể **TH-SENSOR-H2W Rev A** dùng **module ESP32-H2-WROOM-02C-H4S** (người dùng tự mua và hàn, không có trong BOM JLC) trên một **bo 4 lớp vuông 37.6 × 37.6 mm tính cả phần ăng-ten của module nhô ra ngoài mép trên** (bo 37.6 × 31.6 mm); holder CR2450 ở mặt dưới, tụ đệm C5 là tụ tantal thấp nên cả cụm cao ≈ 12.3 mm (ước tính), một nút USER/BOOT bấm cạnh ở giữa mép trái (không có nút RST), J1 là 6 pad dán; gắn tường với cạnh có nút quay xuống đất (nút bấm từ dưới lên, lưỡi cảm biến ở góc dưới); mạch nguồn, cảm biến và firmware như Rev B. File ở `hardware/wroom/`, mô tả và giới hạn ở `docs/wroom_variant.md`.
 
-Biến thể **TH-SENSOR-H2W-123 Rev A** là bo H2W chạy bằng **một pin CR123A** (1550 mAh) thay cho CR2450: pin nằm cạnh phần mạch trong đế hàn xuyên lỗ, không có tụ đệm 470 µF, có cầu chì tự phục hồi; bo 4 lớp 53.3 × 47.3 mm, vuông 53.3 × 53.3 mm tính cả ăng-ten; gắn tường với ăng-ten hướng lên, cảm biến và nút ở cạnh dưới. Theo mô hình (ƯỚC TÍNH), pin này cấp được mọi xung tải ở mọi trạng thái và cho tuổi thọ khoảng 2.3–2.6 năm thay vì 0.55–0.77 năm. Firmware build thêm lớp `sdkconfig.defaults.cr123a`. File ở `hardware/wroom123/`, mô tả ở `docs/cr123a_variant.md`.
+Biến thể **TH-SENSOR-H2W-123 Rev A** là bo H2W chạy bằng **một pin CR123A** (1550 mAh) thay cho CR2450. Pin **không nằm trên bo**: bo chỉ mang phần mạch, 4 lớp, **24.8 × 37.3 mm** (43.3 mm tính cả ăng-ten), pin đặt cạnh bo trong đế riêng và nối bằng hai dây; đặt cạnh một đế pin 18.2 × 43.3 mm thì cả cụm khoảng 43.3 × 43.3 mm. Không có tụ đệm 470 µF, có cầu chì tự phục hồi; pad nạp và test pad ở mặt sau; gắn tường với ăng-ten hướng lên, cảm biến và nút ở cạnh dưới. Theo mô hình (ƯỚC TÍNH), pin này cấp được mọi xung tải ở mọi trạng thái và cho tuổi thọ khoảng 2.3–2.6 năm. Pin sát bo chỉ cách ăng-ten khoảng 7 mm: tầm phủ CHƯA KIỂM THỬ. Chi tiết: `docs/cr123a_variant.md`.
 
 ## Trạng thái — đọc trước
 
@@ -40,7 +40,7 @@ Nhãn dùng trong toàn bộ repo: **ĐÃ XÁC MINH** (kiểm bằng công cụ 
 | Biến thể WROOM-02C H2W: hàn tay module, ăng-ten trên bo này, ảnh hưởng của pin ở mặt dưới, hướng gắn tường | **CHƯA KIỂM THỬ** | `docs/wroom_variant.md` |
 | Biến thể CR123A H2W-123: ERC, DRC + parity, pin map | ĐÃ XÁC MINH: 0 lỗi, 0 cảnh báo; 0 vi phạm, 0 pad chưa nối, 0 lỗi parity | `hardware/wroom123/reports/`, `tools/check_pinmap.py --variant wroom123` |
 | Biến thể CR123A H2W-123: khả năng cấp xung và tuổi thọ pin | ƯỚC TÍNH (mô hình khớp theo đồ thị datasheet) | `hardware/analysis/results/cr123a_summary.md` |
-| Biến thể CR123A H2W-123: footprint đế pin, ăng-ten cạnh pin, phần trăm pin, mọi phép đo | **CHƯA KIỂM THỬ** | `docs/cr123a_variant.md` |
+| Biến thể CR123A H2W-123: ăng-ten khi pin cách module ~7 mm, đấu dây pin, phần trăm pin, mọi phép đo | **CHƯA KIỂM THỬ** | `docs/cr123a_variant.md` |
 
 Chưa có đơn đặt PCB hay linh kiện nào. Chưa đo dòng, chưa ghép Matter với controller nào.
 
@@ -233,7 +233,7 @@ Mô hình năng lượng: `python3 hardware/analysis/power_model.py --plots` (~6
 | `docs/power_budget.md` | ngân sách dòng, tuổi thọ 25/50/100/200 µA, mô phỏng xung, tụ đệm, chế độ hỏng, phương án dự phòng |
 | `docs/decisions.md` | các quyết định thiết kế và lý do (D1–D22; D20 = Rev B, một CR2450; D21 = biến thể chip rời; D22 = biến thể WROOM-02C) |
 | `docs/chip_variant.md` | biến thể chip rời H2C: khác biệt, đối chiếu HDG, ăng-ten, phối hợp RF, stack-up 4 lớp, kiểm thử C-01…C-08 |
-| `docs/cr123a_variant.md` | biến thể CR123A H2W-123: vì sao CR123A (mô hình), bố trí pin cạnh mạch, đế pin và cầu chì, lớp cấu hình firmware, kiểm thử K-01…K-07 |
+| `docs/cr123a_variant.md` | biến thể CR123A H2W-123: vì sao CR123A (mô hình), bo 24.8 × 37.3 mm với pin nằm ngoài bo, nối pin và cầu chì, lớp cấu hình firmware, kiểm thử K-01…K-08 |
 | `docs/wroom_variant.md` | biến thể WROOM-02C H2W: kích thước vuông, vị trí module theo HDG, holder mặt dưới, C5 tantal, hướng gắn tường, hàn tay module, nút bấm cạnh, kiểm thử W-01…W-08 |
 | `docs/commissioning.md` | ghép Matter, cửa sổ commissioning, factory reset, dữ liệu sản xuất |
 | `docs/assembly.md` | file sản xuất, kiểm tra preview JLC, lắp tay, link đo dòng |

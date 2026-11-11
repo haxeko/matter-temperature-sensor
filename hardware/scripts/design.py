@@ -24,9 +24,9 @@ Four board variants share everything except the radio part and, for the last one
   wroom   TH-SENSOR-H2W Rev A: ESP32-H2-WROOM-02C-H4S module (bought and hand-soldered by the user, not in
           the JLC BOM) on a square 4-layer board, the module antenna overhanging the top edge
           -> hardware/wroom/kicad, hardware/wroom/production, ... (docs/wroom_variant.md)
-  wroom123  TH-SENSOR-H2W-123 Rev A: the wroom circuit with ONE CR123A (IEC CR17345) in a through-hole holder
-          beside the electronics instead of the CR2450; no 470 uF buffer (the cell supplies the radio bursts
-          itself), a resettable fuse at the cell -> hardware/wroom123/... (docs/cr123a_variant.md)
+  wroom123  TH-SENSOR-H2W-123 Rev A: the wroom circuit for ONE CR123A (IEC CR17345) that sits beside the board and
+          is wired to two pads; no 470 uF bulk capacitor (the cell carries the radio bursts itself), a
+          resettable fuse at the + pad -> hardware/wroom123/... (docs/cr123a_variant.md)
 The firmware is the same for all four (every GPIO keeps its function); the CR123A board is built with the
 sdkconfig.defaults.cr123a overlay (battery table and Power Source texts).
 """
@@ -155,7 +155,6 @@ SRC = {
     "KT0603R": ("C2286", "KENTO", "KT-0603R"),
     "EVQP7A": ("C79167", "PANASONIC", "EVQP7A01P"),       # side-push tactile switch (wroom variant)
     # CR123A variant (JLC parts search 2026-11-11)
-    "BH123A": ("C5290177", "MYOUNG", "BH-123A-A1CJ002"),  # CR123A holder, through-hole, drawing MY-CP-0398
     "PTC_0A5": ("C883122", "BHFUSE", "BSMD1206-050-6V"),  # resettable fuse 1206: hold 0.5 A, trip 1 A, 6 V
     # chip variant (JLC parts search 2026-11-06)
     "H2FH4S": ("C50392664", "Espressif", "ESP32-H2FH4S"),
@@ -186,15 +185,18 @@ def part(ref, lib_id, value, footprint, pins, src=None, dnp=False, in_bom=True, 
 
 # ------------------------------------------------------------------ power path (one CR2450)
 if CR123:
-    # A CR123A can deliver amperes into a short (Energizer 123: 1.5 A continuous, 3.5 A pulse), a coin cell
-    # cannot: F1 sits directly at the holder's + pin, before anything else. Its resistance (0.15 .. 0.7 Ohm,
-    # JLC listing) drops at most 0.07 V at the converter's 100 mA input limit.
-    part("BT1", "Device:Battery_Cell", "CR123A holder", "th_sensor:BatteryHolder_MYOUNG_BH-123A-A1CJ002_1xCR123A",
-         {"1": "VCELL", "2": "GND"}, src="BH123A",
-         desc="CR123A through-hole holder, nickel-plated stainless contacts, PA66 UL94 V-0 (pin 1 = +, next to "
-              "the locating post)")
+    # The cell is not on the board (user, 2026-11-11: the PCB covers the electronics only, the CR123A sits beside
+    # it): BT1 is two plated holes for the wires from the cell holder. A CR123A can deliver amperes into a short
+    # (Energizer 123: 1.5 A continuous, 3.5 A pulse), a coin cell cannot: F1 sits directly at the + pad, before
+    # anything else. Its resistance (0.15 .. 0.7 Ohm, JLC listing) drops at most 0.07 V at the converter's
+    # 100 mA input limit.
+    part("BT1", "Device:Battery_Cell", "CR123A (off board)", "th_sensor:BatteryWirePads_1x02_P2.54mm_D1.0mm",
+         {"1": "VCELL", "2": "GND"}, in_bom=False,
+         desc="Off-board CR123A: two plated 1.0 mm holes at 2.54 mm for the wires from the cell holder "
+              "(pad 1 = +, square); not a part, nothing to place")
     part("F1", "Device:Polyfuse", "0.5A", "Fuse:Fuse_1206_3216Metric", {"1": "VCELL", "2": "VBAT"}, src="PTC_0A5",
-         spec="PTC 6V hold 0.5A trip 1A 1206", desc="Resettable fuse at the cell: limits the current into a fault")
+         spec="PTC 6V hold 0.5A trip 1A 1206",
+         desc="Resettable fuse at the cell wires: limits the current into a fault")
 else:
     part("BT1", "Device:Battery_Cell", "CR2450 holder", "th_sensor:BatteryHolder_MYOUNG_BS-24-B4AA016_1x2450",
          {"1": "VBAT", "2": "GND"}, src="BS24SMT",

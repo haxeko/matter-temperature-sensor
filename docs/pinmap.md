@@ -136,7 +136,7 @@ Chân khác của module: 1 3V3 và 14 VBAT (đều +3V3; VBAT đã nối 3V3 tr
 
 ## Biến thể CR123A (TH-SENSOR-H2W-123)
 
-Cùng module và cùng bảng chân như H2W ở trên; chỉ khác phần nguồn trước `VBAT` (đế CR123A → F1 → VBAT; net mới `VCELL` giữa cực + và F1, không tới chân nào của module). Kiểm bằng:
+Cùng module và cùng bảng chân như H2W ở trên; chỉ khác phần nguồn trước `VBAT` (hai lỗ hàn dây pin BT1 → F1 → VBAT; net mới `VCELL` giữa lỗ + và F1, không tới chân nào của module). J1 (cùng thứ tự chân) và các test pad là pad trần ở mặt sau. Kiểm bằng:
 
 ```sh
 python3 tools/check_pinmap.py --variant wroom123

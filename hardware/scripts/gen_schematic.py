@@ -82,10 +82,10 @@ def write_project_libs():
         open(os.path.join(LIB, "th_sensor.pretty", ANT_FP + ".kicad_mod"), "w").write(ti_dn007_ifa())
     if D.WROOM:
         open(os.path.join(LIB, "th_sensor.pretty", WROOM_FP + ".kicad_mod"), "w").write(wroom02c_footprint())
-        open(os.path.join(LIB, "th_sensor.pretty", TESTPADS_FP + ".kicad_mod"), "w").write(testpads_2x03())
+        open(os.path.join(LIB, "th_sensor.pretty", TESTPADS_FP + ".kicad_mod"), "w").write(testpads_2x03(frame=not D.CR123))
     open(os.path.join(LIB, "th_sensor.pretty", "L_Murata_DFE201612E.kicad_mod"), "w").write(murata_dfe201612e())
     if D.CR123:
-        open(os.path.join(LIB, "th_sensor.pretty", BH123A_FP + ".kicad_mod"), "w").write(myoung_bh123a_a1cj002())
+        open(os.path.join(LIB, "th_sensor.pretty", BATPADS_FP + ".kicad_mod"), "w").write(battery_wire_pads())
     else:
         open(os.path.join(LIB, "th_sensor.pretty", "BatteryHolder_MYOUNG_BS-24-B4AA016_1x2450.kicad_mod"), "w").write(
             myoung_bs24_b4aa016())
@@ -290,9 +290,12 @@ def wroom02c_footprint():
 TESTPADS_FP = "TestPads_2x03_P2.54mm_SMD"
 
 
-def testpads_2x03():
+def testpads_2x03(frame=True):
     """Debug pads in the 2 x 3 header layout (2.54 mm, same numbering as PinHeader_2x03), SMD only (no holes):
-    1.6 mm pads for soldering wires or for pogo pins; pad 1 square. No paste (nothing is placed on them)."""
+    1.6 mm pads for soldering wires or for pogo pins; pad 1 square. No paste (nothing is placed on them).
+    frame=False leaves out the silkscreen frame (CR123A board: the pads are on the back with a name beside each)."""
+    silk = ('\t(fp_rect (start -1.27 -1.27) (end 3.81 6.35) (stroke (width 0.12) (type solid)) (fill no) '
+            '(layer "F.SilkS") (uuid "%s"))\n' % new_uuid("fp-tp2x3-silk")) if frame else ""
     u = lambda s_: new_uuid("fp-tp2x3-" + s_)
     pads = []
     for k in range(6):
@@ -309,8 +312,7 @@ def testpads_2x03():
 	(property "Reference" "REF**" (at 1.27 -2.2 0) (layer "F.SilkS") (uuid "{u('ref')}") (effects (font (size 0.8 0.8) (thickness 0.15))))
 	(property "Value" "{TESTPADS_FP}" (at 1.27 7.3 0) (layer "F.Fab") (uuid "{u('val')}") (effects (font (size 0.8 0.8) (thickness 0.12))))
 	(attr smd)
-	(fp_rect (start -1.27 -1.27) (end 3.81 6.35) (stroke (width 0.12) (type solid)) (fill no) (layer "F.SilkS") (uuid "{u('silk')}"))
-	(fp_rect (start -1.0 -1.0) (end 3.54 6.08) (stroke (width 0.1) (type solid)) (fill no) (layer "F.Fab") (uuid "{u('fab')}"))
+{silk}	(fp_rect (start -1.0 -1.0) (end 3.54 6.08) (stroke (width 0.1) (type solid)) (fill no) (layer "F.Fab") (uuid "{u('fab')}"))
 	(fp_rect (start -1.05 -1.05) (end 3.59 6.13) (stroke (width 0.05) (type solid)) (fill no) (layer "F.CrtYd") (uuid "{u('crt')}"))
 	(fp_text user "${{REFERENCE}}" (at 1.27 2.54 90) (layer "F.Fab") (uuid "{u('fabref')}") (effects (font (size 0.8 0.8) (thickness 0.12))))
 {chr(10).join(pads)}
@@ -407,45 +409,28 @@ def myoung_bs24_b4aa016():
 '''
 
 
-BH123A_FP = "BatteryHolder_MYOUNG_BH-123A-A1CJ002_1xCR123A"
+BATPADS_FP = "BatteryWirePads_1x02_P2.54mm_D1.0mm"
 
 
-def myoung_bh123a_a1cj002():
-    """CR123A through-hole holder MYOUNG BH-123A-A1CJ002 (LCSC C5290177), drawing MY-CP-0398 (2024-03-07):
-    body 43.3 x 18.2 mm, 14.2 mm high, two blade terminals (0.8 x 0.3 mm, 4.1 mm long) 37.5 +-0.5 mm apart on the
-    centre line in 1.8 mm holes, one locating post (1.4 mm dia., 1.7 mm long) in a 2.0 mm hole, 18.95 mm from
-    the centre and 8.4 mm from the terminal row, at the + end. Origin = body centre, component-side view.
-
-    Which side of the row the post is on: the drawing's "PCB Layout Diagram" is a bottom view with '+' on the
-    left, as in the top view, so it is the top view flipped about the long axis; the post is below the row there
-    and therefore above it (-y) from the component side. The end view agrees (post at the top). Pad 1 = + (the
-    terminal next to the post), pad 2 = -. To be compared with a real holder before ordering boards."""
-    u = lambda s_: new_uuid("fp-bh123a-" + s_)
-    bx, by = 21.65, 9.1
-    return f'''(footprint "{BH123A_FP}"
+def battery_wire_pads():
+    """Connection of an off-board cell: two plated holes (1.0 mm drill, 2.0 mm pad) 2.54 mm apart, for wires up to
+    about 0.8 mm conductor diameter or a 2-pin 2.54 mm header. Pad 1 = + (square), pad 2 = -. Origin = pad 1.
+    The polarity marks are placed on both silkscreens by the PCB script (wires can enter from either side)."""
+    u = lambda s_: new_uuid("fp-batpads-" + s_)
+    return f'''(footprint "{BATPADS_FP}"
 	(version 20241229)
 	(generator "th_sensor_gen")
 	(layer "F.Cu")
-	(descr "CR123A (CR17345) through-hole battery holder, MYOUNG BH-123A-A1CJ002 (LCSC C5290177), PA66 UL94 V-0, nickel-plated stainless contacts, 43.3 x 18.2 x 14.2 mm; PCB layout per drawing MY-CP-0398: two 1.8 mm holes 37.5 mm apart, one 2.0 mm locating hole")
-	(tags "battery holder CR123A CR17345 tht")
-	(property "Reference" "REF**" (at 0 -10.6 0) (layer "F.SilkS") (uuid "{u('ref')}") (effects (font (size 1 1) (thickness 0.15))))
-	(property "Value" "{BH123A_FP}" (at 0 10.6 0) (layer "F.Fab") (uuid "{u('val')}") (effects (font (size 1 1) (thickness 0.15))))
-	(attr through_hole)
-	(fp_line (start -17.4 -{by + 0.12:.2f}) (end {bx + 0.12:.2f} -{by + 0.12:.2f}) (stroke (width 0.12) (type solid)) (layer "F.SilkS") (uuid "{u('s1')}"))
-	(fp_line (start {bx + 0.12:.2f} -{by + 0.12:.2f}) (end {bx + 0.12:.2f} {by + 0.12:.2f}) (stroke (width 0.12) (type solid)) (layer "F.SilkS") (uuid "{u('s2')}"))
-	(fp_line (start {bx + 0.12:.2f} {by + 0.12:.2f}) (end -{bx + 0.12:.2f} {by + 0.12:.2f}) (stroke (width 0.12) (type solid)) (layer "F.SilkS") (uuid "{u('s3')}"))
-	(fp_line (start -{bx + 0.12:.2f} {by + 0.12:.2f}) (end -{bx + 0.12:.2f} -6.9) (stroke (width 0.12) (type solid)) (layer "F.SilkS") (uuid "{u('s4')}"))
-	(fp_line (start -15.6 0) (end -13.6 0) (stroke (width 0.2) (type solid)) (layer "F.SilkS") (uuid "{u('p1')}"))
-	(fp_line (start -14.6 -1.0) (end -14.6 1.0) (stroke (width 0.2) (type solid)) (layer "F.SilkS") (uuid "{u('p2')}"))
-	(fp_line (start 13.6 0) (end 15.6 0) (stroke (width 0.2) (type solid)) (layer "F.SilkS") (uuid "{u('m1')}"))
-	(fp_rect (start -{bx:.2f} -{by:.2f}) (end {bx:.2f} {by:.2f}) (stroke (width 0.1) (type solid)) (fill no) (layer "F.Fab") (uuid "{u('fb')}"))
-	(fp_rect (start -17.25 -8.5) (end 17.25 8.5) (stroke (width 0.1) (type solid)) (fill no) (layer "F.Fab") (uuid "{u('fc')}"))
-	(fp_rect (start -{bx + 0.25:.2f} -{by + 0.25:.2f}) (end {bx + 0.25:.2f} {by + 0.25:.2f}) (stroke (width 0.05) (type solid)) (fill no) (layer "F.CrtYd") (uuid "{u('crt')}"))
-	(fp_text user "${{REFERENCE}}" (at 0 0 0) (layer "F.Fab") (uuid "{u('fabref')}") (effects (font (size 1 1) (thickness 0.15))))
-	(fp_text user "CR123A" (at 0 3.0 0) (layer "F.Fab") (uuid "{u('fabcell')}") (effects (font (size 1 1) (thickness 0.15))))
-	(pad "1" thru_hole rect (at -18.75 0) (size 3.2 3.2) (drill 1.8) (layers "*.Cu" "*.Mask") (uuid "{u('pad1')}"))
-	(pad "2" thru_hole circle (at 18.75 0) (size 3.2 3.2) (drill 1.8) (layers "*.Cu" "*.Mask") (uuid "{u('pad2')}"))
-	(pad "" np_thru_hole circle (at -18.95 -8.4) (size 2 2) (drill 2) (layers "*.Cu" "*.Mask") (uuid "{u('post')}"))
+	(descr "Wire pads for an off-board battery: two plated 1.0 mm holes at 2.54 mm, 2.0 mm pads, pad 1 = + (square)")
+	(tags "battery wire pads tht")
+	(property "Reference" "REF**" (at 0 -2.0 0) (layer "F.SilkS") (uuid "{u('ref')}") (effects (font (size 0.8 0.8) (thickness 0.15))))
+	(property "Value" "{BATPADS_FP}" (at 0 4.6 0) (layer "F.Fab") (uuid "{u('val')}") (effects (font (size 0.8 0.8) (thickness 0.12))))
+	(attr through_hole exclude_from_pos_files exclude_from_bom)
+	(fp_rect (start -1.0 -1.0) (end 1.0 3.54) (stroke (width 0.1) (type solid)) (fill no) (layer "F.Fab") (uuid "{u('fab')}"))
+	(fp_rect (start -1.25 -1.25) (end 1.25 3.79) (stroke (width 0.05) (type solid)) (fill no) (layer "F.CrtYd") (uuid "{u('crt')}"))
+	(fp_text user "${{REFERENCE}}" (at 0 1.27 90) (layer "F.Fab") (uuid "{u('fabref')}") (effects (font (size 0.8 0.8) (thickness 0.12))))
+	(pad "1" thru_hole rect (at 0 0) (size 2 2) (drill 1) (layers "*.Cu" "*.Mask") (uuid "{u('pad1')}"))
+	(pad "2" thru_hole circle (at 0 2.54) (size 2 2) (drill 1) (layers "*.Cu" "*.Mask") (uuid "{u('pad2')}"))
 	(embedded_fonts no)
 )
 '''
@@ -669,7 +654,7 @@ def power_block(yc):
         S.stub(rr, "2")
     S.text("SEL = L: VO(1) = 3.3 V (RCFG3 16.2k, table 7-3). Input current limit 100 mA from RCFG1 0R / RCFG2 10.5k\n"
            "(table 7-2; 13.3k = 50 mA option). TI SLVSET3D, +-1 %% resistors. %s"
-           % ("F1: resettable fuse at the cell; no 470 uF buffer (CR123A)." if D.CR123 else
+           % ("BT1: CR123A beside the board, wired to two pads. F1: resettable fuse; no 470 uF buffer." if D.CR123 else
               "C5: 470 uF electrolytic buffer."),
            (x0 + 1.27, yc + 41.91), size=1.27)
 

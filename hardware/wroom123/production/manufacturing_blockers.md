@@ -13,7 +13,6 @@ Nothing here has been ordered. Re-run `tools/jlc_lookup.py` and this script befo
 
 ## Extended parts (each adds JLC's extended-part setup fee)
 
-- BT1: BH-123A-A1CJ002 (C5290177)
 - F1: BSMD1206-050-6V (C883122)
 - L1: DFE201612E-2R2M=P2 (C337893)
 - R3: 0603WAF1052T5E (C22855)
@@ -25,13 +24,13 @@ Nothing here has been ordered. Re-run `tools/jlc_lookup.py` and this script befo
 
 ## Checks that need a person
 
-- Placement preview: every line of `orientation_check.md` (holder, LED, ICs, MOSFETs).
-- Holder BT1 (MYOUNG BH-123A-A1CJ002, through-hole): its + terminal goes in the square pad at the top (silkscreen '+'), the locating post in the 2.0 mm hole next to it; the post makes a reversed holder impossible if the footprint is right. The footprint is drawn from drawing MY-CP-0398 in the LCSC datasheet, including the side of the locating post: compare it with a real holder first (docs/cr123a_variant.md). BT1 is in the BOM and the CPL as a through-hole part: order JLC's through-hole assembly for it or solder its two pins by hand.
+- Placement preview: every line of `orientation_check.md` (LED, ICs, MOSFETs).
+- The cell is NOT on this board. BT1 is two plated 1.0 mm holes on the left edge for the wires from a CR123A holder mounted beside the board: square pad = + (marked '+' on both sides), round pad = -. No holder is in the BOM/CPL; the user chooses and wires it (docs/cr123a_variant.md).
 - No bulk capacitor C5 on this board (the CR123A supplies the radio bursts); F1 (resettable fuse) is not polarised.
-- J1 is not fitted / not in the BOM (debug pads only).
-- Test pads TP1..TP6 (silkscreen shows their net names) and fiducials have no parts.
-- PCB options: 4 layers, 1.6 mm, JLC stack-up JLC04161H-7628 (no impedance control needed: no RF line on this board), tented vias (set in the board file), lead-free HASL or ENIG. The SHT40 tongue is cut free by a 1 mm L-shaped slot from the right edge (routed, not V-cut).
+- J1 is not fitted / not in the BOM (debug pads only, on the back).
+- Test pads TP1..TP6 (silkscreen shows their net names; on the back) and fiducials have no parts.
+- PCB options: 4 layers, 1.6 mm, JLC stack-up JLC04161H-7628 (no impedance control needed: no RF line on this board), tented vias (set in the board file), lead-free HASL or ENIG. The SHT40 tongue is cut free by a 1 mm L-shaped slot from the left edge (routed, not V-cut).
 - U4 (ESP32-H2-WROOM-02C-H4S) is NOT in this BOM/CPL: the user buys it and solders it by hand (castellated pads with an iron; the thermal pad from the back through the 0.8 mm hole, docs/wroom_variant.md). Its PCB antenna must overhang the top edge.
-- One-sided assembly: every part is on the top side. Fit the holder last (it covers nothing, but it is the tallest part).
+- One-sided assembly: every part is on the top side; the back carries only bare pads (J1, TP1..TP6) and the two wire holes.
 - Firmware for this board: build with the sdkconfig.defaults.cr123a overlay (docs/cr123a_variant.md).
 - Nothing here proves the design works: see docs/test_plan.md (no prototype has been built).

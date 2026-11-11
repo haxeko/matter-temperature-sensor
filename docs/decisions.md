@@ -160,6 +160,8 @@ Người dùng chọn sửa bốn lỗi trong bản đánh giá mã nguồn ("m�
 
 ## D24. Biến thể CR123A TH-SENSOR-H2W-123 Rev A (2026-11-11)
 
+**Bản bố trí đầu tiên mô tả ở đây (bo liền 53.3 × 47.3 mm, đế pin trên bo; commit `d85e807`) đã được thay bằng bản ở D25 theo yêu cầu thứ hai của người dùng cùng ngày.** Các gạch đầu dòng về bỏ C5, thêm F1, firmware dùng chung và chữ ở mặt sau vẫn đúng với bản hiện tại; các gạch đầu dòng về kích thước 34.5 mm, bo liền và đế pin trên bo chỉ còn là lịch sử.
+
 - **Yêu cầu**: "Làm mục 1 và 3, chiều ngang board là 34,5cm bố trí như hình vẽ. Màu đen là cr123a xanh lá là pcb đỏ là esp h2 wroom hồng là cảm sht40, tổng thế thiết bị là vuông" ("mục 3" = thiết kế một biến thể dùng CR123A, sau bản so sánh CR2450 với CR123A). Đổi loại pin là quyết định của người dùng; Rev B, H2C và H2W giữ nguyên CR2450.
 - **Cách hiểu đã báo người dùng kèm hình bố trí đúng tỉ lệ, chưa được xác nhận lại**: (1) "34,5cm" là 34.5 mm và là bề rộng phần mạch — đế pin dài 43.3 mm nên cạnh thiết bị không thể là 34.5 mm; cả thiết bị vuông 53.3 mm tính cả 6 mm ăng-ten nhô ra. (2) Bo một tấm liền, đế pin hàn lên bo (hình vẽ có thể hiểu là pin nằm ngoài bo). (3) Pin ở bên **trái**, tức ảnh gương của hình vẽ, để module đứng ở vị trí ③ của HDG và cách pin 16 mm. Nếu người dùng muốn khác, cả ba điểm đều đổi được bằng cách sửa `gen_pcb_wroom123.py` và sinh lại.
 - **Đế pin**: MYOUNG BH-123A-A1CJ002 (LCSC C5290177), xuyên lỗ, có chốt định vị. Chọn vì có ở JLC, có bản vẽ đầy đủ, và cùng hãng với đế CR2450 đang dùng. Footprint vẽ từ bản vẽ, chưa so với đế thật (K-01).
@@ -168,3 +170,15 @@ Người dùng chọn sửa bốn lỗi trong bản đánh giá mã nguồn ("m�
 - **Firmware dùng chung**, chọn loại pin bằng Kconfig (`APP_CELL_TYPE`) và lớp `sdkconfig.defaults.cr123a`, thay vì tách nhánh mã: bảng phần trăm, chuỗi IEC/dung lượng của cụm Power Source và các ngưỡng mặc định phụ thuộc loại pin; pin map không đổi.
 - **Chữ ở mặt sau** ("Matter temperature Sensor / Villa Nest / Made in Vietnam") được mang sang từ H2W; người dùng mới chỉ yêu cầu dòng chữ đó cho H2W. Ghi chú về nhãn hiệu Matter ở `docs/limitations.md` mục 11 áp dụng nguyên.
 - **Script riêng** `gen_pcb_wroom123.py` (bản sao có chỉnh sửa của `gen_pcb_wroom.py`) thay vì thêm nhánh vào script H2W, để bo H2W sinh lại giống từng byte (đã kiểm: `git status` không thấy thay đổi ở `hardware/kicad`, `hardware/chip/kicad`, `hardware/wroom/kicad`).
+
+## D25. H2W-123: bo chỉ còn phần mạch, thu nhỏ hết mức, pin ngoài bo (2026-11-11)
+
+- **Yêu cầu**: người dùng khoanh phần mạch (không gồm pin) trên hình bố trí của bản D24 và viết "Chỉ bố trí pcb khu vực này, thu gọn mạch nhỏ nhất có thể giữ nguyên vị trí sht40 và nút bấm như hình vẽ." Điểm (2) trong cách hiểu ở D24 (bo liền, đế pin trên bo) như vậy là sai.
+- **Cách hiểu, chưa được xác nhận lại**: (1) pin và đế pin nằm ngoài bo, nối bằng dây; (2) "nhỏ nhất có thể" cho phép thu bề rộng xuống dưới 34.5 mm; (3) "giữ nguyên vị trí" là giữ cả hai ở mép dưới, SHT40 bên trái nút; nút giữ đúng 7.4 mm tới mép phải, còn SHT40 dời tới góc dưới trái vì lưỡi tách nhiệt ở góc chỉ cần rãnh chữ L.
+- **Kích thước 24.8 × 37.3 mm**: bề rộng do hàng bộ chuyển đổi (23.1 mm courtyard), chiều cao do bốn hàng linh kiện. Hai số này cũng cho khung vuông 43.3 mm khi đặt cạnh một đế 18.2 × 43.3 mm ("tổng thể thiết bị là vuông" trong yêu cầu đầu). Có thể hẹp thêm khoảng 1 mm nếu xếp lại hàng bộ chuyển đổi; không làm vì khi đó khung không còn vuông và phải vạch lại khối nguồn đã kiểm.
+- **Nối pin bằng hai lỗ hàn dây (BT1)** thay vì chọn một đế hay kẹp cụ thể: cách giữ pin thuộc về vỏ, chưa có thiết kế vỏ. Bước 2.54 mm để cũng lắp được hàng chân. BT1 không vào BOM.
+- **Đánh đổi đã biết**: pin sát bo chỉ cách module khoảng 7 mm (bản D24: 16 mm; Espressif khuyên ≥ 15 mm). Người dùng yêu cầu kích thước nhỏ nhất; rủi ro tầm phủ ghi ở `docs/limitations.md` mục 12 và phép thử K-04.
+- **J1 và test pad chuyển sang mặt sau** (pad trần): ở mặt trên chúng chiếm khoảng 75 mm², tức 8 % bo. Hệ quả: phải lật bo để nạp và đo; khi đã gắn tường thì không tới được.
+- **Đi dây trên F.Cu + B.Cu**, In1 và In2 là mặt GND (H2W dùng In2 để đi dây vì mặt dưới có đế pin). Ba đường dài ở mặt sau (SCL, SDA, nút bấm tới J1) vạch tay, vì bộ đi dây tự động xếp thứ tự nào cũng bao kín một net.
+- **Cầu đo pin đặt lại** quanh tụ C31 ở chân 4 (nút trở kháng cao dài 3 mm thay vì chạy vòng), R22 dời sang cạnh U3; I2C và nút bấm rời module qua via dưới module.
+- Tên biến thể, thư mục, lớp firmware và nhãn Rev A giữ nguyên (chưa có bo nào được làm theo bản D24).

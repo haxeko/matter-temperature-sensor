@@ -87,6 +87,6 @@ Các mục A–E áp dụng nguyên cho H2W (cùng tên net và điểm đo; T-1
 
 ## H. Biến thể CR123A (H2W-123)
 
-Các mục A–E và G áp dụng cho H2W-123 với các khác biệt: không có C5 (bỏ T-39); pin là CR123A nên các mục dùng "pin đã dùng một nửa" (T-35, T-37) làm với CR123A đã xả trước; firmware build với lớp `sdkconfig.defaults.cr123a`. W-01, W-03 và W-04 (pin và holder ở mặt dưới) không áp dụng. Thêm K-01…K-07 (footprint đế pin so với đế thật, cầu chì F1, khởi động với pin gần hết và lạnh, tầm phủ có và không có pin, bảng phần trăm pin, dòng trung bình, gắn tường): bảng ở `docs/cr123a_variant.md` mục 9. Làm **K-01 trước khi đặt PCB** và W-02 trước khi lắp pin lần đầu.
+Các mục A–E và G áp dụng cho H2W-123 với các khác biệt: pin nằm ngoài bo, nối bằng dây vào hai lỗ BT1; J1 và mọi test pad ở mặt sau (T-10 nạp qua 6 pad J1 ở mặt sau); không có C5 (bỏ T-39); pin là CR123A nên các mục dùng "pin đã dùng một nửa" (T-35, T-37) làm với CR123A đã xả trước; firmware build với lớp `sdkconfig.defaults.cr123a`. W-01, W-03 và W-04 (pin và holder ở mặt dưới) không áp dụng. Thêm K-01…K-08 (cực của dây pin, cầu chì F1, khởi động với pin gần hết và lạnh, tầm phủ khi pin sát bo, bảng phần trăm pin, dòng trung bình, gắn tường, tự sưởi): bảng ở `docs/cr123a_variant.md` mục 9. Làm **K-01 trước lần cấp điện đầu tiên**, W-02 trước khi lắp pin, và **K-04 trước khi làm nhiều bo** (pin sát bo chỉ cách ăng-ten khoảng 7 mm).
 
 Chứng nhận (Matter, FCC/CE, an toàn pin) **không nằm trong phạm vi** và không được tuyên bố.
