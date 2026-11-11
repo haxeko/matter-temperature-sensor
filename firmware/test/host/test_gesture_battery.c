@@ -259,6 +259,56 @@ static void test_pack_level(void)
     CHECK_EQ_INT(bat_pack_update(&st3, &pol, &p), BAT_LEVEL_OK);
 }
 
+/* CR123A: its own table and thresholds (the H2W-123 board). */
+static void test_cr123a_table_and_level(void)
+{
+    CHECK_EQ_INT(bat_half_percent(BAT_CELL_CR123A, 3200), 200);
+    CHECK_EQ_INT(bat_half_percent(BAT_CELL_CR123A, 3000), 200);
+    CHECK_EQ_INT(bat_half_percent(BAT_CELL_CR123A, 2900), 72);     /* 36 %: end of the plateau */
+    CHECK_EQ_INT(bat_half_percent(BAT_CELL_CR123A, 2650), 20);     /* 10 % */
+    CHECK_EQ_INT(bat_half_percent(BAT_CELL_CR123A, 2000), 0);
+    CHECK_EQ_INT(bat_half_percent(BAT_CELL_CR123A, 1700), 0);
+    CHECK_EQ_INT(bat_half_percent(BAT_CELL_CR2450, 2900), 100);    /* the coin table is untouched */
+    uint8_t prev = 255;
+    int monotonic = 1;
+    for (uint32_t mv = 1900; mv <= 3300; mv += 5) {
+        uint8_t p = bat_half_percent(BAT_CELL_CR123A, mv);
+        if (prev != 255 && p < prev) {
+            monotonic = 0;
+        }
+        prev = p;
+    }
+    CHECK(monotonic);
+
+    const bat_policy_t pol = BAT_POLICY_INIT_CR123A(1500, 20, 8);
+    CHECK_EQ_INT(pol.cell, BAT_CELL_CR123A);
+    const bat_policy_t coin = BAT_POLICY_INIT(1500, 40, 20);
+    CHECK_EQ_INT(coin.cell, BAT_CELL_CR2450);
+    const uint32_t plateau[BAT_CELL_COUNT] = {2920};
+    bat_pack_t p;
+    bat_pack_from_cells_for(&p, plateau, &pol);
+    CHECK_EQ_INT(p.cells_present, 1);
+    CHECK(p.pack_half_pct > 72 && p.pack_half_pct < 140);            /* somewhere on the plateau */
+    bat_state_t st = {0};
+    CHECK_EQ_INT(bat_pack_update(&st, &pol, &p), BAT_LEVEL_OK);
+    const uint32_t knee[BAT_CELL_COUNT] = {2780};                   /* ~19.6 % < 20 % */
+    bat_pack_from_cells_for(&p, knee, &pol);
+    CHECK_EQ_INT(bat_pack_update(&st, &pol, &p), BAT_LEVEL_WARNING);
+    const uint32_t low[BAT_CELL_COUNT] = {2600};                    /* ~8.3 %: still Warning */
+    bat_pack_from_cells_for(&p, low, &pol);
+    CHECK_EQ_INT(bat_pack_update(&st, &pol, &p), BAT_LEVEL_WARNING);
+    const uint32_t empty[BAT_CELL_COUNT] = {2490};                  /* below 2500 mV */
+    bat_pack_from_cells_for(&p, empty, &pol);
+    CHECK_EQ_INT(bat_pack_update(&st, &pol, &p), BAT_LEVEL_CRITICAL);
+    const uint32_t fresh[BAT_CELL_COUNT] = {3100};
+    bat_pack_from_cells_for(&p, fresh, &pol);
+    CHECK_EQ_INT(bat_pack_update(&st, &pol, &p), BAT_LEVEL_OK);
+    /* the policy-based call with a coin policy equals the plain one */
+    const uint32_t c[BAT_CELL_COUNT] = {2900};
+    bat_pack_from_cells_for(&p, c, &coin);
+    CHECK_EQ_INT(p.pack_half_pct, 100);
+}
+
 static void test_percent_filter(void)
 {
     CHECK_EQ_INT(bat_filter_half_percent(false, 0, 150), 150);
@@ -288,4 +338,5 @@ void test_battery_all(void)
     run_test("battery: one-cell pack / missing reading", test_pack_aggregate);
     run_test("battery: pack charge level hysteresis", test_pack_level);
     run_test("battery: percent jitter filter", test_percent_filter);
+    run_test("battery: CR123A table and levels", test_cr123a_table_and_level);
 }

@@ -39,6 +39,7 @@ chip-tool powersource read bat-voltage 1 0
 |---|---|
 | Khởi động lần đầu, chưa có fabric | quảng bá BLE + DNS-SD, cửa sổ 180 s (`CONFIG_CHIP_DISCOVERY_TIMEOUT_SECS`) |
 | Nhấn USER 3 lần trong 2 s | `OpenBasicCommissioningWindow(180 s)`; nếu đã có fabric chỉ quảng bá trên mạng (DNS-SD), nếu chưa có thì BLE + mạng. Các fabric hiện có **được giữ nguyên**. LED nháy 3 × 80 ms khi cửa sổ mở |
+| Nhấn USER 3 lần sau khi fabric cuối cùng đã bị gỡ (xóa thiết bị khỏi ứng dụng) | BLE đã bị giải phóng từ lúc ghép xong và không bật lại được trong lần chạy này, nên thiết bị nháy LED 3 × 80 ms rồi **tự khởi động lại**; sau khi khởi động (không còn fabric) nó tự quảng bá BLE + DNS-SD 180 s. Ngay sau khi fabric cuối bị gỡ, thiết bị vẫn mở một cửa sổ chỉ-trên-mạng 180 s như trước |
 | Lệnh console `window` | như trên |
 | Cửa sổ đang mở | nhấn 3 lần không mở thêm; LED vẫn báo đang mở |
 
@@ -48,7 +49,7 @@ BLE chỉ dùng cho commissioning và được giải phóng sau khi ghép xong 
 
 ## 4. Factory reset
 
-Giữ nút USER ≥ 10 s (LED sáng liên tục) rồi **thả** ⇒ LED nháy 8 × 60 ms, xóa: các fabric, Thread dataset, KVS của Matter, cấu hình ứng dụng (offset, chu kỳ đo, LED, TX power). Không xóa phân vùng `fctry` và `esp_secure_cert` (dữ liệu nhà máy). Giữ ≥ 60 s bị coi là kẹt nút và không reset. Lệnh console: `factory_reset confirm`.
+Giữ nút USER ≥ 10 s (LED sáng liên tục) rồi **thả** ⇒ LED nháy 8 × 60 ms, xóa: các fabric, Thread dataset, KVS của Matter, cấu hình ứng dụng (offset, chu kỳ đo, LED, TX power). Không xóa phân vùng `fctry` và `esp_secure_cert` (dữ liệu nhà máy). Giữ ≥ 60 s bị coi là kẹt nút và không reset. Lệnh console: `factory_reset confirm`. Nếu Matter không khởi động được (ví dụ NVS hỏng), thao tác này xóa thẳng phân vùng `nvs` rồi khởi động lại.
 
 ## 5. Sản xuất (CHƯA KIỂM THỬ)
 
@@ -65,9 +66,10 @@ Thêm lớp phủ `firmware/sdkconfig.defaults.prod` khi build (sau `sdkconfig.d
 
 | Triệu chứng | Kiểm tra |
 |---|---|
-| Điện thoại không thấy thiết bị qua BLE | cửa sổ đã đóng sau 180 s → nhấn 3 lần; thiết bị đã có fabric → chỉ quảng bá DNS-SD, hãy dùng controller đã ghép để chia sẻ |
+| Điện thoại không thấy thiết bị qua BLE | cửa sổ đã đóng sau 180 s → nhấn 3 lần (nếu thiết bị vừa bị xóa khỏi ứng dụng, nó sẽ tự khởi động lại rồi mới quảng bá BLE); thiết bị đã có fabric → chỉ quảng bá DNS-SD, hãy dùng controller đã ghép để chia sẻ |
 | Ghép dừng ở bước Thread | border router, dataset đúng, khoảng cách tới border router |
 | Thiết bị khởi động lại trong lúc ghép | pin yếu/lạnh (xem mục 1); thử pin mới ở nhiệt độ phòng hoặc nguồn bench (đã tháo pin) |
+| LED nháy chậm 3 lần rồi thiết bị "chết" sau khi lắp lại pin, nhấn RST hoặc reset nhiều lần | bảo vệ khởi động: reset sớm lần thứ hai liên tiếp (trước khi chạy đủ 10 phút) làm thiết bị ngủ sâu 5 phút … 4 giờ. Nhấn USER để đánh thức; pin không nhất thiết yếu. Profile `debug` tắt cơ chế này |
 | Thiết bị không lên lại sau khi nhấn RST hay sau một lần reset | theo mô hình, khi pin đã dùng khoảng một nửa thì không khởi động lại được (`docs/power_budget.md` mục 4); thay CR2450 mới |
 | Giá trị nhiệt/ẩm là null | cảm biến lỗi ≥ 3 lần liên tiếp; xem `status` trên console |
 | Sau khi mất border router thiết bị không báo cáo | firmware tự gắn lại Thread với backoff của OpenThread; không tự factory reset và không tự mở BLE |

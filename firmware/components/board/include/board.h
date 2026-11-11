@@ -36,6 +36,11 @@ bool board_led_get_enabled(void);
  * Light sleep is blocked only while a pattern is running. */
 void board_led_show(board_led_pattern_t pattern);
 
+/* Blink the LED from the calling task and return when done. For the moment just
+ * before deep sleep, when no pattern task can finish its work. Shown even when
+ * LED feedback is disabled (it explains why the device goes dark). */
+void board_led_blink_blocking(uint8_t count, uint16_t on_ms, uint16_t off_ms);
+
 /* Battery sense divider switches (GPIO12 -> NMOS gates). */
 void board_vbat_sense_enable(bool on);
 

@@ -1,6 +1,6 @@
 # Báo cáo build firmware — TH-SENSOR-H2 Rev B
 
-Ngày: 2026-10-30. **Build: ĐÃ XÁC MINH. Chạy trên chip/bo thật: CHƯA KIỂM THỬ** (chưa nạp vào thiết bị nào).
+Ngày: 2026-10-30; build lại ngày 2026-11-11 sau khi sửa firmware và thêm lớp `cr123a` (mục 7). **Build: ĐÃ XÁC MINH. Chạy trên chip/bo thật: CHƯA KIỂM THỬ** (chưa nạp vào thiết bị nào).
 
 ## 1. Cách kiểm
 
@@ -79,7 +79,7 @@ DIRAM còn ~67 kB cho heap lúc khởi động; mức heap thực tế khi chạ
 
 ## 5. Unit test trên host
 
-40 test, 208 kiểm tra, 0 lỗi, chạy lại trên bản clone sạch của commit `359f772` (`docs/reports/host_tests.txt`; lệnh trong `README.md`). Đây là logic thuần C (giao thức SHT40/CRC, quy đổi Matter, chính sách báo cáo/null, giới hạn cấu hình, nhận dạng thao tác nút, mô hình pin, backoff, power guard) — không thay cho kiểm thử trên chip.
+Lần 2026-10-30: 40 test, 208 kiểm tra, 0 lỗi, chạy lại trên bản clone sạch của commit `359f772`; lần 2026-11-11: 43 test, 264 kiểm tra, 0 lỗi (mục 7) (`docs/reports/host_tests.txt`; lệnh trong `README.md`). Đây là logic thuần C (giao thức SHT40/CRC, quy đổi Matter, chính sách báo cáo/null, giới hạn cấu hình, nhận dạng thao tác nút, mô hình pin, backoff, power guard) — không thay cho kiểm thử trên chip.
 
 ## 6. Chưa làm
 
@@ -87,3 +87,45 @@ DIRAM còn ~67 kB cho heap lúc khởi động; mức heap thực tế khi chạ
 - OTA không bật (`CONFIG_ENABLE_OTA_REQUESTOR=n`); bảng phân vùng có sẵn hai slot A/B.
 - Secure Boot V2, Flash Encryption, NVS encryption: tắt (`docs/limitations.md` mục 5).
 - Build không tái lập từng byte: `CONFIG_APP_COMPILE_TIME_DATE=y`, `CONFIG_APP_REPRODUCIBLE_BUILD` tắt; ở Rev A, hai lần build battery của cùng mã nguồn (`f07d835`) cho file cùng kích thước nhưng khác 76 byte.
+
+## 7. Build lại ngày 2026-11-11
+
+Lý do: bốn sửa đổi sau bản đánh giá (`docs/decisions.md` D23) và lớp cấu hình `sdkconfig.defaults.cr123a` cho biến thể H2W-123 (D24). Các mục 1–6 mô tả lần build 2026-10-30 và được giữ làm hồ sơ.
+
+**Khác với cách kiểm ở mục 1**: không phải bản clone mới. Build trong cây làm việc (commit `13c74d3` cộng các thay đổi firmware của commit chứa báo cáo này), dùng `managed_components/` đã tải từ trước (`dependencies.lock` không đổi). Trước khi build, `sdkconfig` trong bốn thư mục build đầu bị xóa để cấu hình được sinh lại từ các file defaults (một `sdkconfig` cũ giữ giá trị cũ khi mặc định trong Kconfig thay đổi); tổ hợp debug + cr123a build trong thư mục mới. Mỗi cấu hình biên dịch lại toàn bộ (2051–2094 bước), lần lượt trên cùng một máy. Cùng môi trường như mục 2.
+
+```sh
+# thêm so với mục 1
+idf.py -B build_cr123a -D SDKCONFIG=build_cr123a/sdkconfig \
+       -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.battery;sdkconfig.defaults.cr123a" build
+idf.py -B build_debug_cr123a -D SDKCONFIG=build_debug_cr123a/sdkconfig \
+       -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.debug;sdkconfig.defaults.cr123a" build
+```
+
+| Cấu hình | Kết quả | Thời gian | `th_sensor.bin` | Trống trong slot app 0x1E0000 | Bootloader (trống) |
+|---|---|---|---|---|---|
+| battery | exit 0 | 386 s | 1 606 816 B (0x1884A0) | 0x57B60 (18 %) | 0x4B60 (61 %) |
+| battery + cr123a | exit 0 | 416 s | 1 606 816 B (0x1884A0) | 0x57B60 (18 %) | 0x4B60 (61 %) |
+| debug | exit 0 | 378 s | 1 658 160 B (0x194D30) | 0x4B2D0 (16 %) | 0x5590 (55 %) |
+| debug + cr123a | exit 0 | 380 s | 1 658 160 B (0x194D30) | 0x4B2D0 (16 %) | 0x5590 (55 %) |
+| battery + prod | exit 0 | 376 s | 1 620 608 B (0x18BA80) | 0x54580 (18 %) | 0x4B60 (61 %) |
+
+So với lần 2026-10-30: battery và prod lớn hơn 1 936 B, debug lớn hơn 1 616 B.
+
+| Vùng (byte) | battery | battery + cr123a | debug | battery + prod |
+|---|---|---|---|---|
+| Flash code | 1 495 950 | 1 495 950 | 1 547 442 | 1 509 754 |
+| DIRAM dùng (trên 258 000) | 190 778 (73.94 %) | 190 778 (73.94 %) | 190 666 (73.90 %) | 190 834 (73.97 %) |
+| — .text (IRAM) | 99 170 | 99 170 | 98 918 | 99 170 |
+| — .bss | 80 112 | 80 112 | 80 152 | 80 176 |
+| — .data | 11 496 | 11 496 | 11 596 | 11 488 |
+| LP SRAM (trên 4 096) | 132 | 132 | 132 | 132 |
+| Total image size | 1 606 020 | 1 606 020 | 1 657 360 | 1 619 812 |
+
+Bản debug + cr123a có số liệu bộ nhớ trùng với cột debug. Mỗi cặp có/không có lớp cr123a cùng kích thước nhưng **khác nội dung** (đã so bằng `cmp`): bản cr123a chứa chuỗi `CR17345` và `1x CR123A, buck-boost 3.3 V`, không còn `CR2450`. `build_cr123a/sdkconfig` xác nhận lớp phủ đã áp dụng: `CONFIG_APP_CELL_CR123A=y`, `CONFIG_APP_BAT_WARN_PCT=20`, `CONFIG_APP_BAT_CRIT_PCT=8`, `CONFIG_APP_BOOT_MIN_CELL_MV=2200` (bản debug + cr123a: cùng loại pin và ngưỡng, power guard tắt như mọi bản debug); ba bản CR2450 có `CONFIG_APP_CELL_CR2450=y`, 40 / 20 / 2400. Các bản có power guard đều có `CONFIG_APP_GUARD_FREE_BOOTS=2`, `CONFIG_APP_GUARD_FRESH_CELL_MV=3000`, `CONFIG_APP_GUARD_NEW_CELL_RISE_MV=50`. Các ký hiệu của lớp prod liệt kê ở mục 3 vẫn có trong `build_prod/sdkconfig`.
+
+Cảnh báo: như mục 4 — mã của dự án 0 cảnh báo ở cả năm cấu hình; 1 cảnh báo trình biên dịch trong connectedhomeip ở prod (`BLEManagerImpl.cpp:1949`); 2 cảnh báo Kconfig của esp_matter ở cả năm.
+
+Unit test trên host: **43 test, 264 kiểm tra, 0 lỗi** (`docs/reports/host_tests.txt`), gồm các test mới cho quy tắc power guard (lần reset sớm đầu tiên được bỏ qua, vòng lặp sụt áp, pin mới / pin cũ hồi áp / restart, pin yếu, không có số đo) và cho bảng CR123A.
+
+**Chưa làm**: không bản nào trong năm bản được nạp vào chip. Bốn sửa đổi (power guard, khởi động lại để mở lại BLE, đo pin hai mẫu, factory reset dự phòng) chưa chạy trên phần cứng: quy tắc power guard và bảng pin có unit test trên host; việc khởi động lại để mở lại BLE, đo pin hai mẫu và factory reset dự phòng nằm trong mã gắn với SDK nên chỉ được kiểm bằng build; hành vi thật cần T-16…T-16e (`docs/test_plan.md`). Chưa build tổ hợp prod + cr123a.

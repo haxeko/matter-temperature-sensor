@@ -32,11 +32,14 @@ battery: percent table monotonic                 ok
 battery: one-cell pack / missing reading         ok
 battery: pack charge level hysteresis            ok
 battery: percent jitter filter                   ok
+battery: CR123A table and levels                 ok
 backoff: doubling and saturation                 ok
 backoff: n-th attempt                            ok
 guard: normal boots and stable mark              ok
+guard: one early reset is free                   ok
 guard: brown-out loop backs off                  ok
-guard: new cells / restart clear                 ok
+guard: new cell / rebound / restart              ok
 guard: low battery backoff                       ok
+guard: no cell reading                           ok
 
-208 checks, 0 failures
+264 checks, 0 failures

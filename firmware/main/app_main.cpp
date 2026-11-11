@@ -1,6 +1,6 @@
 /*
  * TH-SENSOR-H2: Matter-over-Thread temperature/humidity sensor
- * (ESP32-H2-MINI-1, SHT40, 1 x CR2450, one TPS63900 buck-boost).
+ * (ESP32-H2 module, SHT40, one Li-MnO2 cell - CR2450 or CR123A - one TPS63900 buck-boost).
  *
  * Boot sequence:
  *   1. NVS, power guard state (reset reason, unstable-boot count)
@@ -72,7 +72,8 @@ extern "C" void app_main(void)
     configure_power_management();
 
     battery_reading_t boot_bat = {};
-    if (battery_measure(&boot_bat) == ESP_OK) {
+    const bool have_boot_bat = (battery_measure(&boot_bat) == ESP_OK);
+    if (have_boot_bat) {
         power_guard_check(true, battery_best_cell_mv(&boot_bat));
     } else {
         ESP_LOGW(TAG, "boot battery check without a reading (ADC error)");
@@ -83,7 +84,7 @@ extern "C" void app_main(void)
         ESP_LOGE(TAG, "SHT40 not responding; values will be published as null until it recovers");
     }
 
-    ESP_ERROR_CHECK(app_controller_init(&cfg, &boot_bat));
+    ESP_ERROR_CHECK(app_controller_init(&cfg, have_boot_bat ? &boot_bat : nullptr));
 
     err = user_button_init(app_controller_on_button, nullptr);
     if (err != ESP_OK) {

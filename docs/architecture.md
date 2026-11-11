@@ -72,7 +72,7 @@ firmware/
     app_config/         cấu hình người dùng trong NVS (chỉ ghi khi giá trị đổi)
     maint_console/      console bảo trì qua USB-Serial/JTAG
     app_logic/          logic thuần C, có unit test trên máy host
-  test/host/            40 test, 208 kiểm tra (ĐÃ XÁC MINH: chạy trên host, 0 lỗi)
+  test/host/            43 test, 264 kiểm tra (ĐÃ XÁC MINH: chạy trên host, 0 lỗi)
 ```
 
 ### 4.1 Luồng chạy
@@ -111,7 +111,7 @@ firmware/
 | Thao tác (nút USER) | Hành động | LED |
 |---|---|---|
 | Nhấn ngắn | Đo ngay (giới hạn 1 lần / 5 s) | 1 nháy 40 ms nếu đo được, 2 × 150 ms nếu lỗi |
-| Nhấn 3 lần trong 2 s | Mở cửa sổ commissioning 180 s bằng `OpenBasicCommissioningWindow` (giữ nguyên fabric; nếu đã có fabric chỉ quảng bá trên mạng, chưa có thì BLE + mạng) | 3 × 80 ms khi mở |
+| Nhấn 3 lần trong 2 s | Mở cửa sổ commissioning 180 s bằng `OpenBasicCommissioningWindow` (giữ nguyên fabric; nếu đã có fabric chỉ quảng bá trên mạng, chưa có thì BLE + mạng). Nếu fabric cuối cùng đã bị gỡ sau khi ghép (BLE đã giải phóng): thiết bị **tự khởi động lại**, sau đó tự quảng bá BLE 180 s | 3 × 80 ms khi mở hoặc trước khi khởi động lại |
 | Giữ ≥ 10 s rồi thả | Factory reset (xóa fabric, Thread, KVS, cấu hình app; không xóa `fctry`/`esp_secure_cert`) | sáng liên tục khi đủ 10 s; 8 × 60 ms khi chấp nhận |
 | Giữ ≥ 60 s | Coi là kẹt nút, hủy reset | tắt |
 
@@ -121,9 +121,15 @@ GPIO9 cũng là chân strap BOOT: giữ SW1 khi nhấn SW2 ⇒ vào chế độ 
 
 Reset do supervisor (EN) làm mất RAM RTC, nên trạng thái lưu trong NVS: số lần khởi động "không ổn định" và điện áp cell lần cuối. Quy tắc (`app_logic/guard_policy.c`, có unit test):
 - cell < `APP_BOOT_MIN_CELL_MV` (2400 mV) ⇒ ngủ sâu, thử lại theo backoff;
-- nhiều lần reset trước khi chạy ổn định `APP_STABLE_AFTER_S` (600 s) ⇒ ngủ sâu theo backoff 300 s … 4 h;
-- điện áp cell tăng ≥ 150 mV so với lần lỗi trước (thay pin) hoặc restart bằng phần mềm ⇒ xóa bộ đếm.
-Nút USER đánh thức sớm. Hành vi trên phần cứng: CHƯA KIỂM THỬ.
+- lần reset sớm **đầu tiên** (trước khi chạy ổn định `APP_STABLE_AFTER_S` = 600 s) vẫn chạy bình thường: tháo lắp lại pin, nút RST hay reset của mạch nạp trông giống hệt reset của supervisor. Từ lần reset sớm thứ hai liên tiếp (`APP_GUARD_FREE_BOOTS` = 2) ⇒ ngủ sâu theo backoff 300 s … 4 h;
+- thay pin được nhận ra khi số đo lúc khởi động vừa ≥ `APP_GUARD_FRESH_CELL_MV` (3000 mV, vùng điện áp của pin mới) vừa cao hơn lần ghi trước ≥ `APP_GUARD_NEW_CELL_RISE_MV` (50 mV) ⇒ xóa bộ đếm. Phải đủ cả hai: chỉ "tăng" là điều pin cũ cũng làm sau khi nghỉ, chỉ "cao" là điều pin mới nhưng lạnh cho thấy ở mỗi vòng sụt áp;
+- restart bằng phần mềm hoặc reset từ USB/JTAG ⇒ xóa bộ đếm;
+- không có số đo, hoặc số đo < `APP_BAT_CELL_PRESENT_MV` trong khi chip đang chạy (lỗi mạch đo) ⇒ bỏ qua các quy tắc theo điện áp, không ngủ vì "pin yếu".
+Trước khi ngủ sâu LED nháy chậm 3 lần (kể cả khi đã tắt LED). Nút USER đánh thức sớm. Các ngưỡng điện áp là ƯỚC TÍNH; hành vi trên phần cứng: CHƯA KIỂM THỬ.
+
+Đo pin: số đo đầu tiên là số đo lúc khởi động (trước khi bật radio); sau đó mỗi `bat_interval` lấy hai mẫu cách nhau `APP_BAT_CONFIRM_DELAY_MS` (1.5 s) và giữ mẫu cao hơn, để một mẫu trùng xung phát không làm bật cảnh báo thay pin suốt một chu kỳ. Không đo lại lúc commissioning xong.
+
+Factory reset: nếu Matter không khởi động được, hoặc quy trình của SDK không khởi động lại thiết bị trong 15 s, firmware tự xóa phân vùng `nvs` rồi restart (không đụng tới `fctry`/`esp_secure_cert`).
 
 ### 4.6 Hai profile build
 

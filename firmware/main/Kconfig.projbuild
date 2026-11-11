@@ -1,5 +1,20 @@
 menu "TH sensor application"
 
+    choice APP_CELL_TYPE
+        prompt "Cell fitted on the board"
+        default APP_CELL_CR2450
+        help
+            Selects the voltage-to-charge table, the Power Source cluster
+            texts (designation, capacity) and the defaults of the battery
+            thresholds below. The pin map is the same for every board.
+
+        config APP_CELL_CR2450
+            bool "CR2450 coin cell (Rev B, H2C, H2W)"
+
+        config APP_CELL_CR123A
+            bool "CR123A / CR17345 (H2W-123)"
+    endchoice
+
     config APP_MEASURE_INTERVAL_S
         int "Default measurement interval (s)"
         range 10 3600
@@ -57,9 +72,19 @@ menu "TH sensor application"
         range -24 8
         default 5
         help
-            Upper limit +8 dBm is set by the coin-cell power path (one
-            TPS63900 with a 100 mA input current limit), see
+            Upper limit +8 dBm is set by the power path (one TPS63900 with a
+            100 mA input current limit, on every board), see
             docs/power_budget.md. Tune downwards only after a link-budget test.
+
+    config APP_BAT_CONFIRM_DELAY_MS
+        int "Delay between the two samples of a battery measurement (ms)"
+        range 200 10000
+        default 1500
+        help
+            Each battery measurement takes two readings this far apart and
+            keeps the higher one. A single reading can coincide with a radio
+            burst, when the cell sags, and would otherwise report a low battery
+            for a whole measurement interval.
 
     config APP_BAT_CELL_PRESENT_MV
         int "Cell counted as present above this voltage (mV)"
@@ -73,16 +98,20 @@ menu "TH sensor application"
     config APP_BAT_WARN_PCT
         int "Pack charge below which BatChargeLevel = Warning (%)"
         range 5 80
+        default 20 if APP_CELL_CR123A
         default 40
         help
-            ESTIMATE: the power model (docs/power_budget.md) predicts that
-            reports start to fail once about half of the CR2450's nominal
-            capacity is used (internal resistance, not voltage, ends the cell's
-            life), i.e. well before the capacity is used up.
+            ESTIMATE. CR2450: the power model (docs/power_budget.md) predicts
+            that reports start to fail once about half of the nominal capacity
+            is used (internal resistance, not voltage, ends the cell's life),
+            i.e. well before the capacity is used up, hence 40 %. CR123A: the
+            cell supplies the radio until it is nearly empty, and its voltage
+            only starts to fall in the last third, hence 20 %.
 
     config APP_BAT_CRIT_PCT
         int "Pack charge below which BatChargeLevel = Critical (%)"
         range 1 60
+        default 8 if APP_CELL_CR123A
         default 20
 
     config APP_POWER_GUARD_ENABLE
@@ -93,17 +122,44 @@ menu "TH sensor application"
         int "Minimum cell voltage to start the radio (mV)"
         depends on APP_POWER_GUARD_ENABLE
         range 1700 3000
+        default 2200 if APP_CELL_CR123A
         default 2400
+        help
+            ESTIMATE. A CR123A at 2.2 V under the boot load has about 1 % left
+            (Panasonic 20 mA curve); the converter runs down to 1.8 V.
 
-    config APP_GUARD_RECOVERY_MV
+    config APP_GUARD_FREE_BOOTS
+        int "Boots that may fail to reach 'stable' before the guard backs off"
+        depends on APP_POWER_GUARD_ENABLE
+        range 1 5
+        default 2
+        help
+            A supervisor (brown-out) reset cannot be told from re-seating the
+            cell, a reset button or a programmer reset. With 2, one such reset
+            shortly after boot runs normally and the next one starts the deep
+            sleep backoff. 1 backs off after the first early reset.
+
+    config APP_GUARD_FRESH_CELL_MV
+        int "Cell voltage at boot from which a cell counts as new (mV)"
+        depends on APP_POWER_GUARD_ENABLE
+        range 2500 3300
+        default 3000
+        help
+            Battery change detection, part 1: the reading at boot (chip awake,
+            radio off) must be at least this high. ESTIMATE from the Li-MnO2
+            discharge curve (about 90 % remaining); tune after measuring real
+            cells (docs/test_plan.md).
+
+    config APP_GUARD_NEW_CELL_RISE_MV
         int "Cell voltage rise that counts as a new cell (mV)"
         depends on APP_POWER_GUARD_ENABLE
-        range 50 1000
-        default 150
+        range 20 1000
+        default 50
         help
-            After repeated unstable boots the guard backs off with deep sleep.
-            A boot whose cell voltage is this much higher than at the last
-            unstable boot is treated as a battery change and clears the backoff.
+            Battery change detection, part 2: the reading must also be this
+            much higher than at the last unstable boot. Both conditions together
+            clear the backoff; a rise alone is what a worn cell shows after
+            resting. (Replaces APP_GUARD_RECOVERY_MV, whose 150 mV alone decided.)
 
     config APP_GUARD_BACKOFF_MIN_S
         int "First guard deep-sleep period (s)"

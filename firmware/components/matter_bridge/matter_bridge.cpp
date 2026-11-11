@@ -14,6 +14,8 @@
 #include <esp_log.h>
 #include <esp_matter.h>
 #include <esp_matter_core.h>
+#include <esp_system.h>
+#include <nvs_flash.h>
 
 #include <app/clusters/power-source-server/power-source-server.h>
 #include <app/server/CommissioningWindowManager.h>
@@ -42,10 +44,22 @@ std::atomic<bool> s_window_open{false};
 std::atomic<bool> s_thread_attached{false};
 std::atomic<bool> s_server_ready{false};
 std::atomic<int8_t> s_tx_power{0};
+std::atomic<bool> s_started{false};         /* esp_matter::start() succeeded: the event loop runs */
+std::atomic<bool> s_ble_released{false};    /* BLE memory given back to the heap: no BLE until restart */
 
 constexpr uint16_t kTempToleranceCenti = 20;    /* SHT40 typ. accuracy 0.2 degC (DS v7.3 table 2) */
 constexpr uint16_t kRhToleranceCenti = 180;     /* SHT40 typ. accuracy 1.8 %RH (DS v7.3 table 1) */
+#if CONFIG_APP_CELL_CR123A
+constexpr uint32_t kBatCapacityMah = 1550;      /* CR123A nominal (Panasonic datasheet, July 2024) */
+constexpr char kBatIec[] = "CR17345";           /* IEC designation of the CR123A (Energizer 123 datasheet) */
+constexpr char kBatDescription[] = "1x CR123A, buck-boost 3.3 V";
+constexpr char kBatReplacement[] = "Replace with a new CR123A (primary lithium, never recharge)";
+#else
 constexpr uint32_t kBatCapacityMah = 620;       /* CR2450 nominal (Panasonic datasheet, Feb 2026) */
+constexpr char kBatIec[] = "CR2450";
+constexpr char kBatDescription[] = "1x CR2450, buck-boost 3.3 V";
+constexpr char kBatReplacement[] = "Replace with a new CR2450 (primary lithium, never recharge)";
+#endif
 
 void notify(mb_event_t ev)
 {
@@ -149,6 +163,7 @@ void app_event_cb(const ChipDeviceEvent *event, intptr_t arg)
         break;
 #endif
     case DeviceEventType::kBLEDeinitialized:
+        s_ble_released = true;
         ESP_LOGI(TAG, "BLE deinitialized (commissioning-only BLE)");
         break;
     default:
@@ -187,16 +202,14 @@ esp_err_t add_power_source(node_t *node)
     endpoint::power_source::config_t ps;
     ps.power_source.status = chip::to_underlying(PowerSource::PowerSourceStatusEnum::kActive);
     ps.power_source.order = 0;
-    strncpy(ps.power_source.description, "1x CR2450, buck-boost 3.3 V",
-            sizeof(ps.power_source.description) - 1);
+    strncpy(ps.power_source.description, kBatDescription, sizeof(ps.power_source.description) - 1);
     ps.power_source.feature_flags = cluster::power_source::feature::battery::get_id() |
                                     cluster::power_source::feature::replaceable::get_id();
     ps.power_source.features.battery.bat_charge_level = chip::to_underlying(PowerSource::BatChargeLevelEnum::kOk);
     ps.power_source.features.battery.bat_replacement_needed = false;
     ps.power_source.features.battery.bat_replaceability =
         chip::to_underlying(PowerSource::BatReplaceabilityEnum::kUserReplaceable);
-    strncpy(ps.power_source.features.replaceable.bat_replacement_description,
-            "Replace with a new CR2450 (primary lithium, never recharge)",
+    strncpy(ps.power_source.features.replaceable.bat_replacement_description, kBatReplacement,
             sizeof(ps.power_source.features.replaceable.bat_replacement_description) - 1);
     ps.power_source.features.replaceable.bat_quantity = 1;
     esp_err_t err = endpoint::power_source::add(root, &ps);
@@ -211,7 +224,7 @@ esp_err_t add_power_source(node_t *node)
     psa::create_bat_voltage(c, nullable<uint32_t>(), nullable<uint32_t>(0), nullable<uint32_t>(6000));
     psa::create_bat_percent_remaining(c, nullable<uint8_t>(), nullable<uint8_t>(0), nullable<uint8_t>(200));
     psa::create_bat_present(c, true);
-    psa::create_bat_iec_designation(c, "CR2450", strlen("CR2450"));
+    psa::create_bat_iec_designation(c, const_cast<char *>(kBatIec), strlen(kBatIec));
     psa::create_bat_approved_chemistry(c, chip::to_underlying(PowerSource::BatApprovedChemistryEnum::kLithiumManganeseDioxide),
                                        0, 0xFF);
     psa::create_bat_capacity(c, kBatCapacityMah, 0, UINT32_MAX);
@@ -278,7 +291,9 @@ extern "C" esp_err_t mb_init(const mb_config_t *cfg)
 
 extern "C" esp_err_t mb_start(void)
 {
-    return esp_matter::start(app_event_cb);
+    esp_err_t err = esp_matter::start(app_event_cb);
+    s_started = (err == ESP_OK);
+    return err;
 }
 
 extern "C" void mb_publish_temperature(bool is_null, int16_t centi_c)
@@ -334,6 +349,14 @@ extern "C" void mb_open_commissioning_window(void)
             return;
         }
         const bool has_fabric = server.GetFabricTable().FabricCount() > 0;
+        if (!has_fabric && s_ble_released) {
+            /* The BLE stack cannot be started again in this boot (BLEManagerImpl
+             * ignores advertising requests once its memory is released), so a
+             * "BLE + on-network" window would be invisible to a phone. */
+            ESP_LOGW(TAG, "no fabric and BLE already released: a restart is needed to commission over BLE");
+            notify(MB_EVT_WINDOW_NEEDS_RESTART);
+            return;
+        }
         const auto adv = has_fabric ? chip::CommissioningWindowAdvertisement::kDnssdOnly
                                     : chip::CommissioningWindowAdvertisement::kAllSupported;
         CHIP_ERROR err = mgr.OpenBasicCommissioningWindow(
@@ -361,8 +384,26 @@ extern "C" void mb_set_tx_power(int8_t dbm)
     }
 }
 
+extern "C" void mb_erase_and_restart(void)
+{
+    ESP_LOGW(TAG, "erasing the nvs partition (fabrics, Thread dataset, settings) and restarting");
+    nvs_flash_deinit();                         /* an error only means it was not initialised */
+    esp_err_t err = nvs_flash_erase();
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "nvs erase: %s", esp_err_to_name(err));
+    }
+    esp_restart();
+}
+
 extern "C" void mb_factory_reset(void)
 {
+    if (!s_started) {
+        /* esp_matter::factory_reset() only queues work for the Matter event
+         * loop; without the loop nothing would be erased and nothing restarted. */
+        ESP_LOGW(TAG, "factory reset: Matter is not running");
+        mb_erase_and_restart();
+        return;
+    }
     ESP_LOGW(TAG, "factory reset: clearing fabrics, Thread dataset and Matter KVS");
     esp_matter::factory_reset();
 }

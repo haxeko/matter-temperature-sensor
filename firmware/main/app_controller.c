@@ -79,10 +79,24 @@ static int64_t s_heater_holdoff_until_us;
 static int64_t s_last_manual_us = INT64_MIN / 2;
 static int64_t s_stable_at_us;
 static bool s_stable_marked;
+static battery_reading_t s_boot_batt;       /* taken in app_main before any radio activity */
+static bool s_have_boot_batt;
+
+/* Without a boot reading, the first measurement waits until start-up traffic
+ * (BLE advertising, Thread attach) has settled. */
+#define BAT_FIRST_RETRY_S 60
+/* The SDK factory reset restarts the device within a few seconds; if it has
+ * not by then, the nvs partition is erased directly. */
+#define FACTORY_RESET_FALLBACK_MS 15000
 
 _Static_assert(BAT_CELL_COUNT == 1, "logging and status print one cell (Rev B)");
+#if CONFIG_APP_CELL_CR123A
+static const bat_policy_t k_bat_policy =
+    BAT_POLICY_INIT_CR123A(CONFIG_APP_BAT_CELL_PRESENT_MV, CONFIG_APP_BAT_WARN_PCT, CONFIG_APP_BAT_CRIT_PCT);
+#else
 static const bat_policy_t k_bat_policy =
     BAT_POLICY_INIT(CONFIG_APP_BAT_CELL_PRESENT_MV, CONFIG_APP_BAT_WARN_PCT, CONFIG_APP_BAT_CRIT_PCT);
+#endif
 
 #define LOCK()   xSemaphoreTake(s_lock, portMAX_DELAY)
 #define UNLOCK() xSemaphoreGive(s_lock)
@@ -183,17 +197,40 @@ static void do_measure(bool manual)
 
 /* ---------------------------------------------------------------- battery */
 
-static void do_battery(void)
+/* Two readings CONFIG_APP_BAT_CONFIRM_DELAY_MS apart, the higher one counts.
+ * One reading can fall into a radio burst, when the cell sags by 0.1 V or
+ * more; a single low value must not publish "replace battery" for a whole
+ * measurement interval. */
+static esp_err_t measure_battery_confirmed(battery_reading_t *out)
 {
-    battery_reading_t r = {0};
-    esp_err_t err = battery_measure(&r);
+    battery_reading_t a = {0}, b = {0};
+    esp_err_t ea = battery_measure(&a);
+    vTaskDelay(pdMS_TO_TICKS(CONFIG_APP_BAT_CONFIRM_DELAY_MS));
+    esp_err_t eb = battery_measure(&b);
+    if (ea != ESP_OK && eb != ESP_OK) {
+        return ea;
+    }
+    if (ea != ESP_OK) {
+        *out = b;
+    } else if (eb != ESP_OK) {
+        *out = a;
+    } else {
+        *out = battery_best_cell_mv(&b) > battery_best_cell_mv(&a) ? b : a;
+    }
+    return ESP_OK;
+}
+
+/* Feed one measurement result into the battery model and publish it. */
+static void apply_battery(const battery_reading_t *reading, esp_err_t err)
+{
+    const battery_reading_t r = *reading;
     mb_battery_t pub = {0};
 
     LOCK();
     s_batt.last_err = err;
     if (err == ESP_OK) {
         bat_pack_t pack;
-        bat_pack_from_cells(&pack, r.cell_mv, k_bat_policy.present_mv);
+        bat_pack_from_cells_for(&pack, r.cell_mv, &k_bat_policy);
         bat_level_t prev = s_bat_model.initialized ? s_bat_model.level : BAT_LEVEL_OK;
         bat_level_t level = bat_pack_update(&s_bat_model, &k_bat_policy, &pack);
         uint8_t half = bat_filter_half_percent(s_batt.have_reported_pct, s_batt.half_pct, pack.pack_half_pct);
@@ -234,6 +271,13 @@ static void do_battery(void)
     s_next_bat_us = now_us() + (int64_t)interval_s * 1000000;
 }
 
+static void do_battery(void)
+{
+    battery_reading_t r = {0};
+    esp_err_t err = measure_battery_confirmed(&r);
+    apply_battery(&r, err);
+}
+
 /* ---------------------------------------------------------------- events */
 
 static void factory_reset(void)
@@ -246,6 +290,11 @@ static void factory_reset(void)
         ESP_LOGE(TAG, "app config erase: %s", esp_err_to_name(err));
     }
     mb_factory_reset();                         /* fabrics, Thread, KVS; reboots */
+    /* The SDK does its part on the Matter event loop. If that loop is stuck
+     * the gesture must still work: erase the nvs partition directly. */
+    vTaskDelay(pdMS_TO_TICKS(FACTORY_RESET_FALLBACK_MS));
+    ESP_LOGE(TAG, "Matter factory reset did not restart the device");
+    mb_erase_and_restart();
 }
 
 static void handle_button(bg_event_t ev)
@@ -288,15 +337,25 @@ static void handle_matter(mb_event_t ev)
         s_next_meas_us = now_us();
         break;
     case MB_EVT_COMMISSIONED:
+        /* The battery attributes already hold the last reading; no new sample
+         * here, the radio is busy and the cell sags. */
         board_led_show(BOARD_LED_COMMISSIONED);
         s_next_meas_us = now_us();
-        s_next_bat_us = now_us();
         break;
     case MB_EVT_WINDOW_OPENED:
         board_led_show(BOARD_LED_WINDOW_OPEN);
         break;
     case MB_EVT_WINDOW_FAILED:
         board_led_show(BOARD_LED_ERROR);
+        break;
+    case MB_EVT_WINDOW_NEEDS_RESTART:
+        /* Last fabric removed after commissioning: BLE is gone until the next
+         * boot. The user asked for a window, so restart; with no fabric the
+         * SDK then advertises over BLE by itself. */
+        ESP_LOGW(TAG, "restarting to make the device commissionable over BLE again");
+        board_led_show(BOARD_LED_WINDOW_OPEN);
+        vTaskDelay(pdMS_TO_TICKS(800));         /* let the LED pattern play */
+        esp_restart();
         break;
     case MB_EVT_WINDOW_CLOSED:
         ESP_LOGI(TAG, "commissioning window closed");
@@ -339,6 +398,9 @@ static void handle_heater(sht40_heater_t heater)
 static void controller_task(void *arg)
 {
     (void)arg;
+    if (s_have_boot_batt) {
+        apply_battery(&s_boot_batt, ESP_OK);    /* also schedules the next measurement */
+    }
     for (;;) {
         int64_t t = now_us();
         int64_t next = s_next_meas_us < s_next_bat_us ? s_next_meas_us : s_next_bat_us;
@@ -415,9 +477,17 @@ esp_err_t app_controller_init(const app_cfg_t *cfg, const battery_reading_t *boo
     s_meas.published_rh.is_null = true;
     int64_t t = now_us();
     s_next_meas_us = t;                          /* first sample right away */
-    s_next_bat_us = t;                           /* publish battery right after start */
+    /* Battery: the reading taken at boot, before any radio activity, is the
+     * first published value (controller_task). Measuring again right now would
+     * sample the cell during BLE advertising / Thread attach. */
+    s_have_boot_batt = (boot_battery != NULL);
+    if (boot_battery) {
+        s_boot_batt = *boot_battery;
+        s_next_bat_us = t + (int64_t)cfg->bat_interval_s * 1000000;
+    } else {
+        s_next_bat_us = t + (int64_t)BAT_FIRST_RETRY_S * 1000000;
+    }
     s_stable_at_us = t + (int64_t)CONFIG_APP_STABLE_AFTER_S * 1000000;
-    (void)boot_battery;
     return ESP_OK;
 }
 

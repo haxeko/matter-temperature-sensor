@@ -3,6 +3,7 @@
  */
 #include "power_guard.h"
 
+#include "board.h"
 #include "board_pins.h"
 #include "esp_attr.h"
 #include "esp_log.h"
@@ -51,7 +52,9 @@ const char *power_guard_reset_reason_str(esp_reset_reason_t r)
 static gp_reset_t classify(esp_reset_reason_t r)
 {
     switch (r) {
-    case ESP_RST_SW: return GP_RESET_SOFTWARE;
+    case ESP_RST_SW:
+    case ESP_RST_USB:                                     /* programmer / debugger: never a brown-out */
+    case ESP_RST_JTAG: return GP_RESET_SOFTWARE;
     case ESP_RST_DEEPSLEEP: return GP_RESET_SLEEP_WAKE;   /* the guard is the only deep-sleep user */
     case ESP_RST_PANIC:
     case ESP_RST_INT_WDT:
@@ -93,6 +96,8 @@ static void state_save(void)
 static void guard_sleep(uint32_t seconds, const char *why)
 {
     ESP_LOGW(TAG, "%s: deep sleep for %lu s (USER button wakes earlier)", why, (unsigned long)seconds);
+    /* Tell the user why the device goes dark: 3 slow blinks, then sleep. */
+    board_led_blink_blocking(3, 120, 280);
     esp_sleep_enable_timer_wakeup((uint64_t)seconds * 1000000ULL);
 #if SOC_PM_SUPPORT_EXT1_WAKEUP
     /* GPIO9 is an LP IO on ESP32-H2 (GPIO7..14); 10k external pull-up. */
@@ -141,22 +146,26 @@ void power_guard_check(bool have_mv, uint32_t best_cell_mv)
     }
     const gp_config_t cfg = {
         .boot_min_mv = CONFIG_APP_BOOT_MIN_CELL_MV,
-        .recovery_mv = CONFIG_APP_GUARD_RECOVERY_MV,
+        .fresh_mv = CONFIG_APP_GUARD_FRESH_CELL_MV,
+        .recovery_mv = CONFIG_APP_GUARD_NEW_CELL_RISE_MV,
+        .free_boots = CONFIG_APP_GUARD_FREE_BOOTS,
         .backoff_min_s = CONFIG_APP_GUARD_BACKOFF_MIN_S,
         .backoff_max_s = CONFIG_APP_GUARD_BACKOFF_MAX_S,
     };
-    /* Without a reading, use the last recorded value: rule 2 cannot fire and
-     * rule 3 keeps its previous outcome only if the cells were already low. */
-    uint16_t mv = have_mv ? (uint16_t)(best_cell_mv > 0xFFFFu ? 0xFFFFu : best_cell_mv)
-                          : (s_state.last_best_mv ? s_state.last_best_mv : 0xFFFFu);
-    const uint16_t prev_mv = s_state.last_best_mv;
-    gp_decision_t d = gp_decide(&s_state, &cfg, classify(s_reason), mv);
-    if (!have_mv) {
-        s_state.last_best_mv = prev_mv;   /* never record a substitute as a measurement */
+    /* The converter stops below about 1.7 V at its input, so a running chip
+     * cannot have a cell under the "present" threshold: such a reading is a
+     * sense-path fault (divider, switch, ADC), not an empty cell. Treat it as
+     * "no reading" instead of sleeping on it for ever. */
+    if (have_mv && best_cell_mv < CONFIG_APP_BAT_CELL_PRESENT_MV) {
+        ESP_LOGW(TAG, "cell reads %lu mV while the chip runs: sense-path fault, reading ignored",
+                 (unsigned long)best_cell_mv);
+        have_mv = false;
     }
+    const uint16_t mv = have_mv ? (uint16_t)(best_cell_mv > 0xFFFFu ? 0xFFFFu : best_cell_mv) : 0;
+    gp_decision_t d = gp_decide(&s_state, &cfg, classify(s_reason), have_mv, mv);
     if (d.cleared) {
         ESP_LOGI(TAG, "unstable-boot count cleared (%s)",
-                 classify(s_reason) == GP_RESET_SOFTWARE ? "software restart" : "new cells detected");
+                 classify(s_reason) == GP_RESET_SOFTWARE ? "restart requested" : "new cell detected");
     }
     state_save();
     switch (d.action) {

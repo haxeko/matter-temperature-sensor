@@ -1,0 +1,6 @@
+# CR123A cell (H2W-123 board): add after the battery (or debug) profile, e.g.
+#   -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.battery;sdkconfig.defaults.cr123a"
+# Selects the CR123A voltage-to-charge table, the Power Source cluster texts
+# (IEC CR17345, 1550 mAh) and the battery threshold defaults of that cell
+# (main/Kconfig.projbuild). The pin map and everything else are unchanged.
+CONFIG_APP_CELL_CR123A=y

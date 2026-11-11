@@ -200,6 +200,18 @@ bool board_led_get_enabled(void)
     return s_led_enabled;
 }
 
+void board_led_blink_blocking(uint8_t count, uint16_t on_ms, uint16_t off_ms)
+{
+    led_pm_hold(true);              /* exact pulse lengths: no light sleep in between */
+    for (uint8_t i = 0; i < count; i++) {
+        led_write(true);
+        vTaskDelay(pdMS_TO_TICKS(on_ms));
+        led_write(false);
+        vTaskDelay(pdMS_TO_TICKS(off_ms));
+    }
+    led_pm_hold(false);
+}
+
 void board_led_show(board_led_pattern_t pattern)
 {
     if (!s_led_queue) {

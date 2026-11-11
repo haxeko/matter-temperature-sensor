@@ -33,6 +33,7 @@ typedef enum {
     MB_EVT_WINDOW_OPENED,
     MB_EVT_WINDOW_CLOSED,
     MB_EVT_WINDOW_FAILED,
+    MB_EVT_WINDOW_NEEDS_RESTART,   /* no fabric and BLE already released: restart to advertise over BLE again */
     MB_EVT_FABRIC_REMOVED,
     MB_EVT_THREAD_ATTACHED,
     MB_EVT_THREAD_DETACHED,
@@ -81,13 +82,25 @@ void mb_publish_battery(const mb_battery_t *battery);
  *  - no fabric yet : Basic Commissioning Window, BLE + DNS-SD
  *  - fabric(s) exist: Basic Commissioning Window, DNS-SD (on-network) only;
  *                     existing fabrics are kept (multi-admin).
+ * BLE is released for good once the device has been commissioned
+ * (CONFIG_USE_BLE_ONLY_FOR_COMMISSIONING). If the last fabric was removed since
+ * then, a window could not be seen by a phone: the bridge reports
+ * MB_EVT_WINDOW_NEEDS_RESTART instead and opens nothing. After the restart the
+ * SDK opens the BLE window by itself (no fabric: pairing autostart).
  */
 void mb_open_commissioning_window(void);
 
 void mb_set_tx_power(int8_t dbm);
 
-/* Matter/Thread factory reset (SDK procedure); reboots. */
+/* Matter/Thread factory reset (SDK procedure); reboots. The SDK does the work
+ * on the Matter event loop: if mb_start() failed there is no loop, and this
+ * falls back to mb_erase_and_restart(). */
 void mb_factory_reset(void);
+
+/* Erase the whole "nvs" partition (fabrics, Thread dataset, Matter KVS,
+ * application settings) and restart. Does not touch the factory partitions.
+ * Last resort for an explicit factory reset when the SDK path cannot run. */
+void mb_erase_and_restart(void);
 
 void mb_get_status(mb_status_t *out);
 

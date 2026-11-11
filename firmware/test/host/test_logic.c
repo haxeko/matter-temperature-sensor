@@ -203,40 +203,75 @@ static void test_backoff_for_attempt(void)
 
 /* ----------------------------------------------------------------- boot guard */
 
-static const gp_config_t k_gp = {.boot_min_mv = 2400, .recovery_mv = 150, .backoff_min_s = 300,
-                                 .backoff_max_s = 14400};
+static const gp_config_t k_gp = {.boot_min_mv = 2400, .fresh_mv = 3000, .recovery_mv = 50, .free_boots = 2,
+                                 .backoff_min_s = 300, .backoff_max_s = 14400};
 
 static void test_guard_normal_boots(void)
 {
     gp_state_t st = {0};
-    gp_decision_t d = gp_decide(&st, &k_gp, GP_RESET_POWER_ON, 3050);   /* fresh cells */
+    gp_decision_t d = gp_decide(&st, &k_gp, GP_RESET_POWER_ON, true, 3050);   /* fresh cell */
     CHECK_EQ_INT(d.action, GP_RUN);
     CHECK_EQ_INT(st.unstable_boots, 1);          /* attempt counted until stable */
     CHECK_EQ_INT(st.last_best_mv, 3050);
     CHECK(gp_mark_stable(&st));
     CHECK_EQ_INT(st.unstable_boots, 0);
     CHECK(!gp_mark_stable(&st));                 /* no NVS write when nothing changed */
-    d = gp_decide(&st, &k_gp, GP_RESET_SOFTWARE, 3000);
+    d = gp_decide(&st, &k_gp, GP_RESET_SOFTWARE, true, 3000);
     CHECK_EQ_INT(d.action, GP_RUN);
+}
+
+/* Re-seating the same cell, a reset button or a programmer reset shortly after
+ * boot must not put a healthy device to sleep. */
+static void test_guard_one_early_reset_is_free(void)
+{
+    gp_state_t st = {0};
+    CHECK_EQ_INT(gp_decide(&st, &k_gp, GP_RESET_POWER_ON, true, 3050).action, GP_RUN);
+    gp_decision_t d = gp_decide(&st, &k_gp, GP_RESET_POWER_ON, true, 3050);   /* same cell, 1 min later */
+    CHECK_EQ_INT(d.action, GP_RUN);
+    CHECK(!d.cleared);
+    CHECK_EQ_INT(st.unstable_boots, 2);
+    d = gp_decide(&st, &k_gp, GP_RESET_POWER_ON, true, 3050);                 /* a second early reset */
+    CHECK_EQ_INT(d.action, GP_SLEEP_UNSTABLE);
+    CHECK_EQ_INT(d.sleep_s, 300);
+    d = gp_decide(&st, &k_gp, GP_RESET_POWER_ON, true, 3050);                 /* power-cycled while asleep */
+    CHECK_EQ_INT(d.action, GP_SLEEP_UNSTABLE);
+    CHECK_EQ_INT(d.sleep_s, 300);                /* the wait does not grow */
+    CHECK_EQ_INT(st.unstable_boots, 2);
+    d = gp_decide(&st, &k_gp, GP_RESET_SLEEP_WAKE, true, 3050);               /* timer or USER button */
+    CHECK_EQ_INT(d.action, GP_RUN);
+    CHECK(gp_mark_stable(&st));
+    CHECK_EQ_INT(gp_decide(&st, &k_gp, GP_RESET_POWER_ON, true, 3050).action, GP_RUN);
+
+    /* free_boots = 1 is the strict policy: the first early reset already sleeps */
+    gp_config_t strict = k_gp;
+    strict.free_boots = 1;
+    gp_state_t s2 = {0};
+    CHECK_EQ_INT(gp_decide(&s2, &strict, GP_RESET_POWER_ON, true, 3050).action, GP_RUN);
+    CHECK_EQ_INT(gp_decide(&s2, &strict, GP_RESET_POWER_ON, true, 3050).action, GP_SLEEP_UNSTABLE);
+    strict.free_boots = 0;                        /* treated as 1 */
+    gp_state_t s3 = {0};
+    CHECK_EQ_INT(gp_decide(&s3, &strict, GP_RESET_POWER_ON, true, 3050).action, GP_RUN);
+    CHECK_EQ_INT(gp_decide(&s3, &strict, GP_RESET_POWER_ON, true, 3050).action, GP_SLEEP_UNSTABLE);
 }
 
 static void test_guard_brownout_loop_backs_off(void)
 {
     gp_state_t st = {0};
-    CHECK_EQ_INT(gp_decide(&st, &k_gp, GP_RESET_POWER_ON, 2900).action, GP_RUN);
-    /* supervisor reset before "stable": looks like power-on */
-    gp_decision_t d = gp_decide(&st, &k_gp, GP_RESET_POWER_ON, 2900);
+    CHECK_EQ_INT(gp_decide(&st, &k_gp, GP_RESET_POWER_ON, true, 2900).action, GP_RUN);
+    /* supervisor reset before "stable": looks like power-on; one retry is free */
+    CHECK_EQ_INT(gp_decide(&st, &k_gp, GP_RESET_POWER_ON, true, 2900).action, GP_RUN);
+    gp_decision_t d = gp_decide(&st, &k_gp, GP_RESET_POWER_ON, true, 2900);
     CHECK_EQ_INT(d.action, GP_SLEEP_UNSTABLE);
     CHECK_EQ_INT(d.sleep_s, 300);
-    d = gp_decide(&st, &k_gp, GP_RESET_SLEEP_WAKE, 2910);              /* retry after sleep */
+    d = gp_decide(&st, &k_gp, GP_RESET_SLEEP_WAKE, true, 2910);               /* retry after sleep */
     CHECK_EQ_INT(d.action, GP_RUN);
-    CHECK_EQ_INT(st.unstable_boots, 2);
-    d = gp_decide(&st, &k_gp, GP_RESET_POWER_ON, 2900);                 /* failed again */
+    CHECK_EQ_INT(st.unstable_boots, 3);
+    d = gp_decide(&st, &k_gp, GP_RESET_POWER_ON, true, 2900);                 /* failed again */
     CHECK_EQ_INT(d.action, GP_SLEEP_UNSTABLE);
     CHECK_EQ_INT(d.sleep_s, 600);
     for (int i = 0; i < 20; i++) {
-        gp_decide(&st, &k_gp, GP_RESET_SLEEP_WAKE, 2900);
-        d = gp_decide(&st, &k_gp, GP_RESET_FAULT, 2900);
+        gp_decide(&st, &k_gp, GP_RESET_SLEEP_WAKE, true, 2900);
+        d = gp_decide(&st, &k_gp, GP_RESET_FAULT, true, 2900);
     }
     CHECK_EQ_INT(d.action, GP_SLEEP_UNSTABLE);
     CHECK_EQ_INT(d.sleep_s, 14400);              /* capped */
@@ -244,16 +279,35 @@ static void test_guard_brownout_loop_backs_off(void)
 
 static void test_guard_new_cells_clear(void)
 {
-    gp_state_t st = {.unstable_boots = 5, .last_best_mv = 2700};
-    gp_decision_t d = gp_decide(&st, &k_gp, GP_RESET_POWER_ON, 2849);  /* +149 mV: not enough */
-    CHECK_EQ_INT(d.action, GP_SLEEP_UNSTABLE);
-    CHECK(!d.cleared);
-    d = gp_decide(&st, &k_gp, GP_RESET_POWER_ON, 2850);                 /* +150 mV: new cells */
+    /* flat Li-MnO2 curve: the new cell reads only 100 mV above the worn one */
+    gp_state_t st = {.unstable_boots = 7, .last_best_mv = 2950};
+    gp_decision_t d = gp_decide(&st, &k_gp, GP_RESET_POWER_ON, true, 3050);
     CHECK(d.cleared);
     CHECK_EQ_INT(d.action, GP_RUN);
     CHECK_EQ_INT(st.unstable_boots, 1);
+
+    /* a worn cell that rests and rebounds is not a new cell */
+    gp_state_t reb = {.unstable_boots = 5, .last_best_mv = 2450};
+    d = gp_decide(&reb, &k_gp, GP_RESET_POWER_ON, true, 2650);                /* +200 mV, far below fresh */
+    CHECK(!d.cleared);
+    CHECK_EQ_INT(d.action, GP_SLEEP_UNSTABLE);
+    d = gp_decide(&reb, &k_gp, GP_RESET_POWER_ON, true, 2999);                /* 1 mV short of the range */
+    CHECK(!d.cleared);
+
+    /* a new but cold cell in a brown-out loop reads "fresh" on every boot */
+    gp_state_t cold = {0};
+    CHECK_EQ_INT(gp_decide(&cold, &k_gp, GP_RESET_POWER_ON, true, 3060).action, GP_RUN);
+    CHECK_EQ_INT(gp_decide(&cold, &k_gp, GP_RESET_POWER_ON, true, 3060).action, GP_RUN);
+    d = gp_decide(&cold, &k_gp, GP_RESET_POWER_ON, true, 3070);               /* +10 mV: same cell */
+    CHECK(!d.cleared);
+    CHECK_EQ_INT(d.action, GP_SLEEP_UNSTABLE);
+    d = gp_decide(&cold, &k_gp, GP_RESET_POWER_ON, true, 3109);               /* +49 mV: still the same cell */
+    CHECK(!d.cleared);
+    d = gp_decide(&cold, &k_gp, GP_RESET_POWER_ON, true, 3110);               /* +50 mV inside the range */
+    CHECK(d.cleared);
+
     gp_state_t s2 = {.unstable_boots = 3, .last_best_mv = 3000};
-    d = gp_decide(&s2, &k_gp, GP_RESET_SOFTWARE, 3000);                 /* factory reset / reboot */
+    d = gp_decide(&s2, &k_gp, GP_RESET_SOFTWARE, true, 3000);                 /* factory reset / reboot */
     CHECK(d.cleared);
     CHECK_EQ_INT(d.action, GP_RUN);
 }
@@ -261,21 +315,49 @@ static void test_guard_new_cells_clear(void)
 static void test_guard_low_battery(void)
 {
     gp_state_t st = {0};
-    gp_decision_t d = gp_decide(&st, &k_gp, GP_RESET_POWER_ON, 2399);
+    gp_decision_t d = gp_decide(&st, &k_gp, GP_RESET_POWER_ON, true, 2399);
     CHECK_EQ_INT(d.action, GP_SLEEP_LOW_BATTERY);
     CHECK_EQ_INT(d.sleep_s, 300);
-    d = gp_decide(&st, &k_gp, GP_RESET_SLEEP_WAKE, 2380);
+    d = gp_decide(&st, &k_gp, GP_RESET_SLEEP_WAKE, true, 2380);
     CHECK_EQ_INT(d.action, GP_SLEEP_LOW_BATTERY);
     CHECK_EQ_INT(d.sleep_s, 600);
-    d = gp_decide(&st, &k_gp, GP_RESET_SLEEP_WAKE, 2390);
+    d = gp_decide(&st, &k_gp, GP_RESET_SLEEP_WAKE, true, 2390);
     CHECK_EQ_INT(d.sleep_s, 1200);
-    d = gp_decide(&st, &k_gp, GP_RESET_POWER_ON, 3100);                 /* cells replaced */
+    d = gp_decide(&st, &k_gp, GP_RESET_SLEEP_WAKE, true, 2545);               /* rested: +155 mV, not a new cell */
+    CHECK(!d.cleared);
+    CHECK_EQ_INT(d.action, GP_RUN);              /* above the minimum: one attempt after the sleep */
+    d = gp_decide(&st, &k_gp, GP_RESET_POWER_ON, true, 2545);                 /* it browned out again */
+    CHECK_EQ_INT(d.action, GP_SLEEP_UNSTABLE);
+    CHECK_EQ_INT(d.sleep_s, 1200);               /* not shorter than the wait before it */
+    CHECK_EQ_INT(gp_decide(&st, &k_gp, GP_RESET_SLEEP_WAKE, true, 2545).action, GP_RUN);
+    d = gp_decide(&st, &k_gp, GP_RESET_POWER_ON, true, 2545);
+    CHECK_EQ_INT(d.sleep_s, 2400);               /* and it keeps growing */
+    d = gp_decide(&st, &k_gp, GP_RESET_POWER_ON, true, 3100);                 /* cell replaced */
     CHECK_EQ_INT(d.action, GP_RUN);
     CHECK(d.cleared);
     gp_state_t sat = {.unstable_boots = 255, .last_best_mv = 2000};
-    d = gp_decide(&sat, &k_gp, GP_RESET_POWER_ON, 1000);
+    d = gp_decide(&sat, &k_gp, GP_RESET_POWER_ON, true, 1000);
     CHECK_EQ_INT(sat.unstable_boots, 255);       /* saturates, no wrap to 0 */
     CHECK_EQ_INT(d.sleep_s, 14400);
+}
+
+/* ADC or sense-path fault: no reading. The voltage rules must not fire. */
+static void test_guard_without_reading(void)
+{
+    gp_state_t st = {0};
+    gp_decision_t d = gp_decide(&st, &k_gp, GP_RESET_POWER_ON, false, 0);     /* 0 is not "low battery" */
+    CHECK_EQ_INT(d.action, GP_RUN);
+    CHECK_EQ_INT(st.last_best_mv, 0);            /* nothing recorded */
+    d = gp_decide(&st, &k_gp, GP_RESET_POWER_ON, false, 0xFFFF);              /* nor a "new cell" */
+    CHECK(!d.cleared);
+    CHECK_EQ_INT(d.action, GP_RUN);
+    d = gp_decide(&st, &k_gp, GP_RESET_POWER_ON, false, 0xFFFF);
+    CHECK(!d.cleared);
+    CHECK_EQ_INT(d.action, GP_SLEEP_UNSTABLE);   /* the brown-out backoff still works */
+    gp_state_t s2 = {.unstable_boots = 4, .last_best_mv = 2800};
+    d = gp_decide(&s2, &k_gp, GP_RESET_SLEEP_WAKE, false, 0);
+    CHECK_EQ_INT(d.action, GP_RUN);
+    CHECK_EQ_INT(s2.last_best_mv, 2800);         /* the last measurement is kept */
 }
 
 void test_matter_scale_all(void)
@@ -307,7 +389,9 @@ void test_backoff_all(void)
     run_test("backoff: doubling and saturation", test_backoff_sequence);
     run_test("backoff: n-th attempt", test_backoff_for_attempt);
     run_test("guard: normal boots and stable mark", test_guard_normal_boots);
+    run_test("guard: one early reset is free", test_guard_one_early_reset_is_free);
     run_test("guard: brown-out loop backs off", test_guard_brownout_loop_backs_off);
-    run_test("guard: new cells / restart clear", test_guard_new_cells_clear);
+    run_test("guard: new cell / rebound / restart", test_guard_new_cells_clear);
     run_test("guard: low battery backoff", test_guard_low_battery);
+    run_test("guard: no cell reading", test_guard_without_reading);
 }
